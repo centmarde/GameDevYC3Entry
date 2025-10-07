@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9978d94a6279e63449d46a326b25899b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - pendingProfile: {instanceID: 0}
+  - mainCamera: {instanceID: 0}
+  - muzzle: {instanceID: 0}
+  - projectile: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
