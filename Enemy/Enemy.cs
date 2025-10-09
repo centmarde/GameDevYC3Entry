@@ -22,6 +22,7 @@ public class Enemy : Entity, ITargetable
     public bool IsAlive => GetComponent<Entity_Health>()?.IsAlive ?? true;
 
     private Entity_Health health;
+    private EnemyDeathTracker deathTracker;
 
     private Player player;
 
@@ -43,6 +44,7 @@ public class Enemy : Entity, ITargetable
         combat = GetComponent<Enemy_Combat>();
         movement = GetComponent<Enemy_Movement>();
         health = GetComponent<Entity_Health>();
+        deathTracker = GetComponent<EnemyDeathTracker>();
 
         if (health) health.SetMaxHealth(Stats.maxHealth);
 
@@ -72,6 +74,16 @@ public class Enemy : Entity, ITargetable
     public override void EntityDeath()
     {
         base.EntityDeath(); // stop motion, trigger anim if any
+
+        // IMPORTANT: Notify wave manager about enemy death
+        if (deathTracker != null)
+        {
+            deathTracker.NotifyDeath();
+        }
+        else
+        {
+            Debug.LogWarning($"{gameObject.name} has no EnemyDeathTracker component! Wave system may not track this enemy properly.");
+        }
 
         // finally, remove the object after the animation window
         Destroy(gameObject, Stats.deathDelay);
