@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Attach this to a GameObject with a Collider (set as Trigger).
-/// When the player collides with it, the wave system will be activated.
+/// When the player collides with it, the wave system will be activated and resumed if paused.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class WaveActivatorTrigger : MonoBehaviour
@@ -13,16 +13,19 @@ public class WaveActivatorTrigger : MonoBehaviour
     [SerializeField] private WaveManager waveManager;
     
     [Header("Trigger Behavior")]
-    [SerializeField] private bool activateOnce = true;
     [Tooltip("Destroy this trigger object after activation")]
     [SerializeField] private bool destroyAfterActivation = false;
     [SerializeField] private float destroyDelay = 0.5f;
     
+    [Header("Area Clear")]
+    [Tooltip("If true, destroy the attached object when area is cleared")]
+    [SerializeField] private bool areaClear = false;
+    [Tooltip("The object to destroy when area is cleared (if not assigned, uses this GameObject)")]
+    [SerializeField] private GameObject objectToDestroy;
+    
     [Header("Visual Feedback")]
     [SerializeField] private bool showDebugMessage = true;
     [SerializeField] private GameObject visualEffect; // Optional particle effect or visual
-    
-    private bool hasActivated = false;
     
     private void Awake()
     {
@@ -51,12 +54,6 @@ public class WaveActivatorTrigger : MonoBehaviour
         // Check if player collided
         if (other.CompareTag(playerTag))
         {
-            // Check if already activated (if activateOnce is true)
-            if (activateOnce && hasActivated)
-            {
-                return;
-            }
-            
             ActivateWaves();
         }
     }
@@ -72,15 +69,24 @@ public class WaveActivatorTrigger : MonoBehaviour
             return;
         }
         
-        hasActivated = true;
-        
         if (showDebugMessage)
         {
-            Debug.Log($"WaveActivatorTrigger: Player entered trigger '{gameObject.name}' - Activating waves!");
+            Debug.Log($"WaveActivatorTrigger: Player entered trigger '{gameObject.name}' - Activating/Resuming waves!");
         }
         
         // Activate the wave system
         waveManager.ActivateWaves();
+        
+        // If waves are paused, automatically resume them
+        if (waveManager.AreWavesPaused())
+        {
+            waveManager.ResumeWaves();
+            
+            if (showDebugMessage)
+            {
+                Debug.Log($"WaveActivatorTrigger: Waves were paused - automatically resuming!");
+            }
+        }
         
         // Show visual effect if assigned
         if (visualEffect != null)
@@ -88,9 +94,28 @@ public class WaveActivatorTrigger : MonoBehaviour
             visualEffect.SetActive(true);
         }
         
-        // Destroy this trigger if configured
+        // Area Clear: Destroy attached object if enabled
+        if (areaClear)
+        {
+            GameObject targetToDestroy = objectToDestroy != null ? objectToDestroy : gameObject;
+            
+            if (showDebugMessage)
+            {
+                Debug.Log($"WaveActivatorTrigger: Area cleared! Destroying '{targetToDestroy.name}' in {destroyDelay} seconds...");
+            }
+            
+            Destroy(targetToDestroy, destroyDelay);
+            return; // Exit early since object will be destroyed
+        }
+        
+        // Destroy only this specific trigger GameObject if configured
+        // This will not affect other objects that may have this script attached
         if (destroyAfterActivation)
         {
+            if (showDebugMessage)
+            {
+                Debug.Log($"WaveActivatorTrigger: Destroying trigger '{gameObject.name}' in {destroyDelay} seconds...");
+            }
             Destroy(gameObject, destroyDelay);
         }
     }
