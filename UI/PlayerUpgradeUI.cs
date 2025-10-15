@@ -17,9 +17,7 @@ public class PlayerUpgradeUI : MonoBehaviour
     private Canvas canvas;
     private GameObject upgradePanel;
     private TextMeshProUGUI titleText;
-    private Button damageButton;
-    private Button healthButton;
-    private Button speedButton;
+    private Button[] upgradeButtons = new Button[3];
     private PlayerUpgradeManager upgradeManager;
     
     private void Awake()
@@ -125,14 +123,12 @@ public class PlayerUpgradeUI : MonoBehaviour
         float buttonY = -120;
         float buttonSpacing = 90;
         
-        // Damage button
-        damageButton = CreateButton("DamageButton", new Vector2(0, buttonY), "⚔ DAMAGE", OnDamageButtonClicked);
-        
-        // Health button
-        healthButton = CreateButton("HealthButton", new Vector2(0, buttonY - buttonSpacing), "❤ HEALTH", OnHealthButtonClicked);
-        
-        // Speed button
-        speedButton = CreateButton("SpeedButton", new Vector2(0, buttonY - buttonSpacing * 2), "⚡ SPEED", OnSpeedButtonClicked);
+        // Create 3 upgrade buttons
+        for (int i = 0; i < 3; i++)
+        {
+            int index = i; // Capture for lambda
+            upgradeButtons[i] = CreateButton($"UpgradeButton{i}", new Vector2(0, buttonY - buttonSpacing * i), "UPGRADE", () => OnUpgradeButtonClicked(index));
+        }
     }
     
     /// <summary>
@@ -193,40 +189,50 @@ public class PlayerUpgradeUI : MonoBehaviour
     {
         if (upgradeManager == null) return;
         
-        // Update damage button
-        if (damageButton != null)
+        var upgradeOptions = upgradeManager.GetCurrentUpgradeOptions();
+        
+        for (int i = 0; i < 3; i++)
         {
-            var text = damageButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
+            if (upgradeButtons[i] != null)
             {
-                float current = upgradeManager.GetCurrentDamage();
-                float upgrade = upgradeManager.GetDamageUpgradeAmount();
-                text.text = $"⚔ DAMAGE\n<size=24>{current:F1} → {current + upgrade:F1}</size>";
+                var text = upgradeButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = GetUpgradeButtonText(upgradeOptions[i]);
+                }
             }
         }
-        
-        // Update health button
-        if (healthButton != null)
+    }
+    
+    /// <summary>
+    /// Get the display text for an upgrade type
+    /// </summary>
+    private string GetUpgradeButtonText(PlayerUpgradeManager.UpgradeType upgradeType)
+    {
+        switch (upgradeType)
         {
-            var text = healthButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
-            {
-                float current = upgradeManager.GetCurrentHealth();
-                float upgrade = upgradeManager.GetHealthUpgradeAmount();
-                text.text = $"❤ HEALTH\n<size=24>{current:F0} → {current + upgrade:F0}</size>";
-            }
-        }
-        
-        // Update speed button
-        if (speedButton != null)
-        {
-            var text = speedButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
-            {
-                float current = upgradeManager.GetCurrentSpeed();
-                float upgrade = upgradeManager.GetSpeedUpgradeAmount();
-                text.text = $"⚡ SPEED\n<size=24>{current:F1} → {current + upgrade:F1}</size>";
-            }
+            case PlayerUpgradeManager.UpgradeType.Damage:
+                float currentDamage = upgradeManager.GetCurrentDamage();
+                float damageUpgrade = upgradeManager.GetDamageUpgradeAmount();
+                return $"⚔ DAMAGE\n<size=24>{currentDamage:F1} → {currentDamage + damageUpgrade:F1}</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.Health:
+                float currentHealth = upgradeManager.GetCurrentHealth();
+                float healthUpgrade = upgradeManager.GetHealthUpgradeAmount();
+                return $"❤ HEALTH\n<size=24>{currentHealth:F0} → {currentHealth + healthUpgrade:F0}</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.CriticalChance:
+                float currentCritChance = upgradeManager.GetCurrentCriticalChance();
+                float critChanceUpgrade = upgradeManager.GetCriticalChanceUpgradeAmount();
+                return $"💥 CRIT CHANCE\n<size=24>{currentCritChance:F1}% → {Mathf.Min(currentCritChance + critChanceUpgrade, 100f):F1}%</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.CriticalDamage:
+                float currentCritDamage = upgradeManager.GetCurrentCriticalDamage();
+                float critDamageUpgrade = upgradeManager.GetCriticalDamageUpgradeAmount();
+                return $"⚡ CRIT DAMAGE\n<size=24>{currentCritDamage:F2}x → {currentCritDamage + critDamageUpgrade:F2}x</size>";
+                
+            default:
+                return "UNKNOWN";
         }
     }
     
@@ -254,27 +260,15 @@ public class PlayerUpgradeUI : MonoBehaviour
     }
     
     // Button click handlers
-    private void OnDamageButtonClicked()
+    private void OnUpgradeButtonClicked(int buttonIndex)
     {
         if (upgradeManager != null)
         {
-            upgradeManager.ApplyUpgrade(PlayerUpgradeManager.UpgradeType.Damage);
-        }
-    }
-    
-    private void OnHealthButtonClicked()
-    {
-        if (upgradeManager != null)
-        {
-            upgradeManager.ApplyUpgrade(PlayerUpgradeManager.UpgradeType.Health);
-        }
-    }
-    
-    private void OnSpeedButtonClicked()
-    {
-        if (upgradeManager != null)
-        {
-            upgradeManager.ApplyUpgrade(PlayerUpgradeManager.UpgradeType.Speed);
+            var upgradeOptions = upgradeManager.GetCurrentUpgradeOptions();
+            if (buttonIndex >= 0 && buttonIndex < upgradeOptions.Length)
+            {
+                upgradeManager.ApplyUpgrade(upgradeOptions[buttonIndex]);
+            }
         }
     }
 }

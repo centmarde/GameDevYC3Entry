@@ -15,19 +15,22 @@ public class PlayerUpgradeManager : MonoBehaviour
     [Header("Upgrade Values")]
     [SerializeField] private float damageUpgradeAmount = 5f;
     [SerializeField] private float healthUpgradeAmount = 20f;
-    [SerializeField] private float speedUpgradeAmount = 0.5f;
+    [SerializeField] private float criticalChanceUpgradeAmount = 5f;
+    [SerializeField] private float criticalDamageUpgradeAmount = 0.25f;
     
     [Header("Auto-Setup")]
     [SerializeField] private bool autoFindReferences = true;
     
     private Player player;
     private bool upgradePending = false;
+    private UpgradeType[] currentUpgradeOptions = new UpgradeType[3];
     
     public enum UpgradeType
     {
         Damage,
         Health,
-        Speed
+        CriticalChance,
+        CriticalDamage
     }
     
     private void Awake()
@@ -116,6 +119,9 @@ public class PlayerUpgradeManager : MonoBehaviour
     {
         Debug.Log($"PlayerUpgradeManager: Wave {waveNumber} cleared! Showing upgrade options...");
         
+        // Generate 3 random upgrade options
+        GenerateRandomUpgrades();
+        
         // Pause wave progression
         if (waveManager != null)
         {
@@ -131,6 +137,31 @@ public class PlayerUpgradeManager : MonoBehaviour
         
         // Pause game
         Time.timeScale = 0f;
+    }
+    
+    /// <summary>
+    /// Generate 3 random unique upgrade options
+    /// </summary>
+    private void GenerateRandomUpgrades()
+    {
+        // Get all possible upgrade types
+        var allUpgrades = new System.Collections.Generic.List<UpgradeType>
+        {
+            UpgradeType.Damage,
+            UpgradeType.Health,
+            UpgradeType.CriticalChance,
+            UpgradeType.CriticalDamage
+        };
+        
+        // Shuffle and pick 3
+        for (int i = 0; i < 3; i++)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, allUpgrades.Count);
+            currentUpgradeOptions[i] = allUpgrades[randomIndex];
+            allUpgrades.RemoveAt(randomIndex);
+        }
+        
+        Debug.Log($"Upgrade options: {currentUpgradeOptions[0]}, {currentUpgradeOptions[1]}, {currentUpgradeOptions[2]}");
     }
     
     /// <summary>
@@ -165,9 +196,15 @@ public class PlayerUpgradeManager : MonoBehaviour
                 Debug.Log($"Max Health upgraded! New max health: {playerStats.maxHealth}");
                 break;
                 
-            case UpgradeType.Speed:
-                playerStats.moveSpeed += speedUpgradeAmount;
-                Debug.Log($"Move Speed upgraded! New speed: {playerStats.moveSpeed}");
+            case UpgradeType.CriticalChance:
+                playerStats.criticalChance += criticalChanceUpgradeAmount;
+                playerStats.criticalChance = Mathf.Min(playerStats.criticalChance, 100f); // Cap at 100%
+                Debug.Log($"Critical Chance upgraded! New crit chance: {playerStats.criticalChance}%");
+                break;
+                
+            case UpgradeType.CriticalDamage:
+                playerStats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
+                Debug.Log($"Critical Damage upgraded! New crit multiplier: {playerStats.criticalDamageMultiplier}x");
                 break;
         }
         
@@ -191,9 +228,13 @@ public class PlayerUpgradeManager : MonoBehaviour
     // Public getters for upgrade amounts (for UI display)
     public float GetDamageUpgradeAmount() => damageUpgradeAmount;
     public float GetHealthUpgradeAmount() => healthUpgradeAmount;
-    public float GetSpeedUpgradeAmount() => speedUpgradeAmount;
+    public float GetCriticalChanceUpgradeAmount() => criticalChanceUpgradeAmount;
+    public float GetCriticalDamageUpgradeAmount() => criticalDamageUpgradeAmount;
     
     public float GetCurrentDamage() => playerStats != null ? playerStats.projectileDamage : 0f;
     public float GetCurrentHealth() => playerStats != null ? playerStats.maxHealth : 0f;
-    public float GetCurrentSpeed() => playerStats != null ? playerStats.moveSpeed : 0f;
+    public float GetCurrentCriticalChance() => playerStats != null ? playerStats.criticalChance : 0f;
+    public float GetCurrentCriticalDamage() => playerStats != null ? playerStats.criticalDamageMultiplier : 0f;
+    
+    public UpgradeType[] GetCurrentUpgradeOptions() => currentUpgradeOptions;
 }
