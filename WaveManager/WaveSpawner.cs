@@ -2,13 +2,9 @@ using UnityEngine;
 
 public class WaveSpawner : MonoBehaviour
 {
-    [Header("Enemy Settings")]
-    [SerializeField] private GameObject[] enemyPrefabs; // Array of enemy GameObjects to spawn (deprecated - use enemyGroups instead)
-    
     [Header("Enemy Group Settings")]
     [Tooltip("Define groups of enemies to spawn. Each group can have multiple enemy types with spawn weights.")]
     [SerializeField] private EnemyGroup[] enemyGroups;
-    [SerializeField] private bool useGroupSystem = true; // If false, uses legacy enemyPrefabs array
     
     [Header("Spawn Mode")]
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
@@ -131,28 +127,16 @@ public class WaveSpawner : MonoBehaviour
         currentDamageBonus = damageBonus;
         
         // Validate enemy configuration
-        if (useGroupSystem)
+        if (enemyGroups == null || enemyGroups.Length == 0)
         {
-            if (enemyGroups == null || enemyGroups.Length == 0)
-            {
-                Debug.LogError("WaveSpawner: No enemy groups assigned! Please assign enemy groups or disable useGroupSystem.");
-                return;
-            }
-            
-            // Select ONE group for this entire wave
-            int randomGroupIndex = Random.Range(0, enemyGroups.Length);
-            currentWaveGroup = enemyGroups[randomGroupIndex];
-            Debug.Log($"Wave will spawn enemies from group: {currentWaveGroup.groupName}");
+            Debug.LogError("WaveSpawner: No enemy groups assigned! Please assign enemy groups in the Inspector.");
+            return;
         }
-        else
-        {
-            if (enemyPrefabs == null || enemyPrefabs.Length == 0)
-            {
-                Debug.LogError("WaveSpawner: No enemy prefabs assigned!");
-                return;
-            }
-            currentWaveGroup = null; // Not using group system
-        }
+        
+        // Select ONE group for this entire wave
+        int randomGroupIndex = Random.Range(0, enemyGroups.Length);
+        currentWaveGroup = enemyGroups[randomGroupIndex];
+        Debug.Log($"Wave will spawn enemies from group: {currentWaveGroup.groupName}");
         
         // Validate spawn mode requirements
         if (spawnMode == SpawnMode.Manual)
@@ -191,19 +175,12 @@ public class WaveSpawner : MonoBehaviour
             return;
         }
         
-        // Select enemy based on system in use
+        // Get a random enemy from the current wave's group (using weights)
         GameObject enemyPrefab = null;
         
-        if (useGroupSystem && currentWaveGroup != null)
+        if (currentWaveGroup != null)
         {
-            // Get a random enemy from the current wave's group (using weights)
             enemyPrefab = currentWaveGroup.GetRandomEnemy();
-        }
-        else if (enemyPrefabs != null && enemyPrefabs.Length > 0)
-        {
-            // Legacy system: randomly select from enemyPrefabs array
-            int randomEnemyIndex = Random.Range(0, enemyPrefabs.Length);
-            enemyPrefab = enemyPrefabs[randomEnemyIndex];
         }
         
         // Get spawn position based on mode

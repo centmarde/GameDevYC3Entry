@@ -303,7 +303,10 @@ public class WaveManager : MonoBehaviour
     private void UpdateStatBonuses()
     {
         // Calculate how many scaling intervals have passed
-        int intervals = (currentWave - 1) / waveIntervalForScaling;
+        // Waves 1-4 = 0 intervals (no bonus)
+        // Wave 5 = 1 interval (+10 HP, +10 DMG)
+        // Wave 10 = 2 intervals (+20 HP, +20 DMG), etc.
+        int intervals = currentWave / waveIntervalForScaling;
         
         currentHealthBonus = intervals * healthIncreasePerInterval;
         currentDamageBonus = intervals * damageIncreasePerInterval;
