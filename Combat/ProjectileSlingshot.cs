@@ -7,6 +7,7 @@ public class ProjectileSlingshot : MonoBehaviour
 
     private Rigidbody rb;
     private float damage;
+    private bool isCriticalHit;
     private object source;
 
     private void Awake()
@@ -35,10 +36,11 @@ public class ProjectileSlingshot : MonoBehaviour
         }
     }
 
-    public void Launch(Vector3 velocity, float dmg, object src)
+    public void Launch(Vector3 velocity, float dmg, object src, bool isCritical = false)
     {
         damage = dmg;
         source = src;
+        isCriticalHit = isCritical;
         
         if (rb != null)
         {
@@ -72,8 +74,15 @@ public class ProjectileSlingshot : MonoBehaviour
             {
                 Debug.LogWarning($"{name}: Damage was not applied to {other.name} (invulnerable or dead)");
             }
+            else if (isCriticalHit)
+            {
+                // Show critical hit indicator
+                CriticalHitIndicator.ShowCritical(hitPoint);
+            }
         }
 
         Destroy(gameObject);
     }
+    
+    public bool IsCriticalHit() => isCriticalHit;
 }

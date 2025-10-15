@@ -57,8 +57,31 @@ public class Entity_Health : MonoBehaviour, IDamageable
 
     public void SetMaxHealth(float value)
     {
-        maxHealth = Mathf.Max(1f, value);   // make sure it’s at least 1
+        maxHealth = Mathf.Max(1f, value);   // make sure it's at least 1
         currentHealth = maxHealth;          // reset current to full
+    }
+    
+    /// <summary>
+    /// Heal the entity by a specific amount (won't exceed max health)
+    /// </summary>
+    public void Heal(float amount)
+    {
+        if (!IsAlive) return;
+        
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+    }
+    
+    /// <summary>
+    /// Increase max health and optionally heal
+    /// </summary>
+    public void IncreaseMaxHealth(float amount, bool healToFull = false)
+    {
+        maxHealth += amount;
+        
+        if (healToFull)
+            currentHealth = maxHealth;
+        else
+            currentHealth = Mathf.Min(currentHealth, maxHealth); // Ensure current doesn't exceed new max
     }
 
 }

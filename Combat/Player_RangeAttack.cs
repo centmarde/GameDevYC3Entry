@@ -87,8 +87,12 @@ public class Player_RangeAttack : PlayerAttack
             }
         }
 
+        // Roll for critical hit
+        bool isCritical = player.Stats.RollCriticalHit();
+        float finalDamage = player.Stats.CalculateDamage(isCritical);
+        
         // CRITICAL: Launch projectile with damage - this is what damages enemies!
-        p.Launch(dir.normalized * player.Stats.projectileSpeed, player.Stats.projectileDamage, this);
+        p.Launch(dir.normalized * player.Stats.projectileSpeed, finalDamage, this, isCritical);
     }
 
     public override bool CanAttack(Transform target) => false;
