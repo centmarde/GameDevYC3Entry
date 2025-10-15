@@ -9,7 +9,7 @@ public class Player_RangeAttack : PlayerAttack
 
     private Vector3 cachedDirection;
 
-    public override float AttackRange => player.Stats.rangeAttackRange;
+    public override float AttackRange => player != null && player.Stats != null ? player.Stats.rangeAttackRange : 10f;
 
 
     protected override void Awake()
@@ -21,12 +21,17 @@ public class Player_RangeAttack : PlayerAttack
     public override void ExecuteAttack(Vector3 aimDirection)
     {
         if (!IsOffCooldown) return;
+        if (player == null || player.Stats == null)
+        {
+            Debug.LogWarning($"{name}: Cannot execute attack - player or stats is null");
+            return;
+        }
 
         cachedDirection = aimDirection.normalized;
         ResetCooldown();
 
         // Lock movement
-        if (player?.playerMovement != null)
+        if (player.playerMovement != null)
         {
             player.playerMovement.movementLocked = true;
             player.playerMovement.StopMovement();
@@ -36,13 +41,23 @@ public class Player_RangeAttack : PlayerAttack
     public override void EndAttack()
     {
         FireProjectile();
-        if (player?.playerMovement != null)
+        if (player != null && player.playerMovement != null)
             player.playerMovement.movementLocked = false;
     }
 
     private void FireProjectile()
     {
-        if (projectile == null || muzzle == null) return;
+        if (projectile == null || muzzle == null)
+        {
+            Debug.LogWarning($"{name}: Cannot fire projectile - projectile prefab or muzzle is null");
+            return;
+        }
+
+        if (player == null || player.Stats == null)
+        {
+            Debug.LogWarning($"{name}: Cannot fire projectile - player or stats is null");
+            return;
+        }
 
         Vector3 dir = cachedDirection.sqrMagnitude > 0.0001f
             ? cachedDirection
@@ -53,16 +68,26 @@ public class Player_RangeAttack : PlayerAttack
         Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
 
         ProjectileSlingshot p = Instantiate(projectile, spawnPos, rot);
+        if (p == null)
+        {
+            Debug.LogError($"{name}: Failed to instantiate projectile");
+            return;
+        }
+
         p.transform.SetParent(null, true);
 
         // Ignore collision with player
         var projCol = p.GetComponent<Collider>();
-        if (projCol && player)
+        if (projCol != null && player != null)
         {
             foreach (var c in player.GetComponentsInChildren<Collider>())
-                Physics.IgnoreCollision(projCol, c, true);
+            {
+                if (c != null)
+                    Physics.IgnoreCollision(projCol, c, true);
+            }
         }
 
+        // CRITICAL: Launch projectile with damage - this is what damages enemies!
         p.Launch(dir.normalized * player.Stats.projectileSpeed, player.Stats.projectileDamage, this);
     }
 

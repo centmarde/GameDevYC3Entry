@@ -16,12 +16,12 @@ public class Enemy_Combat : MonoBehaviour
         enemy = GetComponent<Enemy>();
 
         // Auto-wire if nothing assigned in the Inspector
-        if (!currentAttack)
-            currentAttack = defaultAttack
+        if (currentAttack == null)
+            currentAttack = defaultAttack != null
                          ? defaultAttack
                          : GetComponent<EnemyAttack>() ?? GetComponentInChildren<EnemyAttack>();
 
-        if (!currentAttack)
+        if (currentAttack == null)
             Debug.LogError($"{name}: No EnemyAttack found/assigned. Add Enemy_MeleeAttack.", this);
     }
 
@@ -29,7 +29,7 @@ public class Enemy_Combat : MonoBehaviour
 
     public bool TryAttack()
     {
-        if (!Target || currentAttack == null) return false;
+        if (Target == null || currentAttack == null) return false;
         bool can = currentAttack.CanAttack(Target);
         if (!can) return false;
 
@@ -43,7 +43,7 @@ public class Enemy_Combat : MonoBehaviour
 
     public void SetAttack(EnemyAttack attack)
     {
-        if (!attack) return;
+        if (attack == null) return;
         currentAttack = attack;
     }
 

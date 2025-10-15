@@ -34,20 +34,24 @@ public class Enemy_Movement : MonoBehaviour
         origPos = home;
         patrolDirXZ = new Vector3(patrolDir.x, 0f, patrolDir.z).normalized;
         player = playerRef;
-        // precompute squares:
-        chaseRadiusSqr = Stats.chaseRadius * Stats.chaseRadius;
-        stopDistanceSqr = Stats.stopDistance * Stats.stopDistance;
-        aggroRadiusSqr = Stats.aggroRadius * Stats.aggroRadius;
-        homeStopDistanceSqr = Stats.homeStopDistance * Stats.homeStopDistance;
-        leashRadiusSqr = Stats.leashRadius * Stats.leashRadius;
+        
+        // precompute squares if stats are valid:
+        if (Stats != null)
+        {
+            chaseRadiusSqr = Stats.chaseRadius * Stats.chaseRadius;
+            stopDistanceSqr = Stats.stopDistance * Stats.stopDistance;
+            aggroRadiusSqr = Stats.aggroRadius * Stats.aggroRadius;
+            homeStopDistanceSqr = Stats.homeStopDistance * Stats.homeStopDistance;
+            leashRadiusSqr = Stats.leashRadius * Stats.leashRadius;
+        }
     }
 
 
     public bool PlayerWithinAggro() =>
-      player && (player.position - transform.position).sqrMagnitude <= aggroRadiusSqr;
+      player != null && (player.position - transform.position).sqrMagnitude <= aggroRadiusSqr;
 
     public bool PlayerWithinChaseWindow() =>
-        player && (player.position - transform.position).sqrMagnitude <= chaseRadiusSqr;
+        player != null && (player.position - transform.position).sqrMagnitude <= chaseRadiusSqr;
 
     public bool EnemyWithinLeash() =>
         (transform.position - origPos).sqrMagnitude <= leashRadiusSqr;

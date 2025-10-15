@@ -5,10 +5,10 @@ public class Enemy : Entity, ITargetable
     // ========= Stats / Targeting =========
     [SerializeField] private EnemyStatData_SO enemyStats;
     protected virtual EnemyStatData_SO Stats => enemyStats;
-    public float AttackDamage => enemyStats.attackDamage;
-    public float AttackRadius => enemyStats.attackRadius;
-    public float AttackRange => enemyStats.attackRange;
-    public float AttackCooldown => enemyStats.attackCooldown;
+    public float AttackDamage => enemyStats != null ? enemyStats.attackDamage : 10f;
+    public float AttackRadius => enemyStats != null ? enemyStats.attackRadius : 2f;
+    public float AttackRange => enemyStats != null ? enemyStats.attackRange : 2f;
+    public float AttackCooldown => enemyStats != null ? enemyStats.attackCooldown : 1f;
 
 
     public Enemy_Movement movement {  get; private set; }  
@@ -18,8 +18,8 @@ public class Enemy : Entity, ITargetable
 
     [SerializeField] private Transform aimPoint;
     public Transform Transform => transform;
-    public Vector3 AimPoint => aimPoint ? aimPoint.position : transform.position + Vector3.up * 1.2f;
-    public bool IsAlive => GetComponent<Entity_Health>()?.IsAlive ?? true;
+    public Vector3 AimPoint => aimPoint != null ? aimPoint.position : transform.position + Vector3.up * 1.2f;
+    public bool IsAlive => health != null && health.IsAlive;
 
     private Entity_Health health;
     private EnemyDeathTracker deathTracker;
@@ -46,16 +46,25 @@ public class Enemy : Entity, ITargetable
         health = GetComponent<Entity_Health>();
         deathTracker = GetComponent<EnemyDeathTracker>();
 
-        if (health) health.SetMaxHealth(Stats.maxHealth);
+        // Check if enemyStats is assigned before using it
+        if (Stats == null)
+        {
+            Debug.LogError($"{gameObject.name}: EnemyStatData_SO is not assigned! Please assign it in the Inspector.");
+            enabled = false; // Disable component to prevent further errors
+            return;
+        }
+
+        if (health != null) health.SetMaxHealth(Stats.maxHealth);
 
         var pGO = GameObject.FindWithTag("Player");
 
         if (pGO != null) player = pGO.GetComponent<Player>();
-        combat?.SetTarget(player ? player.transform : null);
+        if (combat != null) combat.SetTarget(player != null ? player.transform : null);
 
-
-
-        movement.Init(Stats, transform.position, transform.forward, player ? player.transform : null);
+        if (movement != null)
+        {
+            movement.Init(Stats, transform.position, transform.forward, player != null ? player.transform : null);
+        }
 
         idleState = new Enemy_IdleState(this, stateMachine, "isIdle");
         moveState = new Enemy_MoveState(this, stateMachine, "isMoving");
@@ -67,7 +76,10 @@ public class Enemy : Entity, ITargetable
     protected override void Start()
     {
         base.Start();
-        stateMachine.Initialize(idleState);
+        if (Stats != null && stateMachine != null && idleState != null)
+        {
+            stateMachine.Initialize(idleState);
+        }
     }
 
 
@@ -86,11 +98,14 @@ public class Enemy : Entity, ITargetable
         }
 
         // finally, remove the object after the animation window
-        Destroy(gameObject, Stats.deathDelay);
+        float delay = Stats != null ? Stats.deathDelay : 2f;
+        Destroy(gameObject, delay);
     }
 
     private void OnDrawGizmos()
     {
+        if (Stats == null) return;
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, AttackRadius);
 
