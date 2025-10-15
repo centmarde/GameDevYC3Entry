@@ -38,6 +38,14 @@ public class Enemy_MeleeAttack : EnemyAttack
         Vector3 center = enemy.AimPoint + enemy.transform.forward * (enemy.AttackRange * 0.5f);
         int count = Physics.OverlapSphereNonAlloc(center, enemy.AttackRadius, hits, damageableMask, QueryTriggerInteraction.Ignore);
 
+        // Calculate final damage (base + any bonuses from wave scaling)
+        float finalDamage = enemy.AttackDamage;
+        EnemyStatModifier statModifier = GetComponent<EnemyStatModifier>();
+        if (statModifier != null)
+        {
+            finalDamage = statModifier.GetModifiedDamage(finalDamage);
+        }
+
         for (int i = 0; i < count; i++)
         {
             var rb = hits[i].attachedRigidbody;
@@ -49,7 +57,7 @@ public class Enemy_MeleeAttack : EnemyAttack
             Vector3 toPoint = hitPoint - hits[i].bounds.center;
             Vector3 hitNormal = toPoint.sqrMagnitude > 1e-6f ? toPoint.normalized : -enemy.transform.forward;
 
-            if (health.TakeDamage(enemy.AttackDamage, hitPoint, hitNormal, enemy))
+            if (health.TakeDamage(finalDamage, hitPoint, hitNormal, enemy))
             {
                 // Apply the slowdown to the player
                 if (playerMovement != null)

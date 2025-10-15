@@ -3,7 +3,12 @@ using UnityEngine;
 public class WaveSpawner : MonoBehaviour
 {
     [Header("Enemy Settings")]
-    [SerializeField] private GameObject[] enemyPrefabs; // Array of enemy GameObjects to spawn
+    [SerializeField] private GameObject[] enemyPrefabs; // Array of enemy GameObjects to spawn (deprecated - use enemyGroups instead)
+    
+    [Header("Enemy Group Settings")]
+    [Tooltip("Define groups of enemies to spawn. Each group can have multiple enemy types with spawn weights.")]
+    [SerializeField] private EnemyGroup[] enemyGroups;
+    [SerializeField] private bool useGroupSystem = true; // If false, uses legacy enemyPrefabs array
     
     [Header("Spawn Mode")]
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
@@ -28,11 +33,65 @@ public class WaveSpawner : MonoBehaviour
     private int enemiesSpawned = 0;
     private int enemiesToSpawn = 0;
     private bool isSpawning = false;
+    private float currentHealthBonus = 0f;
+    private float currentDamageBonus = 0f;
+    private EnemyGroup currentWaveGroup = null; // The group selected for this wave
     
     public enum SpawnMode
     {
         Manual,                    // Use manually placed spawn points
         CircularAroundPlayer      // Auto-generate spawn points around player
+    }
+    
+    [System.Serializable]
+    public class EnemyGroup
+    {
+        [Tooltip("Name of this enemy group for organization")]
+        public string groupName = "Enemy Group";
+        
+        [Tooltip("Array of enemy prefabs in this group")]
+        public GameObject[] enemies;
+        
+        [Tooltip("Spawn weights for each enemy (higher = more likely to spawn). Leave empty for equal weights.")]
+        public float[] spawnWeights;
+        
+        /// <summary>
+        /// Get a random enemy from this group based on weights
+        /// </summary>
+        public GameObject GetRandomEnemy()
+        {
+            if (enemies == null || enemies.Length == 0) return null;
+            
+            // If no weights specified, use equal probability
+            if (spawnWeights == null || spawnWeights.Length != enemies.Length)
+            {
+                return enemies[Random.Range(0, enemies.Length)];
+            }
+            
+            // Calculate total weight
+            float totalWeight = 0f;
+            foreach (float weight in spawnWeights)
+            {
+                totalWeight += weight;
+            }
+            
+            // Pick random value within total weight
+            float randomValue = Random.Range(0f, totalWeight);
+            
+            // Find which enemy this value corresponds to
+            float currentWeight = 0f;
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                currentWeight += spawnWeights[i];
+                if (randomValue <= currentWeight)
+                {
+                    return enemies[i];
+                }
+            }
+            
+            // Fallback (shouldn't happen)
+            return enemies[enemies.Length - 1];
+        }
     }
     
     private void Awake()
@@ -62,14 +121,37 @@ public class WaveSpawner : MonoBehaviour
     /// Start spawning enemies for the wave
     /// </summary>
     /// <param name="enemyCount">Number of enemies to spawn in this wave</param>
-    public void StartWave(int enemyCount)
+    /// <param name="healthBonus">Health bonus to apply to spawned enemies</param>
+    /// <param name="damageBonus">Damage bonus to apply to spawned enemies</param>
+    public void StartWave(int enemyCount, float healthBonus = 0f, float damageBonus = 0f)
     {
         if (isSpawning) return;
         
-        if (enemyPrefabs == null || enemyPrefabs.Length == 0)
+        currentHealthBonus = healthBonus;
+        currentDamageBonus = damageBonus;
+        
+        // Validate enemy configuration
+        if (useGroupSystem)
         {
-            Debug.LogError("WaveSpawner: No enemy prefabs assigned!");
-            return;
+            if (enemyGroups == null || enemyGroups.Length == 0)
+            {
+                Debug.LogError("WaveSpawner: No enemy groups assigned! Please assign enemy groups or disable useGroupSystem.");
+                return;
+            }
+            
+            // Select ONE group for this entire wave
+            int randomGroupIndex = Random.Range(0, enemyGroups.Length);
+            currentWaveGroup = enemyGroups[randomGroupIndex];
+            Debug.Log($"Wave will spawn enemies from group: {currentWaveGroup.groupName}");
+        }
+        else
+        {
+            if (enemyPrefabs == null || enemyPrefabs.Length == 0)
+            {
+                Debug.LogError("WaveSpawner: No enemy prefabs assigned!");
+                return;
+            }
+            currentWaveGroup = null; // Not using group system
         }
         
         // Validate spawn mode requirements
@@ -98,8 +180,7 @@ public class WaveSpawner : MonoBehaviour
     
     /// <summary>
     /// Spawns a single enemy at a random spawn point.
-    /// Each spawn randomly selects an enemy type from the enemyPrefabs array.
-    /// The array is never modified - it just picks a random index each time.
+    /// Uses group system if enabled, otherwise falls back to legacy enemyPrefabs array.
     /// </summary>
     private void SpawnEnemy()
     {
@@ -110,10 +191,20 @@ public class WaveSpawner : MonoBehaviour
             return;
         }
         
-        // Randomly select an enemy type from the array (array remains unchanged)
-        // Each spawn gets a fresh random pick, allowing for variety
-        int randomEnemyIndex = Random.Range(0, enemyPrefabs.Length);
-        GameObject enemyPrefab = enemyPrefabs[randomEnemyIndex];
+        // Select enemy based on system in use
+        GameObject enemyPrefab = null;
+        
+        if (useGroupSystem && currentWaveGroup != null)
+        {
+            // Get a random enemy from the current wave's group (using weights)
+            enemyPrefab = currentWaveGroup.GetRandomEnemy();
+        }
+        else if (enemyPrefabs != null && enemyPrefabs.Length > 0)
+        {
+            // Legacy system: randomly select from enemyPrefabs array
+            int randomEnemyIndex = Random.Range(0, enemyPrefabs.Length);
+            enemyPrefab = enemyPrefabs[randomEnemyIndex];
+        }
         
         // Get spawn position based on mode
         Vector3 spawnPosition;
@@ -145,6 +236,9 @@ public class WaveSpawner : MonoBehaviour
                 spawnedEnemy.tag = "Enemy";
             }
             
+            // Apply stat bonuses
+            ApplyStatBonuses(spawnedEnemy);
+            
             // Add enemy death tracker component if not present
             EnemyDeathTracker deathTracker = spawnedEnemy.GetComponent<EnemyDeathTracker>();
             if (deathTracker == null)
@@ -160,7 +254,7 @@ public class WaveSpawner : MonoBehaviour
             
             enemiesSpawned++;
             
-            Debug.Log($"Spawned {enemyPrefab.name} (enemy {enemiesSpawned}/{enemiesToSpawn}) at {spawnPosition}");
+            Debug.Log($"Spawned {enemyPrefab.name} (enemy {enemiesSpawned}/{enemiesToSpawn}) at {spawnPosition} with +{currentHealthBonus} HP, +{currentDamageBonus} DMG");
         }
         else
         {
@@ -204,6 +298,45 @@ public class WaveSpawner : MonoBehaviour
     }
     
     /// <summary>
+    /// Apply stat bonuses to a spawned enemy
+    /// </summary>
+    private void ApplyStatBonuses(GameObject enemyObject)
+    {
+        if (currentHealthBonus == 0f && currentDamageBonus == 0f) return;
+        
+        // Get the Enemy component
+        Enemy enemy = enemyObject.GetComponent<Enemy>();
+        if (enemy == null) return;
+        
+        // Apply health bonus
+        if (currentHealthBonus > 0f)
+        {
+            Entity_Health health = enemyObject.GetComponent<Entity_Health>();
+            if (health != null)
+            {
+                float newMaxHealth = health.MaxHealth + currentHealthBonus;
+                health.SetMaxHealth(newMaxHealth); // SetMaxHealth already sets currentHealth to maxHealth
+            }
+        }
+        
+        // Apply damage bonus by adding a modifier component
+        if (currentDamageBonus > 0f)
+        {
+            Enemy_Combat combat = enemyObject.GetComponent<Enemy_Combat>();
+            if (combat != null)
+            {
+                // Add a component to track damage bonus
+                EnemyStatModifier modifier = enemyObject.GetComponent<EnemyStatModifier>();
+                if (modifier == null)
+                {
+                    modifier = enemyObject.AddComponent<EnemyStatModifier>();
+                }
+                modifier.damageBonus = currentDamageBonus;
+            }
+        }
+    }
+    
+    /// <summary>
     /// Check if the spawner is currently spawning enemies
     /// </summary>
     public bool IsSpawning()
@@ -218,6 +351,7 @@ public class WaveSpawner : MonoBehaviour
     {
         CancelInvoke(nameof(SpawnEnemy));
         isSpawning = false;
+        currentWaveGroup = null; // Clear the current wave group
     }
     
     /// <summary>

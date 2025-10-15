@@ -18,6 +18,12 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private int enemyIncreasePerWave = 3; // How many more enemies per wave
     [SerializeField] private float timeBetweenWaves = 10f; // Time between waves
     
+    [Header("Stat Scaling")]
+    [SerializeField] private bool useStatScaling = true;
+    [SerializeField] private int waveIntervalForScaling = 5; // Every X waves, stats increase
+    [SerializeField] private float healthIncreasePerInterval = 10f; // Health increase per interval
+    [SerializeField] private float damageIncreasePerInterval = 10f; // Damage increase per interval
+    
     [Header("Dynamic Wave Configuration")]
     [SerializeField] private bool useDynamicScaling = true;
     [Tooltip("If enabled, enemy count scales: baseEnemyCount + (currentWave - 1) * enemyIncreasePerWave")]
@@ -39,6 +45,10 @@ public class WaveManager : MonoBehaviour
     private bool spawningComplete = false;
     private bool allEnemiesCleared = false;
     private float timeSinceWaveEnd = 0f;
+    
+    // Stat scaling tracking
+    private float currentHealthBonus = 0f;
+    private float currentDamageBonus = 0f;
     
     private void Awake()
     {
@@ -127,6 +137,13 @@ public class WaveManager : MonoBehaviour
         }
         
         currentWave++;
+        
+        // Update stat bonuses based on wave number
+        if (useStatScaling)
+        {
+            UpdateStatBonuses();
+        }
+        
         enemiesInCurrentWave = CalculateEnemyCount(currentWave);
         enemiesAlive = 0;
         waveInProgress = true;
@@ -134,7 +151,7 @@ public class WaveManager : MonoBehaviour
         allEnemiesCleared = false;
         timeSinceWaveEnd = 0f;
         
-        Debug.Log($"Starting Wave {currentWave} with {enemiesInCurrentWave} enemies");
+        Debug.Log($"Starting Wave {currentWave} with {enemiesInCurrentWave} enemies (Health Bonus: +{currentHealthBonus}, Damage Bonus: +{currentDamageBonus})");
         
         // Notify UI
         if (waveUI != null)
@@ -145,10 +162,10 @@ public class WaveManager : MonoBehaviour
         // Trigger event
         OnWaveStart?.Invoke(currentWave);
         
-        // Start spawning
+        // Start spawning with current stat bonuses
         if (waveSpawner != null)
         {
-            waveSpawner.StartWave(enemiesInCurrentWave);
+            waveSpawner.StartWave(enemiesInCurrentWave, currentHealthBonus, currentDamageBonus);
             // Check for spawning completion
             Invoke(nameof(CheckSpawningCompletion), 1f);
         }
@@ -280,6 +297,18 @@ public class WaveManager : MonoBehaviour
         StartNextWave();
     }
     
+    /// <summary>
+    /// Update stat bonuses based on current wave
+    /// </summary>
+    private void UpdateStatBonuses()
+    {
+        // Calculate how many scaling intervals have passed
+        int intervals = (currentWave - 1) / waveIntervalForScaling;
+        
+        currentHealthBonus = intervals * healthIncreasePerInterval;
+        currentDamageBonus = intervals * damageIncreasePerInterval;
+    }
+    
     // Getters for UI and other systems
     public int GetCurrentWave() => currentWave;
     public int GetEnemiesInCurrentWave() => enemiesInCurrentWave;
@@ -290,6 +319,8 @@ public class WaveManager : MonoBehaviour
     public float GetTimeUntilNextWave() => Mathf.Max(0, timeBetweenWaves - timeSinceWaveEnd);
     public bool AreWavesActivated() => wavesActivated;
     public bool AreWavesPaused() => wavesPaused;
+    public float GetCurrentHealthBonus() => currentHealthBonus;
+    public float GetCurrentDamageBonus() => currentDamageBonus;
     
     /// <summary>
     /// Activate the wave system (call this from trigger or manually)
