@@ -63,7 +63,8 @@ public class UpgradeSystemSetupChecker : MonoBehaviour
         {
             Debug.Log("✓ PlayerUpgradeManager found");
             Debug.Log($"  - Damage Upgrade: +{upgradeManager.GetDamageUpgradeAmount()}");
-            Debug.Log($"  - Health Upgrade: +{upgradeManager.GetHealthUpgradeAmount()}");
+            Debug.Log($"  - Max Health Upgrade: +{upgradeManager.GetMaxHealthUpgradeAmount()}");
+            Debug.Log($"  - Heal Amount: {upgradeManager.GetHealAmount()} (Full Heal)");
             Debug.Log($"  - Crit Chance Upgrade: +{upgradeManager.GetCriticalChanceUpgradeAmount()}%");
             Debug.Log($"  - Crit Damage Upgrade: +{upgradeManager.GetCriticalDamageUpgradeAmount()}x");
         }

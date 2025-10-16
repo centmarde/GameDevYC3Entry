@@ -216,10 +216,13 @@ public class PlayerUpgradeUI : MonoBehaviour
                 float damageUpgrade = upgradeManager.GetDamageUpgradeAmount();
                 return $"⚔ DAMAGE\n<size=24>{currentDamage:F1} → {currentDamage + damageUpgrade:F1}</size>";
                 
-            case PlayerUpgradeManager.UpgradeType.Health:
-                float currentHealth = upgradeManager.GetCurrentHealth();
-                float healthUpgrade = upgradeManager.GetHealthUpgradeAmount();
-                return $"❤ HEALTH\n<size=24>{currentHealth:F0} → {currentHealth + healthUpgrade:F0}</size>";
+            case PlayerUpgradeManager.UpgradeType.MaxHealth:
+                float currentMaxHealth = upgradeManager.GetCurrentHealth();
+                float maxHealthUpgrade = upgradeManager.GetMaxHealthUpgradeAmount();
+                return $"❤ MAX HEALTH\n<size=24>{currentMaxHealth:F0} → {currentMaxHealth + maxHealthUpgrade:F0}</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.Heal:
+                return $"✚ HEAL\n<size=24>Restore to Full Health</size>";
                 
             case PlayerUpgradeManager.UpgradeType.CriticalChance:
                 float currentCritChance = upgradeManager.GetCurrentCriticalChance();

@@ -14,7 +14,8 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     [Header("Upgrade Values")]
     [SerializeField] private float damageUpgradeAmount = 5f;
-    [SerializeField] private float healthUpgradeAmount = 20f;
+    [SerializeField] private float maxHealthUpgradeAmount = 20f;
+    [SerializeField] private float healAmount = 30f; // Amount of health restored when choosing Heal upgrade
     [SerializeField] private float criticalChanceUpgradeAmount = 5f;
     [SerializeField] private float criticalDamageUpgradeAmount = 0.25f;
     
@@ -28,7 +29,8 @@ public class PlayerUpgradeManager : MonoBehaviour
     public enum UpgradeType
     {
         Damage,
-        Health,
+        MaxHealth,
+        Heal,
         CriticalChance,
         CriticalDamage
     }
@@ -148,7 +150,8 @@ public class PlayerUpgradeManager : MonoBehaviour
         var allUpgrades = new System.Collections.Generic.List<UpgradeType>
         {
             UpgradeType.Damage,
-            UpgradeType.Health,
+            UpgradeType.MaxHealth,
+            UpgradeType.Heal,
             UpgradeType.CriticalChance,
             UpgradeType.CriticalDamage
         };
@@ -182,18 +185,32 @@ public class PlayerUpgradeManager : MonoBehaviour
                 Debug.Log($"Damage upgraded! New damage: {playerStats.projectileDamage}");
                 break;
                 
-            case UpgradeType.Health:
-                playerStats.maxHealth += healthUpgradeAmount;
-                // Also increase player's max health and heal to full
+            case UpgradeType.MaxHealth:
+                playerStats.maxHealth += maxHealthUpgradeAmount;
+                // Only increase max health, do NOT heal
                 if (player != null)
                 {
                     var health = player.GetComponent<Entity_Health>();
                     if (health != null)
                     {
-                        health.IncreaseMaxHealth(healthUpgradeAmount, true); // Increase max and heal to full
+                        health.IncreaseMaxHealth(maxHealthUpgradeAmount, false); // Increase max only, don't heal
                     }
                 }
                 Debug.Log($"Max Health upgraded! New max health: {playerStats.maxHealth}");
+                break;
+                
+            case UpgradeType.Heal:
+                // Heal player to full health
+                if (player != null)
+                {
+                    var health = player.GetComponent<Entity_Health>();
+                    if (health != null)
+                    {
+                        float maxHP = health.MaxHealth; // Use public property
+                        health.Heal(maxHP); // Heal to full health
+                    }
+                }
+                Debug.Log($"Player healed to full health!");
                 break;
                 
             case UpgradeType.CriticalChance:
@@ -227,7 +244,8 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     // Public getters for upgrade amounts (for UI display)
     public float GetDamageUpgradeAmount() => damageUpgradeAmount;
-    public float GetHealthUpgradeAmount() => healthUpgradeAmount;
+    public float GetMaxHealthUpgradeAmount() => maxHealthUpgradeAmount;
+    public float GetHealAmount() => healAmount;
     public float GetCriticalChanceUpgradeAmount() => criticalChanceUpgradeAmount;
     public float GetCriticalDamageUpgradeAmount() => criticalDamageUpgradeAmount;
     
