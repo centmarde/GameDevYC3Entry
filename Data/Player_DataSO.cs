@@ -8,17 +8,17 @@ public class Player_DataSO : ScriptableObject
     [Header("Base Stats")]
     public float maxHealth = 100f;
     public float projectileSpeed = 10f;
-    public float projectileDamage = 25f;
+    public float projectileDamage = 10f;
     public float meleeAttackRange = 1.5f;
     public float rangeAttackRange = 6f;
     public float deathDelay = 0.1f;
     public float moveSpeed = 5f;    
-    public float turnSpeed = 1000f;
+    public float turnSpeed = 10f;
     public float currentSpeedMultiplier = 1.0f;
     
     [Header("Critical Hit System")]
     [Range(0f, 100f)]
-    public float criticalChance = 15f; // Percentage chance for critical hit
+    public float criticalChance = 2f; // Percentage chance for critical hit
     [Range(1f, 5f)]
     public float criticalDamageMultiplier = 2f; // Multiplier for critical damage
     
