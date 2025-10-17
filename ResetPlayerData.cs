@@ -16,8 +16,9 @@ public class ResetPlayerData : MonoBehaviour
     [SerializeField] private float defaultMoveSpeed = 5f;
     [SerializeField] private float defaultTurnSpeed = 1000f;
     [SerializeField] private float defaultCurrentSpeedMultiplier = 1.0f;
-    [SerializeField] private float defaultCriticalChance = 15f;
+    [SerializeField] private float defaultCriticalChance = 5f;
     [SerializeField] private float defaultCriticalDamageMultiplier = 2f;
+    [SerializeField] private float defaultEvasionChance = 1f;
     
     [Header("Trigger Settings")]
     [SerializeField] private bool resetOnTriggerEnter = true;
@@ -114,6 +115,7 @@ public class ResetPlayerData : MonoBehaviour
         playerData.currentSpeedMultiplier = defaultCurrentSpeedMultiplier;
         playerData.criticalChance = defaultCriticalChance;
         playerData.criticalDamageMultiplier = defaultCriticalDamageMultiplier;
+        playerData.evasionChance = defaultEvasionChance;
         
         if (showDebugMessages)
             Debug.Log($"ResetPlayerData: Player data has been reset to default values on {gameObject.name}");
