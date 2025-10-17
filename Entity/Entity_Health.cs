@@ -8,10 +8,14 @@ public class Entity_Health : MonoBehaviour, IDamageable
     [SerializeField] private float maxHealth;
     [SerializeField] private float currentHealth;
     [SerializeField] private bool invulnerable = false;
+    
+    // Evasion system
+    private System.Func<bool> evasionCheck;
 
     public bool IsAlive => currentHealth > 0f;
 
     public event System.Action<float, Vector3, Vector3, object> OnDamaged;
+    public event System.Action<float, Vector3, Vector3, object> OnEvaded;
     public event System.Action OnDeath;
 
     private void Awake()
@@ -30,6 +34,18 @@ public class Entity_Health : MonoBehaviour, IDamageable
 
         float applied = Mathf.Max(0f, damage);
         if (applied <= 0f) return false;
+        
+        // Check for evasion
+        if (evasionCheck != null && evasionCheck.Invoke())
+        {
+            OnEvaded?.Invoke(damage, hitPoint, hitNormal, source);
+            Debug.Log($"{gameObject.name} evaded {applied} damage!");
+            
+            // Show evasion indicator (similar to critical hit indicator)
+            EvasionFeedback.ShowEvasion(hitPoint);
+            
+            return false; // Damage was evaded
+        }
 
         currentHealth = Mathf.Max(0f, currentHealth - applied);
 
@@ -82,6 +98,14 @@ public class Entity_Health : MonoBehaviour, IDamageable
             currentHealth = maxHealth;
         else
             currentHealth = Mathf.Min(currentHealth, maxHealth); // Ensure current doesn't exceed new max
+    }
+    
+    /// <summary>
+    /// Set the evasion check function (usually from Player stats)
+    /// </summary>
+    public void SetEvasionCheck(System.Func<bool> evasionFunction)
+    {
+        evasionCheck = evasionFunction;
     }
 
 }

@@ -58,6 +58,8 @@ public class Player : Entity
         if (health && Stats != null)
         {
             health.SetMaxHealth(Stats.maxHealth);
+            // Set up evasion system
+            health.SetEvasionCheck(() => Stats.RollEvasion());
         }
 
 

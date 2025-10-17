@@ -22,6 +22,10 @@ public class Player_DataSO : ScriptableObject
     [Range(1f, 5f)]
     public float criticalDamageMultiplier = 2f; // Multiplier for critical damage
     
+    [Header("Evasion System")]
+    [Range(0f, 100f)]
+    public float evasionChance = 5f; // Percentage chance to evade incoming damage
+    
     /// <summary>
     /// Calculate if an attack is a critical hit
     /// </summary>
@@ -36,5 +40,13 @@ public class Player_DataSO : ScriptableObject
     public float CalculateDamage(bool isCritical)
     {
         return isCritical ? projectileDamage * criticalDamageMultiplier : projectileDamage;
+    }
+    
+    /// <summary>
+    /// Calculate if an attack is evaded
+    /// </summary>
+    public bool RollEvasion()
+    {
+        return Random.Range(0f, 100f) < evasionChance;
     }
 }

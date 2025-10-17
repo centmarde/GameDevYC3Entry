@@ -18,6 +18,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     [SerializeField] private float healAmount = 30f; // Amount of health restored when choosing Heal upgrade
     [SerializeField] private float criticalChanceUpgradeAmount = 5f;
     [SerializeField] private float criticalDamageUpgradeAmount = 0.25f;
+    [SerializeField] private float evasionChanceUpgradeAmount = 3f; // Amount to increase evasion chance
     
     [Header("Auto-Setup")]
     [SerializeField] private bool autoFindReferences = true;
@@ -32,7 +33,8 @@ public class PlayerUpgradeManager : MonoBehaviour
         MaxHealth,
         Heal,
         CriticalChance,
-        CriticalDamage
+        CriticalDamage,
+        Evasion
     }
     
     private void Awake()
@@ -153,7 +155,8 @@ public class PlayerUpgradeManager : MonoBehaviour
             UpgradeType.MaxHealth,
             UpgradeType.Heal,
             UpgradeType.CriticalChance,
-            UpgradeType.CriticalDamage
+            UpgradeType.CriticalDamage,
+            UpgradeType.Evasion
         };
         
         // Shuffle and pick 3
@@ -223,6 +226,12 @@ public class PlayerUpgradeManager : MonoBehaviour
                 playerStats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
                 Debug.Log($"Critical Damage upgraded! New crit multiplier: {playerStats.criticalDamageMultiplier}x");
                 break;
+                
+            case UpgradeType.Evasion:
+                playerStats.evasionChance += evasionChanceUpgradeAmount;
+                playerStats.evasionChance = Mathf.Min(playerStats.evasionChance, 100f); // Cap at 100%
+                Debug.Log($"Evasion upgraded! New evasion chance: {playerStats.evasionChance}%");
+                break;
         }
         
         // Hide UI
@@ -248,11 +257,13 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetHealAmount() => healAmount;
     public float GetCriticalChanceUpgradeAmount() => criticalChanceUpgradeAmount;
     public float GetCriticalDamageUpgradeAmount() => criticalDamageUpgradeAmount;
+    public float GetEvasionChanceUpgradeAmount() => evasionChanceUpgradeAmount;
     
     public float GetCurrentDamage() => playerStats != null ? playerStats.projectileDamage : 0f;
     public float GetCurrentHealth() => playerStats != null ? playerStats.maxHealth : 0f;
     public float GetCurrentCriticalChance() => playerStats != null ? playerStats.criticalChance : 0f;
     public float GetCurrentCriticalDamage() => playerStats != null ? playerStats.criticalDamageMultiplier : 0f;
+    public float GetCurrentEvasion() => playerStats != null ? playerStats.evasionChance : 0f;
     
     public UpgradeType[] GetCurrentUpgradeOptions() => currentUpgradeOptions;
 }

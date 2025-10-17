@@ -303,6 +303,11 @@ public class PlayerUpgradeUI : MonoBehaviour
                 float critDamageUpgrade = upgradeManager.GetCriticalDamageUpgradeAmount();
                 return $"⚡ CRIT DAMAGE\n<size=24>{currentCritDamage:F2}x → {currentCritDamage + critDamageUpgrade:F2}x</size>";
                 
+            case PlayerUpgradeManager.UpgradeType.Evasion:
+                float currentEvasion = upgradeManager.GetCurrentEvasion();
+                float evasionUpgrade = upgradeManager.GetEvasionChanceUpgradeAmount();
+                return $"🌀 EVASION\n<size=24>{currentEvasion:F1}% → {Mathf.Min(currentEvasion + evasionUpgrade, 100f):F1}%</size>";
+                
             default:
                 return "UNKNOWN";
         }

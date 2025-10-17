@@ -12,6 +12,31 @@ public class Player_Feedback : Entity_Feedback
     {
         base.Awake();
         player = GetComponent<Player>();
+        
+        // Subscribe to evasion events for feedback
+        if (health != null)
+        {
+            health.OnEvaded += OnEvaded;
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        if (health != null)
+        {
+            health.OnEvaded -= OnEvaded;
+        }
+    }
+    
+    private void OnEvaded(float damage, Vector3 hitPoint, Vector3 hitNormal, object source)
+    {
+        // Optional: Play evasion animation
+        // anim.SetTrigger("evade");
+        
+        // Optional: Play evasion sound
+        // AudioManager.Instance?.PlaySound("Evade");
+        
+        Debug.Log($"Player evaded {damage} damage!");
     }
 
     protected override void OnDamaged(float damage, Vector3 hitPoint, Vector3 hitNormal, object source)
