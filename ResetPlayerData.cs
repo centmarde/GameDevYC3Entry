@@ -6,6 +6,14 @@ public class ResetPlayerData : MonoBehaviour
     [Tooltip("Drag the Player_DataSO asset you want to reset")]
     public Player_DataSO playerData;
     
+    [Header("Skill Data Reference")]
+    [Tooltip("Drag the PlayerSkill_DataSO asset you want to reset (optional)")]
+    public PlayerSkill_DataSO skillData;
+    
+    [Header("Skill Component Reference")]
+    [Tooltip("If not assigned, will auto-find PlayerSkill_CirclingProjectiles on Player")]
+    public PlayerSkill_CirclingProjectiles circlingProjectilesSkill;
+    
     [Header("Default Values")]
     [SerializeField] private float defaultMaxHealth = 100f;
     [SerializeField] private float defaultProjectileSpeed = 10f;
@@ -19,6 +27,13 @@ public class ResetPlayerData : MonoBehaviour
     [SerializeField] private float defaultCriticalChance = 5f;
     [SerializeField] private float defaultCriticalDamageMultiplier = 2f;
     [SerializeField] private float defaultEvasionChance = 1f;
+    
+    [Header("Skill Default Values")]
+    [SerializeField] private bool defaultSkillIsObtained = false;
+    [SerializeField] private int defaultProjectileCount = 2;
+    [SerializeField] private float defaultSkillProjectileDamage = 2f;
+    [SerializeField] private float defaultOrbitRadius = 2f;
+    [SerializeField] private float defaultOrbitSpeed = 90f;
     
     [Header("Trigger Settings")]
     [SerializeField] private bool resetOnTriggerEnter = true;
@@ -116,6 +131,43 @@ public class ResetPlayerData : MonoBehaviour
         playerData.criticalChance = defaultCriticalChance;
         playerData.criticalDamageMultiplier = defaultCriticalDamageMultiplier;
         playerData.evasionChance = defaultEvasionChance;
+        
+        // Reset skill data if assigned (only resets base stats, not isObtained)
+        if (skillData != null)
+        {
+            skillData.defaultProjectileCount = defaultProjectileCount;
+            skillData.projectileDamage = defaultSkillProjectileDamage;
+            skillData.orbitRadius = defaultOrbitRadius;
+            skillData.orbitSpeed = defaultOrbitSpeed;
+            
+            if (showDebugMessages)
+                Debug.Log($"ResetPlayerData: Skill '{skillData.skillName}' base stats reset - " +
+                         $"Projectiles: {defaultProjectileCount}, Damage: {defaultSkillProjectileDamage}, " +
+                         $"Radius: {defaultOrbitRadius}, Speed: {defaultOrbitSpeed}");
+        }
+        
+        // Reset skill component if assigned or auto-find it
+        if (circlingProjectilesSkill == null)
+        {
+            // Try to auto-find on player
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                circlingProjectilesSkill = playerObj.GetComponent<PlayerSkill_CirclingProjectiles>();
+            }
+        }
+        
+        if (circlingProjectilesSkill != null)
+        {
+            circlingProjectilesSkill.ResetSkill(); // This resets isObtained back to the Inspector value
+            
+            if (showDebugMessages)
+                Debug.Log($"ResetPlayerData: PlayerSkill_CirclingProjectiles component reset (isObtained reset to Inspector default: {defaultSkillIsObtained}).");
+        }
+        else if (showDebugMessages)
+        {
+            Debug.LogWarning("ResetPlayerData: Could not find PlayerSkill_CirclingProjectiles component to reset.");
+        }
         
         if (showDebugMessages)
             Debug.Log($"ResetPlayerData: Player data has been reset to default values on {gameObject.name}");

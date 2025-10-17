@@ -20,10 +20,16 @@ public class PlayerUpgradeManager : MonoBehaviour
     [SerializeField] private float criticalDamageUpgradeAmount = 0.25f;
     [SerializeField] private float evasionChanceUpgradeAmount = 3f; // Amount to increase evasion chance
     
+    [Header("Circling Projectiles Skill Upgrades")]
+    [SerializeField] private float skillProjectileDamageUpgrade = 5f;
+    [SerializeField] private float skillRadiusUpgrade = 0.5f;
+    [SerializeField] private float skillSpeedUpgrade = 15f;
+    
     [Header("Auto-Setup")]
     [SerializeField] private bool autoFindReferences = true;
     
     private Player player;
+    private PlayerSkill_CirclingProjectiles circlingProjectilesSkill;
     private bool upgradePending = false;
     private UpgradeType[] currentUpgradeOptions = new UpgradeType[3];
     
@@ -34,7 +40,12 @@ public class PlayerUpgradeManager : MonoBehaviour
         Heal,
         CriticalChance,
         CriticalDamage,
-        Evasion
+        Evasion,
+        UnlockCirclingProjectiles,
+        UpgradeProjectileCount,
+        UpgradeProjectileDamage,
+        UpgradeProjectileRadius,
+        UpgradeProjectileSpeed
     }
     
     private void Awake()
@@ -88,6 +99,12 @@ public class PlayerUpgradeManager : MonoBehaviour
         if (playerStats == null && player != null)
         {
             playerStats = player.Stats;
+        }
+        
+        // Find circling projectiles skill
+        if (circlingProjectilesSkill == null && player != null)
+        {
+            circlingProjectilesSkill = player.GetComponent<PlayerSkill_CirclingProjectiles>();
         }
         
         // Find wave manager
@@ -158,6 +175,29 @@ public class PlayerUpgradeManager : MonoBehaviour
             UpgradeType.CriticalDamage,
             UpgradeType.Evasion
         };
+        
+        // Check if skill is obtained (from component state, not ScriptableObject)
+        bool skillObtained = circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained;
+        
+        Debug.Log($"[UPGRADE DEBUG] Skill Component: {circlingProjectilesSkill != null}, isObtained: {(circlingProjectilesSkill?.IsObtained ?? false)}");
+        
+        if (skillObtained)
+        {
+            // Add skill upgrades ONLY if skill is obtained
+            Debug.Log("[UPGRADE DEBUG] Skill IS obtained - Adding skill upgrade options");
+            if (circlingProjectilesSkill.CurrentProjectileCount < 8)
+            {
+                allUpgrades.Add(UpgradeType.UpgradeProjectileCount);
+            }
+            allUpgrades.Add(UpgradeType.UpgradeProjectileDamage);
+            allUpgrades.Add(UpgradeType.UpgradeProjectileRadius);
+            allUpgrades.Add(UpgradeType.UpgradeProjectileSpeed);
+        }
+        else
+        {
+            // Skill NOT obtained - Do NOT add unlock option (reserved for future special unlock)
+            Debug.Log("[UPGRADE DEBUG] Skill NOT obtained - Unlock option hidden (reserved for future)");
+        }
         
         // Shuffle and pick 3
         for (int i = 0; i < 3; i++)
@@ -232,6 +272,42 @@ public class PlayerUpgradeManager : MonoBehaviour
                 playerStats.evasionChance = Mathf.Min(playerStats.evasionChance, 100f); // Cap at 100%
                 Debug.Log($"Evasion upgraded! New evasion chance: {playerStats.evasionChance}%");
                 break;
+                
+            case UpgradeType.UnlockCirclingProjectiles:
+                if (circlingProjectilesSkill != null && !circlingProjectilesSkill.IsObtained)
+                {
+                    circlingProjectilesSkill.ObtainSkill();
+                    Debug.Log("Circling Projectiles Skill Unlocked!");
+                }
+                break;
+                
+            case UpgradeType.UpgradeProjectileCount:
+                if (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained)
+                {
+                    circlingProjectilesSkill.UpgradeProjectileCount();
+                }
+                break;
+                
+            case UpgradeType.UpgradeProjectileDamage:
+                if (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained)
+                {
+                    circlingProjectilesSkill.UpgradeDamage(skillProjectileDamageUpgrade);
+                }
+                break;
+                
+            case UpgradeType.UpgradeProjectileRadius:
+                if (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained)
+                {
+                    circlingProjectilesSkill.UpgradeRadius(skillRadiusUpgrade);
+                }
+                break;
+                
+            case UpgradeType.UpgradeProjectileSpeed:
+                if (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained)
+                {
+                    circlingProjectilesSkill.UpgradeSpeed(skillSpeedUpgrade);
+                }
+                break;
         }
         
         // Hide UI
@@ -264,6 +340,28 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetCurrentCriticalChance() => playerStats != null ? playerStats.criticalChance : 0f;
     public float GetCurrentCriticalDamage() => playerStats != null ? playerStats.criticalDamageMultiplier : 0f;
     public float GetCurrentEvasion() => playerStats != null ? playerStats.evasionChance : 0f;
+    
+    // Circling Projectiles skill getters
+    public float GetSkillDamageUpgradeAmount() => skillProjectileDamageUpgrade;
+    public float GetSkillRadiusUpgradeAmount() => skillRadiusUpgrade;
+    public float GetSkillSpeedUpgradeAmount() => skillSpeedUpgrade;
+    
+    // Return 0 if skill not obtained or component is null
+    public int GetCurrentProjectileCount() => 
+        (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained) 
+        ? circlingProjectilesSkill.CurrentProjectileCount : 0;
+        
+    public float GetCurrentProjectileDamage() => 
+        (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained) 
+        ? circlingProjectilesSkill.CurrentDamage : 0f;
+        
+    public float GetCurrentProjectileRadius() => 
+        (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained) 
+        ? circlingProjectilesSkill.CurrentRadius : 0f;
+        
+    public float GetCurrentProjectileSpeed() => 
+        (circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained) 
+        ? circlingProjectilesSkill.CurrentSpeed : 0f;
     
     public UpgradeType[] GetCurrentUpgradeOptions() => currentUpgradeOptions;
 }

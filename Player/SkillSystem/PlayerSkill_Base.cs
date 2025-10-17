@@ -28,7 +28,11 @@ public class PlayerSkill_Base : MonoBehaviour
         return true;
     }
 
-    protected bool OnCoolDown() => Time.time < lastTimeUsed + Data.cooldown;
+    protected bool OnCoolDown()
+    {
+        if (Data == null) return false; // No cooldown if no data
+        return Time.time < lastTimeUsed + Data.cooldown;
+    }
     public void SetSkillOnCoolDown() => lastTimeUsed = Time.time;
 
 }

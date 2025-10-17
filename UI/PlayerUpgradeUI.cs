@@ -267,7 +267,18 @@ public class PlayerUpgradeUI : MonoBehaviour
                 var text = upgradeButtons[i].GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
                 {
-                    text.text = GetUpgradeButtonText(upgradeOptions[i]);
+                    string buttonText = GetUpgradeButtonText(upgradeOptions[i]);
+                    
+                    // Safety check: If button text is error/unknown, hide the button
+                    if (buttonText == "ERROR" || buttonText == "UNKNOWN")
+                    {
+                        upgradeButtons[i].gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        upgradeButtons[i].gameObject.SetActive(true);
+                        text.text = buttonText;
+                    }
                 }
             }
         }
@@ -307,6 +318,48 @@ public class PlayerUpgradeUI : MonoBehaviour
                 float currentEvasion = upgradeManager.GetCurrentEvasion();
                 float evasionUpgrade = upgradeManager.GetEvasionChanceUpgradeAmount();
                 return $"🌀 EVASION\n<size=24>{currentEvasion:F1}% → {Mathf.Min(currentEvasion + evasionUpgrade, 100f):F1}%</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.UnlockCirclingProjectiles:
+                return $"🌀 UNLOCK SKILL\n<size=24>Circling Projectiles</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileCount:
+                // Safety check: Only show if skill is obtained
+                if (upgradeManager.GetCurrentProjectileCount() > 0)
+                {
+                    int currentCount = upgradeManager.GetCurrentProjectileCount();
+                    return $"🌀 ADD PROJECTILE\n<size=24>{currentCount} → {currentCount + 1}</size>";
+                }
+                return "ERROR";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileDamage:
+                // Safety check: Only show if skill is obtained
+                if (upgradeManager.GetCurrentProjectileDamage() > 0)
+                {
+                    float currentSkillDmg = upgradeManager.GetCurrentProjectileDamage();
+                    float skillDmgUpgrade = upgradeManager.GetSkillDamageUpgradeAmount();
+                    return $"⚔ PROJECTILE DMG\n<size=24>{currentSkillDmg:F1} → {currentSkillDmg + skillDmgUpgrade:F1}</size>";
+                }
+                return "ERROR";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileRadius:
+                // Safety check: Only show if skill is obtained
+                if (upgradeManager.GetCurrentProjectileRadius() > 0)
+                {
+                    float currentRadius = upgradeManager.GetCurrentProjectileRadius();
+                    float radiusUpgrade = upgradeManager.GetSkillRadiusUpgradeAmount();
+                    return $"📏 ORBIT RADIUS\n<size=24>{currentRadius:F1}m → {currentRadius + radiusUpgrade:F1}m</size>";
+                }
+                return "ERROR";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileSpeed:
+                // Safety check: Only show if skill is obtained
+                if (upgradeManager.GetCurrentProjectileSpeed() > 0)
+                {
+                    float currentSpeed = upgradeManager.GetCurrentProjectileSpeed();
+                    float speedUpgrade = upgradeManager.GetSkillSpeedUpgradeAmount();
+                    return $"⚡ ORBIT SPEED\n<size=24>{currentSpeed:F0}° → {currentSpeed + speedUpgrade:F0}°/s</size>";
+                }
+                return "ERROR";
                 
             default:
                 return "UNKNOWN";
