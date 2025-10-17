@@ -4,11 +4,23 @@ using TMPro;
 
 /// <summary>
 /// Minimalist UI for player stat upgrades after each wave
-/// Auto-creates its own canvas and UI elements
+/// Supports both auto-creation and manual setup of UI elements
 /// </summary>
 public class PlayerUpgradeUI : MonoBehaviour
 {
-    [Header("Appearance")]
+    [Header("Setup Mode")]
+    [SerializeField] private bool autoCreateUI = true;
+    [Tooltip("If true, UI elements will be created programmatically. If false, assign manual references below.")]
+    
+    [Header("Manual Setup (Only if Auto-Create is OFF)")]
+    [SerializeField] private Canvas manualCanvas;
+    [SerializeField] private GameObject manualUpgradePanel;
+    [SerializeField] private TextMeshProUGUI manualTitleText;
+    [SerializeField] private Button manualButton1;
+    [SerializeField] private Button manualButton2;
+    [SerializeField] private Button manualButton3;
+    
+    [Header("Appearance (For Auto-Create Only)")]
     [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.95f);
     [SerializeField] private Color buttonColor = new Color(0.2f, 0.2f, 0.2f, 1f);
     [SerializeField] private Color buttonHighlight = new Color(0.3f, 0.6f, 0.9f, 1f);
@@ -22,7 +34,14 @@ public class PlayerUpgradeUI : MonoBehaviour
     
     private void Awake()
     {
-        CreateUI();
+        if (autoCreateUI)
+        {
+            CreateUI();
+        }
+        else
+        {
+            SetupManualReferences();
+        }
     }
     
     /// <summary>
@@ -34,7 +53,57 @@ public class PlayerUpgradeUI : MonoBehaviour
     }
     
     /// <summary>
-    /// Create all UI elements programmatically
+    /// Setup references from manually assigned UI elements
+    /// </summary>
+    private void SetupManualReferences()
+    {
+        // Use manual references
+        canvas = manualCanvas;
+        upgradePanel = manualUpgradePanel;
+        titleText = manualTitleText;
+        
+        upgradeButtons[0] = manualButton1;
+        upgradeButtons[1] = manualButton2;
+        upgradeButtons[2] = manualButton3;
+        
+        // Validate references
+        if (canvas == null)
+        {
+            Debug.LogError("PlayerUpgradeUI: Manual Canvas is not assigned!");
+        }
+        if (upgradePanel == null)
+        {
+            Debug.LogError("PlayerUpgradeUI: Manual Upgrade Panel is not assigned!");
+        }
+        if (titleText == null)
+        {
+            Debug.LogWarning("PlayerUpgradeUI: Manual Title Text is not assigned!");
+        }
+        
+        // Setup button listeners
+        for (int i = 0; i < 3; i++)
+        {
+            if (upgradeButtons[i] == null)
+            {
+                Debug.LogError($"PlayerUpgradeUI: Manual Button {i + 1} is not assigned!");
+            }
+            else
+            {
+                int index = i; // Capture for lambda
+                upgradeButtons[i].onClick.RemoveAllListeners(); // Clear any existing listeners
+                upgradeButtons[i].onClick.AddListener(() => OnUpgradeButtonClicked(index));
+            }
+        }
+        
+        // Hide panel initially
+        if (upgradePanel != null)
+        {
+            upgradePanel.SetActive(false);
+        }
+    }
+    
+    /// <summary>
+    /// Create all UI elements programmatically (auto-create mode)
     /// </summary>
     private void CreateUI()
     {
