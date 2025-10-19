@@ -86,12 +86,7 @@ public class CirclingProjectile : MonoBehaviour
             Vector3 hitNormal = (other.transform.position - transform.position).normalized;
             
             // Apply damage to the enemy
-            bool damageApplied = target.TakeDamage(damage, hitPoint, hitNormal, source);
-            
-            if (damageApplied)
-            {
-                Debug.Log($"Circling projectile hit {other.name} for {damage} damage!");
-            }
+            target.TakeDamage(damage, hitPoint, hitNormal, source);
         }
     }
 

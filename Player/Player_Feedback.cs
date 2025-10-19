@@ -35,8 +35,6 @@ public class Player_Feedback : Entity_Feedback
         
         // Optional: Play evasion sound
         // AudioManager.Instance?.PlaySound("Evade");
-        
-        Debug.Log($"Player evaded {damage} damage!");
     }
 
     protected override void OnDamaged(float damage, Vector3 hitPoint, Vector3 hitNormal, object source)

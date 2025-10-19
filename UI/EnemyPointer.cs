@@ -72,10 +72,6 @@ public class EnemyPointer : MonoBehaviour
             distanceText = GetComponentInChildren<Text>();
         }
         
-        if (rectTransform == null)
-        {
-            Debug.LogError("EnemyPointer: No RectTransform found! This component requires a UI element.");
-        }
     }
     
     public void SetTarget(GameObject enemy)

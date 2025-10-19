@@ -37,36 +37,27 @@ public class EnemyPointerSystemSetup : MonoBehaviour
     [ContextMenu("Setup Enemy Pointer System")]
     public void SetupEnemyPointerSystem()
     {
-        Debug.Log("=== ENEMY POINTER SYSTEM SETUP STARTING ===");
-        
-        int stepNumber = 1;
-        
         // Step 1: Configure camera
         if (configureCamera)
         {
-            Debug.Log($"Step {stepNumber++}: Configuring camera...");
             ConfigureIsoFollowCamera();
         }
         
         // Step 2: Setup pointer manager
         if (createPointerManager)
         {
-            Debug.Log($"Step {stepNumber++}: Setting up pointer manager...");
             SetupPointerManager();
         }
         
         // Step 3: Setup settings UI
         if (createSettingsUI)
         {
-            Debug.Log($"Step {stepNumber++}: Setting up settings UI...");
             SetupSettingsUI();
         }
         
         // Step 4: Configure existing enemies
-        Debug.Log($"Step {stepNumber++}: Configuring existing enemies...");
         ConfigureExistingEnemies();
         
-        Debug.Log("=== SETUP COMPLETE ===");
         LogSetupInstructions();
     }
     
@@ -79,7 +70,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         
         if (existingCamera != null)
         {
-            Debug.Log($"  ✓ IsoCameraFollow found on '{existingCamera.gameObject.name}'");
             return;
         }
         
@@ -96,12 +86,7 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             if (mainCamera.GetComponent<IsoCameraFollow>() == null)
             {
                 mainCamera.gameObject.AddComponent<IsoCameraFollow>();
-                Debug.Log($"  ✓ Added IsoCameraFollow to '{mainCamera.gameObject.name}'");
             }
-        }
-        else
-        {
-            Debug.LogWarning("  ✗ No camera found in scene!");
         }
     }
     
@@ -123,11 +108,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             manager.SetMinDistance(minPointerDistance);
             manager.SetShowOnlyOffscreen(showOnlyOffscreenEnemies);
             manager.SetUpdateFrequency(updateFrequency);
-            
-            Debug.Log("  ✓ Created EnemyPointerManager");
-            Debug.Log($"    - Max Distance: {maxPointerDistance}m");
-            Debug.Log($"    - Min Distance: {minPointerDistance}m");
-            Debug.Log($"    - Offscreen Only: {showOnlyOffscreenEnemies}");
         }
         else
         {
@@ -136,8 +116,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             existingManager.SetMinDistance(minPointerDistance);
             existingManager.SetShowOnlyOffscreen(showOnlyOffscreenEnemies);
             existingManager.SetUpdateFrequency(updateFrequency);
-            
-            Debug.Log("  ✓ Updated existing EnemyPointerManager");
         }
     }
     
@@ -153,13 +131,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             // Create new settings UI GameObject
             GameObject uiObj = new GameObject("EnemyPointerSettingsUI");
             uiObj.AddComponent<EnemyPointerSettingsUI>();
-            
-            Debug.Log("  ✓ Created EnemyPointerSettingsUI");
-            Debug.Log("    - Press [P] to toggle settings");
-        }
-        else
-        {
-            Debug.Log("  ✓ Found existing EnemyPointerSettingsUI");
         }
     }
     
@@ -191,7 +162,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         {
             // "Enemy" tag doesn't exist - try finding by name
             usedTagSearch = false;
-            Debug.Log("  ℹ 'Enemy' tag not found, searching by name...");
             
             GameObject[] allObjects = FindObjectsOfType<GameObject>();
             foreach (GameObject obj in allObjects)
@@ -209,19 +179,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         }
         
         // Log results
-        if (totalEnemies > 0)
-        {
-            string searchMethod = usedTagSearch ? "by tag" : "by name";
-            Debug.Log($"  ✓ Found {totalEnemies} enemies {searchMethod}");
-            if (configuredCount > 0)
-            {
-                Debug.Log($"    - Added EnemyDeathTracker to {configuredCount} enemies");
-            }
-        }
-        else
-        {
-            Debug.Log("  ℹ No enemies in scene (will track when spawned)");
-        }
     }
     
     /// <summary>
@@ -229,15 +186,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
     /// </summary>
     private void LogSetupInstructions()
     {
-        Debug.Log("\n" + "=".PadRight(50, '='));
-        Debug.Log("ENEMY POINTER SYSTEM - READY!");
-        Debug.Log("=".PadRight(50, '='));
-        Debug.Log("📍 Press [P] to open settings");
-        Debug.Log("🎯 Pointers show direction to off-screen enemies");
-        Debug.Log("📏 Distance text shows how far enemies are");
-        Debug.Log("🔄 New enemies are tracked automatically");
-        Debug.Log("✨ System is fully operational!");
-        Debug.Log("=".PadRight(50, '=') + "\n");
     }
     
     /// <summary>
@@ -246,9 +194,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
     [ContextMenu("Validate Setup")]
     public void ValidateSetup()
     {
-        Debug.Log("\n" + "=".PadRight(50, '='));
-        Debug.Log("VALIDATING ENEMY POINTER SYSTEM");
-        Debug.Log("=".PadRight(50, '=') + "\n");
         
         bool allGood = true;
         
@@ -258,21 +203,17 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         
         if (isoCamera != null)
         {
-            Debug.Log($"✓ IsoCameraFollow: Found on '{isoCamera.gameObject.name}'");
         }
         else
         {
-            Debug.LogWarning("✗ IsoCameraFollow: NOT FOUND");
             allGood = false;
         }
         
         if (mainCamera != null)
         {
-            Debug.Log($"✓ Main Camera: '{mainCamera.gameObject.name}'");
         }
         else
         {
-            Debug.LogWarning("✗ Main Camera: NOT FOUND");
             allGood = false;
         }
         
@@ -280,15 +221,9 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         EnemyPointerManager pointerManager = FindObjectOfType<EnemyPointerManager>();
         if (pointerManager != null)
         {
-            int trackedEnemies = pointerManager.GetTrackedEnemyCount();
-            int activePointers = pointerManager.GetActivePointerCount();
-            Debug.Log($"✓ Pointer Manager: Active");
-            Debug.Log($"  - Tracking: {trackedEnemies} enemies");
-            Debug.Log($"  - Showing: {activePointers} pointers");
         }
         else
         {
-            Debug.LogWarning("✗ Pointer Manager: NOT FOUND");
             allGood = false;
         }
         
@@ -296,11 +231,9 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         EnemyPointerSettingsUI settingsUI = FindObjectOfType<EnemyPointerSettingsUI>();
         if (settingsUI != null)
         {
-            Debug.Log("✓ Settings UI: Ready (Press P to toggle)");
         }
         else
         {
-            Debug.LogWarning("✗ Settings UI: NOT FOUND");
             allGood = false;
         }
         
@@ -339,28 +272,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             }
         }
         
-        string searchMethod = usedTag ? "by tag" : "by name";
-        if (totalEnemies > 0)
-        {
-            Debug.Log($"✓ Enemies: Found {totalEnemies} {searchMethod}");
-            Debug.Log($"  - {enemiesWithTracker} have EnemyDeathTracker");
-        }
-        else
-        {
-            Debug.Log($"ℹ Enemies: None in scene (will track on spawn)");
-        }
-        
-        // Final status
-        Debug.Log("\n" + "=".PadRight(50, '='));
-        if (allGood)
-        {
-            Debug.Log("STATUS: ✓ ALL SYSTEMS OPERATIONAL");
-        }
-        else
-        {
-            Debug.LogWarning("STATUS: ⚠ SOME ISSUES DETECTED");
-        }
-        Debug.Log("=".PadRight(50, '=') + "\n");
     }
     
     /// <summary>
@@ -369,9 +280,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
     [ContextMenu("Remove Enemy Pointer System")]
     public void RemoveEnemyPointerSystem()
     {
-        Debug.Log("\n" + "=".PadRight(50, '='));
-        Debug.Log("REMOVING ENEMY POINTER SYSTEM");
-        Debug.Log("=".PadRight(50, '=') + "\n");
         
         int removedCount = 0;
         
@@ -380,7 +288,6 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         if (pointerManager != null)
         {
             DestroyImmediate(pointerManager.gameObject);
-            Debug.Log("✓ Removed EnemyPointerManager");
             removedCount++;
         }
         
@@ -389,15 +296,7 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         if (settingsUI != null)
         {
             DestroyImmediate(settingsUI.gameObject);
-            Debug.Log("✓ Removed EnemyPointerSettingsUI");
             removedCount++;
         }
-        
-        // Note: IsoCameraFollow is kept as it's part of the core camera system
-        Debug.Log("ℹ IsoCameraFollow kept (core camera component)");
-        
-        Debug.Log("\n" + "=".PadRight(50, '='));
-        Debug.Log($"REMOVAL COMPLETE - {removedCount} components removed");
-        Debug.Log("=".PadRight(50, '=') + "\n");
     }
 }

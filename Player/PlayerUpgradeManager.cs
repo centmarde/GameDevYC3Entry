@@ -63,10 +63,6 @@ public class PlayerUpgradeManager : MonoBehaviour
         {
             waveManager.OnAllEnemiesCleared.AddListener(OnWaveCleared);
         }
-        else
-        {
-            Debug.LogWarning("PlayerUpgradeManager: WaveManager not assigned!");
-        }
         
         // Hide upgrade UI at start
         if (upgradeUI != null)
@@ -138,7 +134,6 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     private void OnWaveCleared(int waveNumber)
     {
-        Debug.Log($"PlayerUpgradeManager: Wave {waveNumber} cleared! Showing upgrade options...");
         
         // Generate 3 random upgrade options
         GenerateRandomUpgrades();
@@ -179,12 +174,9 @@ public class PlayerUpgradeManager : MonoBehaviour
         // Check if skill is obtained (from component state, not ScriptableObject)
         bool skillObtained = circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained;
         
-        Debug.Log($"[UPGRADE DEBUG] Skill Component: {circlingProjectilesSkill != null}, isObtained: {(circlingProjectilesSkill?.IsObtained ?? false)}");
-        
         if (skillObtained)
         {
             // Add skill upgrades ONLY if skill is obtained
-            Debug.Log("[UPGRADE DEBUG] Skill IS obtained - Adding skill upgrade options");
             if (circlingProjectilesSkill.CurrentProjectileCount < 8)
             {
                 allUpgrades.Add(UpgradeType.UpgradeProjectileCount);
@@ -196,7 +188,6 @@ public class PlayerUpgradeManager : MonoBehaviour
         else
         {
             // Skill NOT obtained - Do NOT add unlock option (reserved for future special unlock)
-            Debug.Log("[UPGRADE DEBUG] Skill NOT obtained - Unlock option hidden (reserved for future)");
         }
         
         // Shuffle and pick 3
@@ -206,8 +197,6 @@ public class PlayerUpgradeManager : MonoBehaviour
             currentUpgradeOptions[i] = allUpgrades[randomIndex];
             allUpgrades.RemoveAt(randomIndex);
         }
-        
-        Debug.Log($"Upgrade options: {currentUpgradeOptions[0]}, {currentUpgradeOptions[1]}, {currentUpgradeOptions[2]}");
     }
     
     /// <summary>
@@ -217,7 +206,6 @@ public class PlayerUpgradeManager : MonoBehaviour
     {
         if (playerStats == null)
         {
-            Debug.LogError("PlayerUpgradeManager: Cannot apply upgrade - playerStats is null!");
             return;
         }
         
@@ -225,7 +213,6 @@ public class PlayerUpgradeManager : MonoBehaviour
         {
             case UpgradeType.Damage:
                 playerStats.projectileDamage += damageUpgradeAmount;
-                Debug.Log($"Damage upgraded! New damage: {playerStats.projectileDamage}");
                 break;
                 
             case UpgradeType.MaxHealth:
@@ -239,7 +226,6 @@ public class PlayerUpgradeManager : MonoBehaviour
                         health.IncreaseMaxHealth(maxHealthUpgradeAmount, false); // Increase max only, don't heal
                     }
                 }
-                Debug.Log($"Max Health upgraded! New max health: {playerStats.maxHealth}");
                 break;
                 
             case UpgradeType.Heal:
@@ -253,31 +239,26 @@ public class PlayerUpgradeManager : MonoBehaviour
                         health.Heal(maxHP); // Heal to full health
                     }
                 }
-                Debug.Log($"Player healed to full health!");
                 break;
                 
             case UpgradeType.CriticalChance:
                 playerStats.criticalChance += criticalChanceUpgradeAmount;
                 playerStats.criticalChance = Mathf.Min(playerStats.criticalChance, 100f); // Cap at 100%
-                Debug.Log($"Critical Chance upgraded! New crit chance: {playerStats.criticalChance}%");
                 break;
                 
             case UpgradeType.CriticalDamage:
                 playerStats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
-                Debug.Log($"Critical Damage upgraded! New crit multiplier: {playerStats.criticalDamageMultiplier}x");
                 break;
                 
             case UpgradeType.Evasion:
                 playerStats.evasionChance += evasionChanceUpgradeAmount;
                 playerStats.evasionChance = Mathf.Min(playerStats.evasionChance, 100f); // Cap at 100%
-                Debug.Log($"Evasion upgraded! New evasion chance: {playerStats.evasionChance}%");
                 break;
                 
             case UpgradeType.UnlockCirclingProjectiles:
                 if (circlingProjectilesSkill != null && !circlingProjectilesSkill.IsObtained)
                 {
                     circlingProjectilesSkill.ObtainSkill();
-                    Debug.Log("Circling Projectiles Skill Unlocked!");
                 }
                 break;
                 

@@ -45,11 +45,6 @@ public class SlowMotionUI_Line : MonoBehaviour
         if (skillManager == null)
         {
             skillManager = FindObjectOfType<PlayerSkill_Manager>();
-            
-            if (skillManager == null)
-            {
-                Debug.LogWarning("SlowMotionUI_Line: Could not find PlayerSkill_Manager in scene");
-            }
         }
         
         // Ensure image type is set to Filled

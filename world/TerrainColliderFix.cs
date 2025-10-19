@@ -13,7 +13,6 @@ public class TerrainColliderFix : MonoBehaviour
             if (col is MeshCollider)
             {
                 DestroyImmediate(col);
-                Debug.Log("Removed MeshCollider from terrain - MeshCollider is not supported on terrain objects.");
             }
         }
         
@@ -22,7 +21,6 @@ public class TerrainColliderFix : MonoBehaviour
         if (terrainCollider == null)
         {
             terrainCollider = gameObject.AddComponent<TerrainCollider>();
-            Debug.Log("Added TerrainCollider to terrain object.");
         }
         
         // Refresh the TerrainCollider (disable then enable)

@@ -14,11 +14,6 @@ public class EnemyDeathTracker : MonoBehaviour
     {
         // Find wave manager in scene
         waveManager = FindObjectOfType<WaveManager>();
-        
-        if (waveManager == null)
-        {
-            Debug.LogWarning("EnemyDeathTracker: No WaveManager found in scene!");
-        }
     }
     
     /// <summary>
@@ -35,8 +30,6 @@ public class EnemyDeathTracker : MonoBehaviour
         {
             waveManager.RegisterEnemyKilled();
         }
-        
-        Debug.Log($"{gameObject.name} death registered with WaveManager");
     }
     
     /// <summary>

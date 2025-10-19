@@ -37,7 +37,6 @@ public class EnemyPointerSettingsUI : MonoBehaviour
         
         if (pointerManager == null)
         {
-            Debug.LogWarning("EnemyPointerSettingsUI: No EnemyPointerManager found in scene!");
             return;
         }
         
@@ -73,8 +72,6 @@ public class EnemyPointerSettingsUI : MonoBehaviour
         settingsCanvas = FindOrCreateCanvas();
         CreateMainPanel();
         CreateUIControls();
-        
-        Debug.Log("EnemyPointerSettingsUI: Settings UI created successfully!");
     }
     
     private Canvas FindOrCreateCanvas()
@@ -383,7 +380,6 @@ public class EnemyPointerSettingsUI : MonoBehaviour
         if (pointerManager != null)
         {
             pointerManager.ForceRefresh();
-            Debug.Log("EnemyPointerSettingsUI: Manual refresh triggered");
         }
     }
     

@@ -24,24 +24,18 @@ public class Player_RangeAttack : PlayerAttack
 
     public override void ExecuteAttack(Vector3 aimDirection)
     {
-        Debug.Log($"[Player_RangeAttack] ExecuteAttack called with direction: {aimDirection}");
-        Debug.Log($"[Player_RangeAttack] IsOffCooldown: {IsOffCooldown}");
-        
         if (!IsOffCooldown)
         {
-            Debug.Log("[Player_RangeAttack] Attack blocked - cooldown not ready");
             return;
         }
 
         cachedDirection = aimDirection.normalized;
         ResetCooldown();
-        Debug.Log($"[Player_RangeAttack] Cached direction: {cachedDirection}, cooldown reset");
 
         if (player?.playerMovement != null)
         {
             player.playerMovement.movementLocked = true;
             player.playerMovement.StopMovement();
-            Debug.Log("[Player_RangeAttack] Movement locked and stopped");
         }
     }
 

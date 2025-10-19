@@ -81,17 +81,17 @@ public class IntroTrigger : MonoBehaviour
             }
         }
         
-        Debug.Log("IntroTrigger initialized. Camera: " + (mainCamera != null ? mainCamera.name : "NULL"));
+        //Debug.Log("IntroTrigger initialized. Camera: " + (mainCamera != null ? mainCamera.name : "NULL"));
     }
     
     private void OnTriggerEnter(Collider other)
     {
         // Check if player entered the trigger
-        Debug.Log("Trigger entered by: " + other.name);
+        //Debug.Log("Trigger entered by: " + other.name);
         
         if (other.CompareTag("Player") && !hasTriggered && !isInCutscene)
         {
-            Debug.Log("Starting cutscene!");
+            //Debug.Log("Starting cutscene!");
             
             if (triggerOnce)
             {
@@ -106,7 +106,7 @@ public class IntroTrigger : MonoBehaviour
     {
         isInCutscene = true;
         
-        Debug.Log("Cutscene started!");
+        //Debug.Log("Cutscene started!");
         
         // Save original camera transform (both local and world)
         originalCameraParent = mainCamera.transform.parent;
@@ -115,8 +115,8 @@ public class IntroTrigger : MonoBehaviour
         originalCameraWorldPosition = mainCamera.transform.position;
         originalCameraWorldRotation = mainCamera.transform.rotation;
         
-        Debug.Log("Original camera parent: " + (originalCameraParent != null ? originalCameraParent.name : "NULL"));
-        Debug.Log("Original camera position: " + originalCameraWorldPosition);
+        /* Debug.Log("Original camera parent: " + (originalCameraParent != null ? originalCameraParent.name : "NULL"));
+        Debug.Log("Original camera position: " + originalCameraWorldPosition); */
         
         // Disable player controls
         DisablePlayerControl();
@@ -130,7 +130,7 @@ public class IntroTrigger : MonoBehaviour
             // Use predefined cutscene position
             targetPosition = cutscenePosition.position;
             targetRotation = cutscenePosition.rotation;
-            Debug.Log("Using cutscene position object");
+           // Debug.Log("Using cutscene position object");
         }
         else
         {
@@ -144,13 +144,13 @@ public class IntroTrigger : MonoBehaviour
             Vector3 lookAtTarget = player.transform.position + Vector3.up * heightOffset;
             targetRotation = Quaternion.LookRotation(lookAtTarget - targetPosition);
             
-            Debug.Log("Calculated cutscene position: " + targetPosition);
+            //Debug.Log("Calculated cutscene position: " + targetPosition);
         }
         
         // IMPORTANT: Detach camera from parent first!
         mainCamera.transform.SetParent(null);
         
-        Debug.Log("Camera detached, moving to cutscene position");
+       // Debug.Log("Camera detached, moving to cutscene position");
         
         // Store start position for lerp
         Vector3 startPosition = mainCamera.transform.position;
@@ -182,7 +182,7 @@ public class IntroTrigger : MonoBehaviour
         mainCamera.transform.position = targetPosition;
         mainCamera.transform.rotation = targetRotation;
         
-        Debug.Log("Camera moved to: " + mainCamera.transform.position);
+       // Debug.Log("Camera moved to: " + mainCamera.transform.position);
         
         // Show dialog canvas
         if (dialogCanvas != null)
@@ -212,7 +212,7 @@ public class IntroTrigger : MonoBehaviour
             yield return new WaitForSeconds(cutsceneDuration);
         }
         
-        Debug.Log("Cutscene complete, returning camera");
+        //.Log("Cutscene complete, returning camera");
         
         // Return camera to original position
         Vector3 currentPos = mainCamera.transform.position;
@@ -244,7 +244,7 @@ public class IntroTrigger : MonoBehaviour
         mainCamera.transform.localPosition = originalCameraLocalPosition;
         mainCamera.transform.localRotation = originalCameraLocalRotation;
         
-        Debug.Log("Camera returned to original position");
+      //  Debug.Log("Camera returned to original position");
         
         // Re-enable player controls
         EnablePlayerControl();
@@ -268,7 +268,7 @@ public class IntroTrigger : MonoBehaviour
     {
         if (player == null) return;
         
-        Debug.Log("Disabling player controls");
+       // Debug.Log("Disabling player controls");
         
         // Set animation to idle state only (let animation continue playing)
         if (playerAnimator != null && playerAnimator.isActiveAndEnabled)
@@ -278,7 +278,7 @@ public class IntroTrigger : MonoBehaviour
             TrySetAnimatorParameter("poseOrLook", 0f);      // Set to 0 for idle pose
             TrySetAnimatorParameter("move", false);         // Set to false for no movement
             
-            Debug.Log("Player animation set to idle");
+          //  Debug.Log("Player animation set to idle");
         }
         
         // Disable all MonoBehaviour scripts on player (except this one)
@@ -340,7 +340,7 @@ public class IntroTrigger : MonoBehaviour
     {
         if (player == null) return;
         
-        Debug.Log("Re-enabling player controls");
+      //  Debug.Log("Re-enabling player controls");
         
         // Keep animation in idle state when exiting cutscene
         if (playerAnimator != null && playerAnimator.isActiveAndEnabled)
@@ -350,7 +350,7 @@ public class IntroTrigger : MonoBehaviour
             TrySetAnimatorParameter("poseOrLook", 0f);      // Idle pose
             TrySetAnimatorParameter("move", false);         // No movement
             
-            Debug.Log("Player animation restored to idle");
+         //   Debug.Log("Player animation restored to idle");
         }
         
         // Re-enable all MonoBehaviour scripts on player
@@ -382,7 +382,7 @@ public class IntroTrigger : MonoBehaviour
     {
         if (isInCutscene)
         {
-            Debug.Log("Skipping cutscene");
+           // Debug.Log("Skipping cutscene");
             StopAllCoroutines();
             
             // Restore camera immediately

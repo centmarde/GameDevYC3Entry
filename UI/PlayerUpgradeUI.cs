@@ -67,27 +67,11 @@ public class PlayerUpgradeUI : MonoBehaviour
         upgradeButtons[2] = manualButton3;
         
         // Validate references
-        if (canvas == null)
-        {
-            Debug.LogError("PlayerUpgradeUI: Manual Canvas is not assigned!");
-        }
-        if (upgradePanel == null)
-        {
-            Debug.LogError("PlayerUpgradeUI: Manual Upgrade Panel is not assigned!");
-        }
-        if (titleText == null)
-        {
-            Debug.LogWarning("PlayerUpgradeUI: Manual Title Text is not assigned!");
-        }
         
         // Setup button listeners
         for (int i = 0; i < 3; i++)
         {
-            if (upgradeButtons[i] == null)
-            {
-                Debug.LogError($"PlayerUpgradeUI: Manual Button {i + 1} is not assigned!");
-            }
-            else
+            if (upgradeButtons[i] != null)
             {
                 int index = i; // Capture for lambda
                 upgradeButtons[i].onClick.RemoveAllListeners(); // Clear any existing listeners

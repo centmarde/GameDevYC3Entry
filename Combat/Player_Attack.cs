@@ -38,6 +38,5 @@ public abstract class PlayerAttack : MonoBehaviour
     public virtual void ExecuteAttack(Vector3 aimDirection)
     {
         // Default: do nothing (override in subclasses)
-        Debug.Log($"{name} executed an attack toward {aimDirection}");
     }
 }

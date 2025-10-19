@@ -92,10 +92,6 @@ public class EnemyPointerManager : MonoBehaviour
             }
         }
         
-        if (gameCamera == null)
-        {
-            Debug.LogError("EnemyPointerManager: No camera found!");
-        }
     }
     
     private void CreatePointerUI()
@@ -130,8 +126,6 @@ public class EnemyPointerManager : MonoBehaviour
         {
             CreateDefaultPointerPrefab();
         }
-        
-        Debug.Log($"EnemyPointerManager: UI Canvas created!");
     }
     
     private void CreateDefaultPointerPrefab()
@@ -173,8 +167,6 @@ public class EnemyPointerManager : MonoBehaviour
         
         pointerPrefab = prefab;
         prefab.SetActive(false);
-        
-        Debug.Log("EnemyPointerManager: Default pointer prefab created!");
     }
     
     private Texture2D CreateArrowTexture()

@@ -100,10 +100,6 @@ public class WaveSpawner : MonoBehaviour
             {
                 playerTransform = player.transform;
             }
-            else
-            {
-                Debug.LogWarning("WaveSpawner: Player not found! Please assign player transform or tag your player as 'Player'");
-            }
         }
         
         // Auto-find WaveManager if not assigned
@@ -129,21 +125,18 @@ public class WaveSpawner : MonoBehaviour
         // Validate enemy configuration
         if (enemyGroups == null || enemyGroups.Length == 0)
         {
-            Debug.LogError("WaveSpawner: No enemy groups assigned! Please assign enemy groups in the Inspector.");
             return;
         }
         
         // Select ONE group for this entire wave
         int randomGroupIndex = Random.Range(0, enemyGroups.Length);
         currentWaveGroup = enemyGroups[randomGroupIndex];
-        Debug.Log($"Wave will spawn enemies from group: {currentWaveGroup.groupName}");
         
         // Validate spawn mode requirements
         if (spawnMode == SpawnMode.Manual)
         {
             if (spawnPoints == null || spawnPoints.Length == 0)
             {
-                Debug.LogError("WaveSpawner: No spawn points assigned for Manual mode!");
                 return;
             }
         }
@@ -151,7 +144,6 @@ public class WaveSpawner : MonoBehaviour
         {
             if (playerTransform == null)
             {
-                Debug.LogError("WaveSpawner: Player transform not found for Circular mode!");
                 return;
             }
         }
@@ -230,12 +222,6 @@ public class WaveSpawner : MonoBehaviour
             }
             
             enemiesSpawned++;
-            
-            Debug.Log($"Spawned {enemyPrefab.name} (enemy {enemiesSpawned}/{enemiesToSpawn}) at {spawnPosition} with +{currentHealthBonus} HP, +{currentDamageBonus} DMG");
-        }
-        else
-        {
-            Debug.LogWarning($"WaveSpawner: Invalid enemy prefab!");
         }
     }
     

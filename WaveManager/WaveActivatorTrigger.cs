@@ -33,18 +33,12 @@ public class WaveActivatorTrigger : MonoBehaviour
         if (waveManager == null)
         {
             waveManager = FindObjectOfType<WaveManager>();
-            
-            if (waveManager == null)
-            {
-                Debug.LogError("WaveActivatorTrigger: No WaveManager found in scene!");
-            }
         }
         
         // Ensure this object has a trigger collider
         Collider col = GetComponent<Collider>();
         if (col != null && !col.isTrigger)
         {
-            Debug.LogWarning("WaveActivatorTrigger: Collider is not set as Trigger! Setting it now.");
             col.isTrigger = true;
         }
     }
@@ -65,13 +59,7 @@ public class WaveActivatorTrigger : MonoBehaviour
     {
         if (waveManager == null)
         {
-            Debug.LogError("WaveActivatorTrigger: Cannot activate waves - WaveManager is null!");
             return;
-        }
-        
-        if (showDebugMessage)
-        {
-            Debug.Log($"WaveActivatorTrigger: Player entered trigger '{gameObject.name}' - Activating/Resuming waves!");
         }
         
         // Activate the wave system
@@ -81,11 +69,6 @@ public class WaveActivatorTrigger : MonoBehaviour
         if (waveManager.AreWavesPaused())
         {
             waveManager.ResumeWaves();
-            
-            if (showDebugMessage)
-            {
-                Debug.Log($"WaveActivatorTrigger: Waves were paused - automatically resuming!");
-            }
         }
         
         // Show visual effect if assigned
@@ -99,11 +82,6 @@ public class WaveActivatorTrigger : MonoBehaviour
         {
             GameObject targetToDestroy = objectToDestroy != null ? objectToDestroy : gameObject;
             
-            if (showDebugMessage)
-            {
-                Debug.Log($"WaveActivatorTrigger: Area cleared! Destroying '{targetToDestroy.name}' in {destroyDelay} seconds...");
-            }
-            
             Destroy(targetToDestroy, destroyDelay);
             return; // Exit early since object will be destroyed
         }
@@ -112,10 +90,6 @@ public class WaveActivatorTrigger : MonoBehaviour
         // This will not affect other objects that may have this script attached
         if (destroyAfterActivation)
         {
-            if (showDebugMessage)
-            {
-                Debug.Log($"WaveActivatorTrigger: Destroying trigger '{gameObject.name}' in {destroyDelay} seconds...");
-            }
             Destroy(gameObject, destroyDelay);
         }
     }

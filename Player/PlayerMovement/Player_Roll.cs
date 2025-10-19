@@ -83,6 +83,5 @@ public class Player_Roll : MonoBehaviour
         onCooldown = true;
         yield return new WaitForSeconds(rollCooldown);
         onCooldown = false;
-        Debug.Log("Roll cooldown ended � ready again!");
     }
 }

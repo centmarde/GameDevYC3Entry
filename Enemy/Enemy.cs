@@ -49,7 +49,6 @@ public class Enemy : Entity, ITargetable
         // Check if enemyStats is assigned before using it
         if (Stats == null)
         {
-            Debug.LogError($"{gameObject.name}: EnemyStatData_SO is not assigned! Please assign it in the Inspector.");
             enabled = false; // Disable component to prevent further errors
             return;
         }
@@ -91,10 +90,6 @@ public class Enemy : Entity, ITargetable
         if (deathTracker != null)
         {
             deathTracker.NotifyDeath();
-        }
-        else
-        {
-            Debug.LogWarning($"{gameObject.name} has no EnemyDeathTracker component! Wave system may not track this enemy properly.");
         }
 
         // finally, remove the object after the animation window

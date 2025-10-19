@@ -31,7 +31,6 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
     public void ApplyBuff(float dmgBonus, float spdBonus)
     {
         runtimeData.ApplyUpgrade(dmgBonus, spdBonus);
-        Debug.Log($"Buff applied → Damage: {runtimeData.chargedAttackDamage}, Speed: {runtimeData.chargedAttackSpeed}");
     }
 
     public override void ExecuteAttack(Vector3 aimDirection)
@@ -41,8 +40,6 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
         ResetCooldown();
         isCharging = true;
         chargeTimer = 0f;
-
-        Debug.Log("[ChargedRangeAttack] Started charging...");
     }
 
     public void TickCharge(float deltaTime)
@@ -79,8 +76,6 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
 
         if (camFollow != null) camFollow.ResetZoom();
         isCharging = false;
-
-        Debug.Log($"[ChargedRangeAttack] Fired at {chargePercent * 100f:F0}% charge");
     }
 
     private void FireChargedProjectile(Vector3 direction, float multiplier)

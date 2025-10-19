@@ -39,18 +39,12 @@ public class WavePauseTrigger : MonoBehaviour
         if (waveManager == null)
         {
             waveManager = FindObjectOfType<WaveManager>();
-            
-            if (waveManager == null)
-            {
-                Debug.LogError("WavePauseTrigger: No WaveManager found in scene!");
-            }
         }
         
         // Ensure this object has a trigger collider
         Collider col = GetComponent<Collider>();
         if (col != null && !col.isTrigger)
         {
-            Debug.LogWarning("WavePauseTrigger: Collider is not set as Trigger! Setting it now.");
             col.isTrigger = true;
         }
     }
@@ -129,11 +123,6 @@ public class WavePauseTrigger : MonoBehaviour
     {
         if (waveManager == null) return;
         
-        if (showDebugMessage)
-        {
-            Debug.Log($"WavePauseTrigger: Player triggered '{gameObject.name}' - PAUSING waves!");
-        }
-        
         waveManager.PauseWaves();
         
         // Update visuals
@@ -149,11 +138,6 @@ public class WavePauseTrigger : MonoBehaviour
     private void ResumeWaves()
     {
         if (waveManager == null) return;
-        
-        if (showDebugMessage)
-        {
-            Debug.Log($"WavePauseTrigger: Player triggered '{gameObject.name}' - RESUMING waves!");
-        }
         
         waveManager.ResumeWaves();
         

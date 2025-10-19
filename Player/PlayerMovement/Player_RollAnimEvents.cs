@@ -19,10 +19,6 @@ public class Player_RollAnimEvents : MonoBehaviour
             Vector3 dir = rollComponent.transform.forward;
             rollComponent.BeginRoll(dir);
         }
-        else
-        {
-            Debug.LogWarning("Player_RollAnimEvents: Roll component not found!");
-        }
     }
 
     // Called by Animation Event at the end of the roll animation

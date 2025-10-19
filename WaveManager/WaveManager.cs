@@ -82,10 +82,6 @@ public class WaveManager : MonoBehaviour
         {
             Invoke(nameof(StartNextWave), 2f);
         }
-        else
-        {
-            Debug.Log("WaveManager: Waiting for manual activation or trigger collision");
-        }
     }
     
     private void Update()
@@ -119,20 +115,17 @@ public class WaveManager : MonoBehaviour
         // Don't start if paused or not activated
         if (wavesPaused)
         {
-            Debug.LogWarning("Cannot start wave: Waves are paused");
             return;
         }
         
         if (!wavesActivated)
         {
-            Debug.LogWarning("Cannot start wave: Waves not activated yet");
             return;
         }
         
         // Don't start new wave if current wave is in progress or enemies still alive
         if (waveInProgress || !allEnemiesCleared) 
         {
-            Debug.LogWarning($"Cannot start next wave: Wave in progress={waveInProgress}, Enemies cleared={allEnemiesCleared}");
             return;
         }
         
@@ -151,8 +144,6 @@ public class WaveManager : MonoBehaviour
         allEnemiesCleared = false;
         timeSinceWaveEnd = 0f;
         
-        Debug.Log($"Starting Wave {currentWave} with {enemiesInCurrentWave} enemies (Health Bonus: +{currentHealthBonus}, Damage Bonus: +{currentDamageBonus})");
-        
         // Notify UI
         if (waveUI != null)
         {
@@ -168,10 +159,6 @@ public class WaveManager : MonoBehaviour
             waveSpawner.StartWave(enemiesInCurrentWave, currentHealthBonus, currentDamageBonus);
             // Check for spawning completion
             Invoke(nameof(CheckSpawningCompletion), 1f);
-        }
-        else
-        {
-            Debug.LogError("WaveManager: No WaveSpawner assigned!");
         }
     }
     
@@ -209,7 +196,6 @@ public class WaveManager : MonoBehaviour
         if (waveSpawner != null && !waveSpawner.IsSpawning())
         {
             spawningComplete = true;
-            Debug.Log($"Wave {currentWave}: All enemies spawned. Waiting for enemies to be cleared...");
             OnWaveComplete?.Invoke(currentWave);
         }
         else
@@ -245,8 +231,6 @@ public class WaveManager : MonoBehaviour
         allEnemiesCleared = true;
         waveInProgress = false;
         
-        Debug.Log($"Wave {currentWave} CLEARED! All enemies defeated.");
-        
         // Trigger event
         OnAllEnemiesCleared?.Invoke(currentWave);
     }
@@ -265,7 +249,6 @@ public class WaveManager : MonoBehaviour
     public void RegisterEnemyKilled()
     {
         enemiesAlive--;
-        Debug.Log($"Enemy killed. Remaining: {enemiesAlive}");
         
         if (enemiesAlive <= 0 && spawningComplete)
         {
@@ -332,12 +315,10 @@ public class WaveManager : MonoBehaviour
     {
         if (wavesActivated)
         {
-            Debug.Log("WaveManager: Waves already activated");
             return;
         }
         
         wavesActivated = true;
-        Debug.Log("WaveManager: Waves ACTIVATED! Starting first wave...");
         
         // Start first wave immediately
         if (!waveInProgress && allEnemiesCleared)
@@ -352,7 +333,6 @@ public class WaveManager : MonoBehaviour
     public void DeactivateWaves()
     {
         wavesActivated = false;
-        Debug.Log("WaveManager: Waves DEACTIVATED");
     }
     
     /// <summary>
@@ -361,7 +341,6 @@ public class WaveManager : MonoBehaviour
     public void PauseWaves()
     {
         wavesPaused = true;
-        Debug.Log("WaveManager: Waves PAUSED");
         
         // Pause spawning if in progress
         if (waveSpawner != null && waveSpawner.IsSpawning())
@@ -376,7 +355,6 @@ public class WaveManager : MonoBehaviour
     public void ResumeWaves()
     {
         wavesPaused = false;
-        Debug.Log("WaveManager: Waves RESUMED");
     }
     
     /// <summary>

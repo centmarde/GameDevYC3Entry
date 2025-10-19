@@ -31,11 +31,6 @@ public class SlowMotionUI_Minimal : MonoBehaviour
         if (skillManager == null)
         {
             skillManager = FindObjectOfType<PlayerSkill_Manager>();
-            
-            if (skillManager == null)
-            {
-                Debug.LogWarning("SlowMotionUI_Minimal: Could not find PlayerSkill_Manager in scene");
-            }
         }
         
         // Initialize key hint

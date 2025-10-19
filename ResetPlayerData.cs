@@ -57,11 +57,10 @@ public class ResetPlayerData : MonoBehaviour
         
         if (triggerCollider == null)
         {
-            Debug.LogError("ResetPlayerData: No Collider component found on this GameObject!");
+            return;
         }
         else if (!triggerCollider.isTrigger)
         {
-            Debug.LogWarning("ResetPlayerData: Collider is not set as trigger. Setting it to trigger mode.");
             triggerCollider.isTrigger = true;
         }
     }
@@ -106,16 +105,12 @@ public class ResetPlayerData : MonoBehaviour
     {
         if (playerData == null)
         {
-            if (showDebugMessages)
-                Debug.LogWarning("ResetPlayerData: No Player_DataSO assigned!");
             return;
         }
         
         // Only reset if it hasn't been triggered before (prevents multiple resets)
         if (hasBeenTriggered)
         {
-            if (showDebugMessages)
-                Debug.Log("ResetPlayerData: Already triggered. Collider is now solid.");
             return;
         }
         
@@ -139,11 +134,6 @@ public class ResetPlayerData : MonoBehaviour
             skillData.projectileDamage = defaultSkillProjectileDamage;
             skillData.orbitRadius = defaultOrbitRadius;
             skillData.orbitSpeed = defaultOrbitSpeed;
-            
-            if (showDebugMessages)
-                Debug.Log($"ResetPlayerData: Skill '{skillData.skillName}' base stats reset - " +
-                         $"Projectiles: {defaultProjectileCount}, Damage: {defaultSkillProjectileDamage}, " +
-                         $"Radius: {defaultOrbitRadius}, Speed: {defaultOrbitSpeed}");
         }
         
         // Reset skill component if assigned or auto-find it
@@ -160,26 +150,13 @@ public class ResetPlayerData : MonoBehaviour
         if (circlingProjectilesSkill != null)
         {
             circlingProjectilesSkill.ResetSkill(); // This resets isObtained back to the Inspector value
-            
-            if (showDebugMessages)
-                Debug.Log($"ResetPlayerData: PlayerSkill_CirclingProjectiles component reset (isObtained reset to Inspector default: {defaultSkillIsObtained}).");
         }
-        else if (showDebugMessages)
-        {
-            Debug.LogWarning("ResetPlayerData: Could not find PlayerSkill_CirclingProjectiles component to reset.");
-        }
-        
-        if (showDebugMessages)
-            Debug.Log($"ResetPlayerData: Player data has been reset to default values on {gameObject.name}");
         
         // Make the collider solid after reset
         if (makeColliderSolidAfterReset && triggerCollider != null)
         {
             triggerCollider.isTrigger = false;
             hasBeenTriggered = true;
-            
-            if (showDebugMessages)
-                Debug.Log($"ResetPlayerData: Collider on {gameObject.name} is now solid. Player cannot pass through.");
         }
     }
     

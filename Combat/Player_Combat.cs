@@ -54,21 +54,15 @@ public class Player_Combat : MonoBehaviour
 
     public void OnFirePerformed(InputAction.CallbackContext ctx)
     {
-        Debug.Log($"[Player_Combat] OnFirePerformed called - Phase: {ctx.phase}, canAttack: {canAttack}");
-        
         var atk = rangeAttackController?.CurrentAttack;
         bool isCharge = atk is Player_ChargedRangeAttack;
-        
-        Debug.Log($"[Player_Combat] Current attack: {atk?.GetType().Name ?? "NULL"}, isCharge: {isCharge}");
 
         switch (ctx.phase)
         {
             case InputActionPhase.Started:
             case InputActionPhase.Performed:  // Handle both Started and Performed
-                Debug.Log($"[Player_Combat] Started/Performed phase - canAttack: {canAttack}");
                 if (!canAttack)
                 {
-                    Debug.Log("[Player_Combat] Attack blocked - canAttack is false");
                     return;
                 }
 
@@ -76,21 +70,17 @@ public class Player_Combat : MonoBehaviour
 
                 if (isCharge)
                 {
-                    Debug.Log("[Player_Combat] Starting charged attack state");
                     player.RequestStateChange(player.chargedAttackState);
                 }
                 else
                 {
-                    Debug.Log("[Player_Combat] Starting attack routine");
                     StartCoroutine(AttackRoutine());
                 }
                 break;
 
             case InputActionPhase.Canceled:
-                Debug.Log("[Player_Combat] Canceled phase");
                 if (isCharge)
                 {
-                    Debug.Log("[Player_Combat] Canceling charged attack");
                     player.RequestStateChange(player.idleState);
                     canAttack = true;
                 }
@@ -103,16 +93,13 @@ public class Player_Combat : MonoBehaviour
 
     private IEnumerator AttackRoutine()
     {
-        Debug.Log("[Player_Combat] AttackRoutine started");
         canAttack = false;
 
         cachedAimDirection = GetAimDirection();
-        Debug.Log($"[Player_Combat] Aim direction: {cachedAimDirection}");
 
         FaceInstant(cachedAimDirection);
 
         var current = player.playerCombat.currentAttack;
-        Debug.Log($"[Player_Combat] Current attack type: {current?.GetType().Name ?? "NULL"}");
 
         if (current is not Player_ChargedRangeAttack)
             player.playerMovement.movementLocked = true;
@@ -120,18 +107,15 @@ public class Player_Combat : MonoBehaviour
         // Tell the state to start the appropriate attack
         if (current is Player_ChargedRangeAttack)
         {
-            Debug.Log("[Player_Combat] Changing to chargedAttackState");
             player.RequestStateChange(player.chargedAttackState);
         }
         else
         {
-            Debug.Log($"[Player_Combat] Changing to rangeAttackState with aim: {cachedAimDirection}");
             player.rangeAttackState.SetCachedAim(cachedAimDirection);
             player.RequestStateChange(player.rangeAttackState);
         }
 
         yield return new WaitForSeconds(attackCooldown);
-        Debug.Log("[Player_Combat] AttackRoutine cooldown finished");
         canAttack = true;
     }
 

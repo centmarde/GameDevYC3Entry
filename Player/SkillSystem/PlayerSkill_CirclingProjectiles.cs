@@ -38,16 +38,7 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         base.Awake();
         currentProjectileCount = defaultProjectileCount;
         
-        if (projectilePrefab == null)
-        {
-            Debug.LogError($"{name}: ProjectilePrefab is not assigned!");
-        }
-        
-        // Validate that Data is assigned
-        if (Data == null)
-        {
-            Debug.LogWarning($"{name}: Skill Data (ScriptableObject) is not assigned! Some features may not work.");
-        }
+
     }
     
     private void Start()
@@ -68,13 +59,11 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
             if (isObtained)
             {
                 // Just obtained - activate skill and spawn projectiles
-                Debug.Log("Skill obtained in real-time - spawning projectiles!");
                 ActivateSkill();
             }
             else
             {
                 // Just lost - deactivate skill
-                Debug.Log("Skill lost in real-time - removing projectiles!");
                 DeactivateSkill();
             }
             wasObtainedLastFrame = isObtained;
@@ -88,15 +77,11 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     {
         if (isObtained)
         {
-            string skillName = Data != null ? Data.skillName : "Circling Projectiles";
-            Debug.LogWarning($"{skillName} skill is already obtained!");
             return;
         }
         
         // Set the runtime-only flag (does NOT persist)
         isObtained = true;
-        string name = Data != null ? Data.skillName : "Circling Projectiles";
-        Debug.Log($"{name} skill obtained!");
         ActivateSkill();
     }
 
@@ -109,15 +94,11 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         
         if (!isObtained)
         {
-            Debug.LogWarning("Cannot activate skill - not obtained yet!");
             return;
         }
 
         isActive = true;
         SpawnProjectiles();
-        
-        string skillName = Data != null ? Data.skillName : "Circling Projectiles";
-        Debug.Log($"{skillName} activated with {currentProjectileCount} projectiles!");
     }
 
     /// <summary>
@@ -129,8 +110,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         
         isActive = false;
         DestroyAllProjectiles();
-        
-        Debug.Log($"{Data.skillName} deactivated!");
     }
 
     /// <summary>
@@ -140,7 +119,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     {
         if (projectilePrefab == null)
         {
-            Debug.LogError("Cannot spawn projectiles: prefab is null!");
             return;
         }
 
@@ -182,7 +160,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
             }
             else
             {
-                Debug.LogError($"Projectile prefab is missing CirclingProjectile component!");
                 Destroy(projectileObj);
                 continue;
             }
@@ -235,7 +212,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     {
         if (currentProjectileCount >= maxProjectileCount)
         {
-            Debug.Log("Max projectile count reached!");
             return;
         }
 
@@ -247,8 +223,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         {
             SpawnProjectiles();
         }
-        
-        Debug.Log($"Projectile count upgraded to {currentProjectileCount}!");
     }
 
     /// <summary>
@@ -264,8 +238,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         {
             UpdateAllProjectiles();
         }
-        
-        Debug.Log($"Projectile damage upgraded to {projectileDamage}!");
     }
 
     /// <summary>
@@ -281,8 +253,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         {
             UpdateAllProjectiles();
         }
-        
-        Debug.Log($"Orbit radius upgraded to {orbitRadius}!");
     }
 
     /// <summary>
@@ -298,8 +268,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         {
             UpdateAllProjectiles();
         }
-        
-        Debug.Log($"Orbit speed upgraded to {orbitSpeed}!");
     }
 
     #endregion
@@ -349,8 +317,6 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         damageLevel = 0;
         radiusLevel = 0;
         speedLevel = 0;
-        
-        Debug.Log($"PlayerSkill_CirclingProjectiles reset to original state: isObtained=false, Count={currentProjectileCount}, Damage={projectileDamage}, Radius={orbitRadius}, Speed={orbitSpeed}");
     }
 
     private void OnDestroy()

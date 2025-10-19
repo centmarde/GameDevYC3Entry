@@ -21,7 +21,6 @@ public class PlayerSkill_Base : MonoBehaviour
     {
         if (OnCoolDown())
         {
-            Debug.Log("On cooldown.");
             return false;
         }
 

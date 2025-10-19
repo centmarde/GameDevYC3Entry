@@ -22,10 +22,6 @@ public class Player_RangeAttackController : MonoBehaviour
     {
         // Automatically find all attached attack types
         attackVariants.AddRange(GetComponents<Player_RangeAttack>());
-
-
-        foreach (var atk in attackVariants)
-            Debug.Log($"Loaded attack variant: {atk.GetType().Name}");
     }
 
     private void Start()
@@ -63,14 +59,12 @@ public class Player_RangeAttackController : MonoBehaviour
     private void CycleNext()
     {
         currentIndex = (currentIndex + 1) % attackVariants.Count;
-        Debug.Log($"Switched to attack: {CurrentAttack.GetType().Name}");
         UpdateAttackLabel();
     }
 
     private void CyclePrevious()
     {
         currentIndex = (currentIndex - 1 + attackVariants.Count) % attackVariants.Count;
-        Debug.Log($"Switched to attack: {CurrentAttack.GetType().Name}");
         UpdateAttackLabel();
     }
 
