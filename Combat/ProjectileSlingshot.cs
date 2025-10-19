@@ -67,8 +67,17 @@ public class ProjectileSlingshot : MonoBehaviour
             Vector3 hitPoint = transform.position;
             Vector3 hitNormal = rb != null ? -rb.linearVelocity.normalized : Vector3.back;
             
+            // Apply damage falloff if this is a scatter pellet
+            float finalDamage = damage;
+            var damageFalloff = GetComponent<ScatterPelletDamageFalloff>();
+            if (damageFalloff != null)
+            {
+                float multiplier = damageFalloff.GetDamageMultiplier();
+                finalDamage = damage * multiplier;
+            }
+            
             // CRITICAL: This applies damage to the enemy!
-            bool damageApplied = target.TakeDamage(damage, hitPoint, hitNormal, source);
+            bool damageApplied = target.TakeDamage(finalDamage, hitPoint, hitNormal, source);
             
             if (!damageApplied)
             {
@@ -85,4 +94,14 @@ public class ProjectileSlingshot : MonoBehaviour
     }
     
     public bool IsCriticalHit() => isCriticalHit;
+    
+    /// <summary>
+    /// Get the current damage value of the projectile
+    /// </summary>
+    public float GetDamage() => damage;
+    
+    /// <summary>
+    /// Set the damage value of the projectile (used for distance-based falloff)
+    /// </summary>
+    public void SetDamage(float newDamage) => damage = newDamage;
 }

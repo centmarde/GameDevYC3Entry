@@ -39,7 +39,7 @@ public class Player_RangeAttackController : MonoBehaviour
         if (GetComponent<Player_AttackAnimEvents>() == null)
         {
             gameObject.AddComponent<Player_AttackAnimEvents>();
-            Debug.Log("[RangeAttackController] Added missing Player_AttackAnimEvents component");
+            // Debug.Log("[RangeAttackController] Added missing Player_AttackAnimEvents component");
         }
 
         // Manually collect specific attack components in order
@@ -77,12 +77,12 @@ public class Player_RangeAttackController : MonoBehaviour
         currentIndex = 0;
 
         // Debug: Log detected attacks
-        Debug.Log($"[RangeAttackController] Detected {attackVariants.Count} attack variants:");
-        for (int i = 0; i < attackVariants.Count; i++)
-        {
-            var attackType = attackVariants[i].GetType();
-            Debug.Log($"  [{i}] {attackType.Name} (Instance ID: {attackVariants[i].GetInstanceID()})");
-        }
+        // Debug.Log($"[RangeAttackController] Detected {attackVariants.Count} attack variants:");
+        // for (int i = 0; i < attackVariants.Count; i++)
+        // {
+        //     var attackType = attackVariants[i].GetType();
+        //     Debug.Log($"  [{i}] {attackType.Name} (Instance ID: {attackVariants[i].GetInstanceID()}).");
+        // }
         
         // Warning if no normal attack found
         if (normalAttack == null)
@@ -168,7 +168,7 @@ public class Player_RangeAttackController : MonoBehaviour
             attackLabelText.text = $"{attackName}";
             
             // Debug: Log current attack selection
-            Debug.Log($"[RangeAttackController] Switched to: {CurrentAttack.GetType().Name} at index {currentIndex}");
+            // Debug.Log($"[RangeAttackController] Switched to: {CurrentAttack.GetType().Name} at index {currentIndex}");
         }
     }
 
@@ -245,6 +245,6 @@ public class Player_RangeAttackController : MonoBehaviour
         textRect.offsetMin = new Vector2(10f, 10f);
         textRect.offsetMax = new Vector2(-10f, -10f);
         
-        Debug.Log($"[RangeAttackController] UI Created - Attack Count: {attackVariants.Count}, Current: {CurrentAttack?.GetType().Name}");
+        // Debug.Log($"[RangeAttackController] UI Created - Attack Count: {attackVariants.Count}, Current: {CurrentAttack?.GetType().Name}");
     }
 }

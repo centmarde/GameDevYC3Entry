@@ -21,7 +21,7 @@ public class Player_RangeAttackState : PlayerState
         // Debug: Log which attack is being executed
         if (currentAttack != null)
         {
-            Debug.Log($"[RangeAttackState] Executing: {currentAttack.GetType().Name} (Instance ID: {currentAttack.GetInstanceID()})");
+            // Debug.Log($"[RangeAttackState] Executing: {currentAttack.GetType().Name} (Instance ID: {currentAttack.GetInstanceID()})");
             
             // Cache this attack as the active one (prevents scroll-switching mid-attack)
             var controller = player.GetComponent<Player_RangeAttackController>();
@@ -30,7 +30,7 @@ public class Player_RangeAttackState : PlayerState
                 var rangeAttack = currentAttack as Player_RangeAttack;
                 if (rangeAttack != null)
                 {
-                    Debug.Log($"[RangeAttackState] Setting active attack: {rangeAttack.GetType().Name} (Instance ID: {rangeAttack.GetInstanceID()})");
+                    // Debug.Log($"[RangeAttackState] Setting active attack: {rangeAttack.GetType().Name} (Instance ID: {rangeAttack.GetInstanceID()})");
                     controller.SetActiveAttack(rangeAttack);
                 }
                 else

@@ -75,14 +75,14 @@ public abstract class Player_RangeAttack : PlayerAttack
         // Prevent multiple calls to EndAttack in the same frame
         if (hasEndedThisAttack)
         {
-            Debug.LogWarning($"[{GetType().Name}] EndAttackInternal called multiple times! Ignoring duplicate call on instance {GetInstanceID()}");
+            // Debug.LogWarning($"[{GetType().Name}] EndAttackInternal called multiple times! Ignoring duplicate call on instance {GetInstanceID()}");
             return;
         }
 
         hasEndedThisAttack = true;
         
         // Debug: Verify which instance is calling EndAttack
-        Debug.Log($"[{GetType().Name}] EndAttackInternal called on instance {GetInstanceID()}");
+        // Debug.Log($"[{GetType().Name}] EndAttackInternal called on instance {GetInstanceID()}");
         
         FireProjectile();
         if (player?.playerMovement != null)

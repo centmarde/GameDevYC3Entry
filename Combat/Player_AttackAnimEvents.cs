@@ -4,7 +4,7 @@ public class Player_AttackAnimEvents : MonoBehaviour
 {
      public void EndAttack()
     {
-        Debug.Log("[AttackAnimEvents] EndAttack animation event triggered!");
+        // Debug.Log("[AttackAnimEvents] EndAttack animation event triggered!");
         
         // Try to find the range attack controller in the player hierarchy
         var controller = GetComponentInParent<Player_RangeAttackController>();
@@ -17,7 +17,7 @@ public class Player_AttackAnimEvents : MonoBehaviour
             {
                 // Use ActiveAttack instead of CurrentAttack to ensure we fire the attack that was started,
                 // not the one currently selected (in case player scrolled mid-attack)
-                Debug.Log($"[AttackAnimEvents] Calling EndAttackInternal on: {activeAttack.GetType().Name} (Instance ID: {activeAttack.GetInstanceID()})");
+                // Debug.Log($"[AttackAnimEvents] Calling EndAttackInternal on: {activeAttack.GetType().Name} (Instance ID: {activeAttack.GetInstanceID()})");
                 activeAttack.EndAttackInternal();
                 controller.ClearActiveAttack();
             }

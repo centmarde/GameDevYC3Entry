@@ -16,7 +16,7 @@ public class Player_NormalShotAttack : Player_RangeAttack
 
     protected override void FireProjectile()
     {
-        Debug.Log($"[NormalShotAttack] FireProjectile called on Instance {GetInstanceID()} - firing SINGLE projectile");
+        // Debug.Log($"[NormalShotAttack] FireProjectile called on Instance {GetInstanceID()} - firing SINGLE projectile");
         
         if (projectile == null || muzzle == null) return;
 
@@ -51,15 +51,20 @@ public class Player_NormalShotAttack : Player_RangeAttack
                 Physics.IgnoreCollision(projCol, c, true);
         }
 
+        // Roll for critical hit
+        bool isCritical = player.Stats.RollCriticalHit();
+        
         // Calculate final damage and speed with buffs from Player_DataSO
-        float finalDamage = player.Stats.projectileDamage + damageBonus;
+        float baseDamage = player.Stats.projectileDamage + damageBonus;
+        float finalDamage = isCritical ? baseDamage * player.Stats.criticalDamageMultiplier : baseDamage;
         float finalSpeed = player.Stats.normalAttackSpeed + speedBonus;
 
         // Launch single projectile with normal attack stats
         p.Launch(
             dir * finalSpeed,
             finalDamage,
-            this
+            this,
+            isCritical
         );
     }
 }
