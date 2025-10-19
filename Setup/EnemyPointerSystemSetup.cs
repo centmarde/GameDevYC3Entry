@@ -71,15 +71,15 @@ public class EnemyPointerSystemSetup : MonoBehaviour
     }
     
     /// <summary>
-    /// Configure IsoFollowCamera - add it to the main camera if missing
+    /// Configure IsoCameraFollow - add it to the main camera if missing
     /// </summary>
     private void ConfigureIsoFollowCamera()
     {
-        IsoFollowCamera existingCamera = FindObjectOfType<IsoFollowCamera>();
+        IsoCameraFollow existingCamera = FindObjectOfType<IsoCameraFollow>();
         
         if (existingCamera != null)
         {
-            Debug.Log($"  ✓ IsoFollowCamera found on '{existingCamera.gameObject.name}'");
+            Debug.Log($"  ✓ IsoCameraFollow found on '{existingCamera.gameObject.name}'");
             return;
         }
         
@@ -93,10 +93,10 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         if (mainCamera != null)
         {
             // Check if it already has the component (shouldn't happen, but safety check)
-            if (mainCamera.GetComponent<IsoFollowCamera>() == null)
+            if (mainCamera.GetComponent<IsoCameraFollow>() == null)
             {
-                mainCamera.gameObject.AddComponent<IsoFollowCamera>();
-                Debug.Log($"  ✓ Added IsoFollowCamera to '{mainCamera.gameObject.name}'");
+                mainCamera.gameObject.AddComponent<IsoCameraFollow>();
+                Debug.Log($"  ✓ Added IsoCameraFollow to '{mainCamera.gameObject.name}'");
             }
         }
         else
@@ -253,16 +253,16 @@ public class EnemyPointerSystemSetup : MonoBehaviour
         bool allGood = true;
         
         // Check camera
-        IsoFollowCamera isoCamera = FindObjectOfType<IsoFollowCamera>();
+        IsoCameraFollow isoCamera = FindObjectOfType<IsoCameraFollow>();
         Camera mainCamera = Camera.main;
         
         if (isoCamera != null)
         {
-            Debug.Log($"✓ IsoFollowCamera: Found on '{isoCamera.gameObject.name}'");
+            Debug.Log($"✓ IsoCameraFollow: Found on '{isoCamera.gameObject.name}'");
         }
         else
         {
-            Debug.LogWarning("✗ IsoFollowCamera: NOT FOUND");
+            Debug.LogWarning("✗ IsoCameraFollow: NOT FOUND");
             allGood = false;
         }
         
@@ -393,8 +393,8 @@ public class EnemyPointerSystemSetup : MonoBehaviour
             removedCount++;
         }
         
-        // Note: IsoFollowCamera is kept as it's part of the core camera system
-        Debug.Log("ℹ IsoFollowCamera kept (core camera component)");
+        // Note: IsoCameraFollow is kept as it's part of the core camera system
+        Debug.Log("ℹ IsoCameraFollow kept (core camera component)");
         
         Debug.Log("\n" + "=".PadRight(50, '='));
         Debug.Log($"REMOVAL COMPLETE - {removedCount} components removed");

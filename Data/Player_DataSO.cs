@@ -15,6 +15,11 @@ public class Player_DataSO : ScriptableObject
     public float moveSpeed = 5f;    
     public float turnSpeed = 10f;
     public float currentSpeedMultiplier = 1.0f;
+
+    //projectile offsets for ranged attacks
+    public float muzzleForwardOffset = 0.25f;
+    public float muzzleHeightOffset = -0.3f;
+    public float DirectionEpsilon = 0.0001f;
     
     [Header("Critical Hit System")]
     [Range(0f, 100f)]

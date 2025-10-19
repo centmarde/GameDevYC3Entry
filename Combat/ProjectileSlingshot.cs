@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ProjectileSlingshot : MonoBehaviour
 {
-    [SerializeField] private float lifeTime = 5f;
+    [SerializeField] private float lifeTime = 1f;
     [SerializeField] private LayerMask hitMask;
 
     private Rigidbody rb;

@@ -7,20 +7,23 @@ public class Player_Movement : MonoBehaviour
     //Movement 
     [Header("Movement details")]
     public Vector2 moveInput { get; private set; }
+    public Vector2 lastMoveDir { get; private set; }
 
 
     public bool movementLocked;
 
-    private float moveSpeed;
+    private float baseMoveSpeed;
     private float turnSpeed;
     private float currentSpeedMultiplier;
 
-    
+
     private Vector3 moveVelocityXZ;
     private Quaternion lookRotation;
     private bool hasLookRotation;
 
     private float slowdownTimer;
+    public bool isAiming;
+
 
     private Rigidbody rb;
     private Player player;
@@ -31,10 +34,12 @@ public class Player_Movement : MonoBehaviour
         player = GetComponent<Player>();
         rb = player.GetComponent<Rigidbody>();
 
-        moveSpeed = player.Stats.moveSpeed;
+        baseMoveSpeed = player.Stats.moveSpeed;
         turnSpeed = player.Stats.turnSpeed;
         currentSpeedMultiplier = player.Stats.currentSpeedMultiplier;
     }
+
+    private float MoveSpeed => baseMoveSpeed * currentSpeedMultiplier;
 
 
     public void RequestMove(Vector3 velocityXZ)
@@ -56,7 +61,43 @@ public class Player_Movement : MonoBehaviour
 
     private void Update()
     {
-        HandleSlowdown();
+        if (movementLocked) return;
+        HandleMovement();
+        UpdateSlowdown();
+    }
+
+    private void HandleMovement()
+    {
+        Vector3 playerDirection = GetIsoDir();
+
+        if (playerDirection.sqrMagnitude > 0.0001f)
+        {
+            lastMoveDir = playerDirection;
+            RequestMove(playerDirection * MoveSpeed);
+
+            // Only rotate with movement if not aiming
+            if (!isAiming)
+                RequestLook(playerDirection);
+        }
+        else
+        {
+            RequestMove(Vector3.zero);
+            if (!isAiming && lastMoveDir.sqrMagnitude > 0.0001f)
+                RequestLook(lastMoveDir);
+        }
+    }
+
+    private void UpdateSlowdown()
+    {
+        if (slowdownTimer > 0f)
+        {
+            slowdownTimer -= Time.deltaTime;
+            if (slowdownTimer <= 0f)
+            {
+                currentSpeedMultiplier = 1.0f;
+                slowdownTimer = 0f;
+            }
+        }
     }
 
 
@@ -65,14 +106,21 @@ public class Player_Movement : MonoBehaviour
     {
         if (!rb) return;
 
-        if (movementLocked || player.CurrentState != player.moveState)
+        if (movementLocked)
         {
             StopMovement();
             RequestMove(Vector3.zero);
-
-
             return;
         }
+
+
+        if (player.CurrentState != player.moveState && player.CurrentState != player.chargedAttackState)
+        {
+            StopMovement();
+            RequestMove(Vector3.zero);
+            return;
+        }
+
 
         rb.MovePosition(rb.position + moveVelocityXZ * Time.fixedDeltaTime);
 
@@ -97,6 +145,7 @@ public class Player_Movement : MonoBehaviour
 
     public void ClearMovementIntent()
     {
+        moveInput = Vector2.zero;
         moveVelocityXZ = Vector3.zero;
         hasLookRotation = false;
     }
@@ -104,31 +153,16 @@ public class Player_Movement : MonoBehaviour
     public Vector3 GetIsoDir()
     {
         Vector3 rawXZ = new Vector3(moveInput.x, 0f, moveInput.y);
+
+        // Ignore tiny noise from keyboard/analog input
+        if (rawXZ.sqrMagnitude < 0.02f)
+            return Vector3.zero;
+
         Vector3 iso = Quaternion.Euler(0f, 45f, 0f) * rawXZ;
-
-        return iso.sqrMagnitude > 0.0001f ? iso.normalized : Vector3.zero;
+        return iso.normalized;
     }
 
 
-    private void HandleSlowdown()
-    {
-        if (slowdownTimer > 0f)
-        {
-            slowdownTimer -= Time.deltaTime;
-            if (slowdownTimer <= 0f)
-            {
-                currentSpeedMultiplier = 1.0f;
-                slowdownTimer = 0f;
-            }
-        }
-        Vector3 isoDir = GetIsoDir();
-        Vector3 desiredVelocity = isoDir * moveSpeed * currentSpeedMultiplier;
-        RequestMove(desiredVelocity);
-        if (isoDir.sqrMagnitude > 0.0001f)
-        {
-            RequestLook(isoDir);
-        }
-    }
 
     public void ApplySlowdown(float duration, float slowAmount)
     {

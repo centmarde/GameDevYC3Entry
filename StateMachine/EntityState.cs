@@ -18,7 +18,16 @@ public abstract class EntityState
 
     public virtual void Enter()
     {
-        anim.SetBool(animBoolName, true);
+        Debug.Log($"[EntityState] Enter - Setting animator bool '{animBoolName}' to TRUE");
+        if (anim == null)
+        {
+            Debug.LogError("[EntityState] Animator is NULL!");
+        }
+        else
+        {
+            anim.SetBool(animBoolName, true);
+            Debug.Log($"[EntityState] Animator bool '{animBoolName}' set successfully");
+        }
     }
 
     public virtual void Update()
@@ -28,8 +37,8 @@ public abstract class EntityState
 
     public virtual void Exit()
     {
+        Debug.Log($"[EntityState] Exit - Setting animator bool '{animBoolName}' to FALSE");
         anim.SetBool(animBoolName, false);
-
     }
 
 

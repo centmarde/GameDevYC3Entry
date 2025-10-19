@@ -10,7 +10,10 @@ public class Player : Entity
     public PlayerInputSet input { get; private set; }
     public PlayerSkill_Manager skillManager { get; private set; }
     public Player_Movement playerMovement { get; private set; }
+
+    public Player_Roll playerRoll { get; private set; }
     public Player_Combat playerCombat { get; private set; }
+    public Player_RangeAttackController rangeAttackController { get; private set; }
 
 
     //State Variables
@@ -18,8 +21,15 @@ public class Player : Entity
     public Player_IdleState idleState { get; private set; }
     public Player_OpenChestState openChestState { get; private set; }
     public Player_RangeAttackState rangeAttackState { get; private set; }
+    
 
     public Player_HurtState hurtState { get; private set; }
+
+    public Player_RollState rollState { get; private set; }
+
+    public Player_ChargedAttackState chargedAttackState { get; private set; }
+
+    public Player_DeathState deathState { get; private set; }
 
 
     public EntityState CurrentState => stateMachine.currentState;
@@ -45,6 +55,8 @@ public class Player : Entity
         skillManager = GetComponent<PlayerSkill_Manager>();
         playerMovement = GetComponent<Player_Movement>();
         playerCombat = GetComponent<Player_Combat>();
+        rangeAttackController = GetComponent<Player_RangeAttackController>();
+        playerRoll = GetComponent<Player_Roll>();
 
         input = new PlayerInputSet();
         moveState = new Player_MoveState(this, stateMachine, "move");
@@ -52,6 +64,9 @@ public class Player : Entity
         openChestState = new Player_OpenChestState(this, stateMachine, "isOpeningChest");
         rangeAttackState = new Player_RangeAttackState(this, stateMachine, "rangeAttack");
         hurtState = new Player_HurtState(this, stateMachine, "hurt");
+        rollState = new Player_RollState(this, stateMachine, "isRolling");
+        chargedAttackState = new Player_ChargedAttackState(this, stateMachine, "isCharging");
+        deathState = new Player_DeathState(this, stateMachine, "isDead");
 
         health = GetComponent<Entity_Health>();
 
@@ -76,6 +91,12 @@ public class Player : Entity
     {
         input.Enable();
         input.Player.Attack.performed += playerCombat.OnFirePerformed;
+        input.Player.Attack.canceled += playerCombat.OnFirePerformed;
+        input.Player.Attack.performed += playerCombat.OnFirePerformed;
+
+        input.Player.SwitchAttackType.performed += rangeAttackController.OnScroll;
+        input.Player.Roll.performed += ctx => TryStartRoll();
+
 
 
 
@@ -91,6 +112,11 @@ public class Player : Entity
     {
         input.Disable();
         input.Player.Attack.performed -= playerCombat.OnFirePerformed;
+        input.Player.Attack.canceled -= playerCombat.OnFirePerformed;
+        input.Player.Attack.performed -= playerCombat.OnFirePerformed;
+
+        input.Player.SwitchAttackType.performed -= rangeAttackController.OnScroll;
+        input.Player.Roll.performed -= ctx => TryStartRoll();
 
 
     }
@@ -148,9 +174,23 @@ public class Player : Entity
         return false;
     }
 
-    public override void EntityDeath()
+    private void TryStartRoll()
     {
-        base.EntityDeath();
+        if (stateMachine.currentState == rollState ||
+            stateMachine.currentState == hurtState ||
+            stateMachine.currentState == rangeAttackState)
+            return;
+
+        if (playerRoll == null) return;
+        if (playerRoll.IsOnCooldown)
+            return;
+
+        stateMachine.ChangeState(rollState);
+
+    }
+
+     public override void EntityDeath()
+    {
         Destroy(gameObject, Stats.deathDelay);
 
 

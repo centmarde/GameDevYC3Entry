@@ -12,10 +12,15 @@ public class Player_RangeAttackState : PlayerState
     public override void Enter()
     {
         base.Enter();
+        Debug.Log("[Player_RangeAttackState] Enter called");
+        Debug.Log($"[Player_RangeAttackState] Cached aim: {cachedAim}");
+        Debug.Log($"[Player_RangeAttackState] Current attack: {player.playerCombat.currentAttack?.GetType().Name ?? "NULL"}");
+        
         player.playerMovement.StopMovement();
         player.playerMovement.movementLocked = true;
 
         player.playerCombat.currentAttack.ExecuteAttack(cachedAim);
+        Debug.Log("[Player_RangeAttackState] ExecuteAttack called");
     }
 
     public override void Update()
@@ -24,8 +29,12 @@ public class Player_RangeAttackState : PlayerState
 
         // Return to idle when animation finishes
         var info = anim.GetCurrentAnimatorStateInfo(0);
+        Debug.Log($"[Player_RangeAttackState] Update - Current anim state: {info.shortNameHash}, normalizedTime: {info.normalizedTime}");
+        Debug.Log($"[Player_RangeAttackState] Is 'playerRangeAttack'? {info.IsName("playerRangeAttack")}");
+        
         if (info.IsName("playerRangeAttack") && info.normalizedTime >= 1f)
         {
+            Debug.Log("[Player_RangeAttackState] Animation finished, returning to idle");
             player.RequestStateChange(player.idleState);
         }
     }
