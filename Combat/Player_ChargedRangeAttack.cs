@@ -2,10 +2,6 @@
 
 public class Player_ChargedRangeAttack : Player_RangeAttack
 {
-    // Runtime buffs
-    private float damageBonus = 0f;
-    private float speedBonus = 0f;
-    
     private IsoCameraFollow camFollow;
     private float chargeTimer;
     private bool isCharging;
@@ -17,20 +13,6 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
     {
         base.Awake();
         camFollow = FindFirstObjectByType<IsoCameraFollow>();
-    }
-
-    // called by WaveManager at the start of every new run
-    public void ResetRuntimeStats()
-    {
-        damageBonus = 0f;
-        speedBonus = 0f;
-    }
-
-    // called by WaveManager when granting buffs/upgrades
-    public void ApplyBuff(float dmgBonus, float spdBonus)
-    {
-        damageBonus += dmgBonus;
-        speedBonus += spdBonus;
     }
 
     public override void ExecuteAttack(Vector3 aimDirection)
@@ -59,7 +41,14 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
         }
     }
 
-    public override void EndAttack()
+    protected override void FireProjectile()
+    {
+        // Charged attack doesn't use the standard FireProjectile
+        // It uses FireChargedProjectile with charge multiplier instead
+        Debug.LogWarning("[ChargedRangeAttack] FireProjectile called directly - use FireChargedProjectile instead!");
+    }
+
+    public override void EndAttackInternal()
     {
         if (!isCharging) return;
 
@@ -80,6 +69,8 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
 
     private void FireChargedProjectile(Vector3 direction, float multiplier)
     {
+        Debug.Log($"[ChargedRangeAttack] FireChargedProjectile called with multiplier {multiplier:F2}");
+        
         if (projectile == null || muzzle == null) return;
 
         // Safety check: use muzzle forward if direction is invalid

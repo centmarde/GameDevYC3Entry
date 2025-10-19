@@ -16,7 +16,31 @@ public class Player_RangeAttackState : PlayerState
         player.playerMovement.StopMovement();
         player.playerMovement.movementLocked = true;
 
-        player.playerCombat.currentAttack.ExecuteAttack(cachedAim);
+        var currentAttack = player.playerCombat.currentAttack;
+        
+        // Debug: Log which attack is being executed
+        if (currentAttack != null)
+        {
+            Debug.Log($"[RangeAttackState] Executing: {currentAttack.GetType().Name} (Instance ID: {currentAttack.GetInstanceID()})");
+            
+            // Cache this attack as the active one (prevents scroll-switching mid-attack)
+            var controller = player.GetComponent<Player_RangeAttackController>();
+            if (controller != null)
+            {
+                var rangeAttack = currentAttack as Player_RangeAttack;
+                if (rangeAttack != null)
+                {
+                    Debug.Log($"[RangeAttackState] Setting active attack: {rangeAttack.GetType().Name} (Instance ID: {rangeAttack.GetInstanceID()})");
+                    controller.SetActiveAttack(rangeAttack);
+                }
+                else
+                {
+                    Debug.LogError($"[RangeAttackState] Failed to cast {currentAttack.GetType().Name} to Player_RangeAttack!");
+                }
+            }
+        }
+        
+        currentAttack.ExecuteAttack(cachedAim);
     }
 
     public override void Update()

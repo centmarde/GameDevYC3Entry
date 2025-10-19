@@ -37,7 +37,7 @@ public class Player_ChargedAttackState : PlayerState
         {
             chargedAttack.TickCharge(Time.deltaTime);
 
-            // Always face the mouse aim — even while moving
+            // Always face the mouse aim ï¿½ even while moving
             Vector3 newAim = player.playerCombat.GetAimDirection();
             player.playerCombat.FaceSmooth(newAim);
         }
@@ -53,7 +53,7 @@ public class Player_ChargedAttackState : PlayerState
         var currentAttack = player.playerCombat.currentAttack as Player_ChargedRangeAttack;
         if (currentAttack != null)
         {
-            currentAttack.EndAttack();
+            currentAttack.EndAttackInternal();
         }
 
         Debug.Log("[ChargeState] Released charge.");

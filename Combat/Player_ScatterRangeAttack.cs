@@ -2,10 +2,6 @@
 
 public class Player_ScatterRangeAttack : Player_RangeAttack
 {
-    // Runtime buffs
-    private float damageBonus = 0f;
-    private float speedBonus = 0f;
-
     // Override to use scatter-specific range from Player_DataSO
     public override float AttackRange => player.Stats.scatterAttackRange;
 
@@ -14,20 +10,10 @@ public class Player_ScatterRangeAttack : Player_RangeAttack
         base.Awake();
     }
 
-    public void ResetRuntimeStats()
-    {
-        damageBonus = 0f;
-        speedBonus = 0f;
-    }
-
-    public void ApplyBuff(float dmgBonus, float speedBonus)
-    {
-        damageBonus += dmgBonus;
-        speedBonus += speedBonus;
-    }
-
     protected override void FireProjectile()
     {
+        Debug.Log($"[ScatterRangeAttack] FireProjectile called on Instance {GetInstanceID()} - firing {player.Stats.scatterPelletCount} pellets");
+        
         if (projectile == null || muzzle == null) return;
 
         // Safety check: use muzzle forward if cached direction is invalid

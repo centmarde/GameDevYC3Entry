@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Player_RangeAttack : PlayerAttack
+public abstract class Player_RangeAttack : PlayerAttack
 {
     private Player_Combat playerCombat;
 
@@ -10,11 +10,11 @@ public class Player_RangeAttack : PlayerAttack
 
     protected Vector3 cachedDirection;
 
-    // Runtime buffs for default normal attack behavior
-    private float damageBonus = 0f;
-    private float speedBonus = 0f;
+    // Runtime buffs for all range attacks (accessible by child classes)
+    protected float damageBonus = 0f;
+    protected float speedBonus = 0f;
 
-    public override float AttackRange => player.Stats.normalAttackRange;
+    public override float AttackRange => player.Stats.rangeAttackRange;
 
     public float muzzleHeightOffset => player.Stats.muzzleHeightOffset;
     public float muzzleForwardOffset => player.Stats.muzzleForwardOffset;
@@ -65,58 +65,37 @@ public class Player_RangeAttack : PlayerAttack
         speedBonus += spdBonus;
     }
 
-    protected virtual void FireProjectile()
-    {
-        if (projectile == null || muzzle == null) return;
+    // Abstract method - must be implemented by child classes (Normal, Scatter, Charged)
+    protected abstract void FireProjectile();
 
-        // Get aim direction with fallback
-        Vector3 dir = cachedDirection.sqrMagnitude > DirectionEpsilon
-           ? cachedDirection
-           : muzzle.forward;
+    private bool hasEndedThisAttack = false;
+
+    public override void EndAttackInternal()
+    {
+        // Prevent multiple calls to EndAttack in the same frame
+        if (hasEndedThisAttack)
+        {
+            Debug.LogWarning($"[{GetType().Name}] EndAttackInternal called multiple times! Ignoring duplicate call on instance {GetInstanceID()}");
+            return;
+        }
+
+        hasEndedThisAttack = true;
         
-        // Safety check: ensure direction is valid
-        if (dir.sqrMagnitude < 0.0001f)
-        {
-            dir = muzzle.forward;
-        }
-        dir.Normalize();
-
-        // Calculate spawn position
-        Vector3 spawnPos = muzzle.position + dir * muzzleForwardOffset;
-        spawnPos.y += muzzleHeightOffset;
-
-        // Create rotation facing the direction
-        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
-
-        // Instantiate SINGLE projectile for normal shot
-        ProjectileSlingshot p = Instantiate(projectile, spawnPos, rot);
-        p.transform.SetParent(null, true);
-
-        // Ignore collision with player
-        var projCol = p.GetComponent<Collider>();
-        if (projCol && player)
-        {
-            foreach (var c in player.GetComponentsInChildren<Collider>())
-                Physics.IgnoreCollision(projCol, c, true);
-        }
-
-        // Calculate final damage and speed with buffs from Player_DataSO
-        float finalDamage = player.Stats.projectileDamage + damageBonus;
-        float finalSpeed = player.Stats.normalAttackSpeed + speedBonus;
-
-        // Launch single projectile with normal attack stats
-        p.Launch(
-            dir * finalSpeed,
-            finalDamage,
-            this
-        );
-    }
-
-    public override void EndAttack()
-    {
+        // Debug: Verify which instance is calling EndAttack
+        Debug.Log($"[{GetType().Name}] EndAttackInternal called on instance {GetInstanceID()}");
+        
         FireProjectile();
         if (player?.playerMovement != null)
             player.playerMovement.movementLocked = false;
+
+        // Reset flag after a short delay to allow next attack
+        StartCoroutine(ResetEndAttackFlag());
+    }
+
+    private System.Collections.IEnumerator ResetEndAttackFlag()
+    {
+        yield return new WaitForSeconds(0.1f);
+        hasEndedThisAttack = false;
     }
 
     public override bool CanAttack(Transform target) => false;

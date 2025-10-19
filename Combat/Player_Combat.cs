@@ -40,14 +40,21 @@ public class Player_Combat : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         mainCamera = Camera.main;
 
-        // Auto-detect default attack (base Player_RangeAttack)
+        // Auto-detect default attack (Player_NormalShotAttack)
         if (defaultAttack == null)
         {
-            defaultAttack = GetComponent<Player_RangeAttack>();
+            // Try to find the normal shot attack first
+            defaultAttack = GetComponent<Player_NormalShotAttack>();
+            
+            // Fallback to any Player_RangeAttack if normal shot not found
+            if (defaultAttack == null)
+            {
+                defaultAttack = GetComponent<Player_RangeAttack>();
+            }
             
             if (defaultAttack == null)
             {
-                Debug.LogWarning("[Player_Combat] No default PlayerAttack found! Please attach a Player_RangeAttack component.");
+                Debug.LogWarning("[Player_Combat] No default PlayerAttack found! Please attach a Player_NormalShotAttack component.");
             }
         }
     }

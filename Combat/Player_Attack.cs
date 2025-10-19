@@ -32,7 +32,9 @@ public abstract class PlayerAttack : MonoBehaviour
     // --- Old compatibility (still usable for melee) ---
     public abstract bool CanAttack(Transform target);
     public abstract void BeginAttack(Transform target);
-    public abstract void EndAttack();
+    
+    // Internal method called by animation event handler - not directly by Unity
+    public abstract void EndAttackInternal();
 
     // --- NEW: Universal free-aim attack entry point ---
     public virtual void ExecuteAttack(Vector3 aimDirection)

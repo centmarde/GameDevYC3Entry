@@ -1,36 +1,23 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-public class Player_NormalRangeAttack : Player_RangeAttack
+/// <summary>
+/// Normal single-shot attack - fires one projectile at a time
+/// This is the default range attack for the player
+/// </summary>
+public class Player_NormalShotAttack : Player_RangeAttack
 {
-    // Runtime buffs
-    private float damageBonus = 0f;
-    private float speedBonus = 0f;
-
     // Override to use specific normal attack range from Player_DataSO
     public override float AttackRange => player.Stats.normalAttackRange;
 
-    // ------------------------------------------
     protected override void Awake()
     {
         base.Awake();
     }
 
-    // Called by WaveManager at the start of every run
-    public void ResetRuntimeStats()
-    {
-        damageBonus = 0f;
-        speedBonus = 0f;
-    }
-
-    //Called when the player receives a buff after a wave
-    public void ApplyBuff(float dmgBonus, float spdBonus)
-    {
-        damageBonus += dmgBonus;
-        speedBonus += spdBonus;
-    }
-
     protected override void FireProjectile()
     {
+        Debug.Log($"[NormalShotAttack] FireProjectile called on Instance {GetInstanceID()} - firing SINGLE projectile");
+        
         if (projectile == null || muzzle == null) return;
 
         // Get aim direction with fallback
