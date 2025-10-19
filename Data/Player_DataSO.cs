@@ -7,7 +7,6 @@ public class Player_DataSO : ScriptableObject
 {
     [Header("Base Stats")]
     public float maxHealth = 100f;
-    public float projectileSpeed = 10f;
     public float projectileDamage = 10f;
     public float meleeAttackRange = 1.5f;
     public float rangeAttackRange = 6f;
@@ -20,6 +19,24 @@ public class Player_DataSO : ScriptableObject
     public float muzzleForwardOffset = 0.25f;
     public float muzzleHeightOffset = -0.3f;
     public float DirectionEpsilon = 0.0001f;
+    
+    [Header("Normal Attack Stats")]
+    public float normalAttackSpeed = 50f;
+    public float normalAttackRange = 15f;
+    
+    [Header("Scatter Attack Stats")]
+    public int scatterPelletCount = 5;
+    public float scatterSpreadAngle = 30f;
+    public float scatterPelletSpeed = 30f;
+    public float scatterAttackRange = 8f;
+    public float scatterProjectileLifetime = 0.25f;
+    
+    [Header("Charged Attack Stats")]
+    public float chargedAttackSpeed = 50f;
+    public float chargedAttackRange = 25f;
+    public float chargedMaxChargeTime = 2f;
+    public float chargedMinChargeMultiplier = 1f;
+    public float chargedMaxChargeMultiplier = 2.5f;
     
     [Header("Critical Hit System")]
     [Range(0f, 100f)]

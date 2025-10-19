@@ -4,9 +4,8 @@ using UnityEngine;
 public class Player_NormalRangeAtkData_SO : ScriptableObject
 {
     [Header("Normal Attack Stats")]
-    public float normalAttackDamage = 10f;
+    [Tooltip("Damage is taken from Player_DataSO.projectileDamage")]
     public float normalAttackSpeed = 50f;
-
     public float normalAttackRange = 15f;
 
 }

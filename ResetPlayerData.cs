@@ -16,7 +16,6 @@ public class ResetPlayerData : MonoBehaviour
     
     [Header("Default Values")]
     [SerializeField] private float defaultMaxHealth = 100f;
-    [SerializeField] private float defaultProjectileSpeed = 10f;
     [SerializeField] private float defaultProjectileDamage = 25f;
     [SerializeField] private float defaultMeleeAttackRange = 1.5f;
     [SerializeField] private float defaultRangeAttackRange = 6f;
@@ -115,7 +114,6 @@ public class ResetPlayerData : MonoBehaviour
         }
         
         playerData.maxHealth = defaultMaxHealth;
-        playerData.projectileSpeed = defaultProjectileSpeed;
         playerData.projectileDamage = defaultProjectileDamage;
         playerData.meleeAttackRange = defaultMeleeAttackRange;
         playerData.rangeAttackRange = defaultRangeAttackRange;

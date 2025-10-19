@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class Player_ChargedRangeAtkData_SO : ScriptableObject
 {
-
-
-    public float chargedAttackDamage = 10f;
+    [Header("Attack Stats")]
+    [Tooltip("Damage is taken from Player_DataSO.projectileDamage")]
     public float chargedAttackSpeed = 50f;
+    public float chargedAttackRange = 25f;
+    
+    [Header("Charge Settings")]
     public float maxChargeTime = 2f;
     public float minChargeMultiplier = 1f;
     public float maxChargeMultiplier = 2.5f;

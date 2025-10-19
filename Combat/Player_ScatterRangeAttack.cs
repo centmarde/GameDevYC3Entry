@@ -2,39 +2,53 @@
 
 public class Player_ScatterRangeAttack : Player_RangeAttack
 {
-    [Header("Scatter Shot Settings")]
-    [SerializeField] private Player_ScatterRangeAtkData_SO baseData;
+    // Runtime buffs
+    private float damageBonus = 0f;
+    private float speedBonus = 0f;
 
-    private Player_ScatterRuntimeData runtimeData;
+    // Override to use scatter-specific range from Player_DataSO
+    public override float AttackRange => player.Stats.scatterAttackRange;
 
     protected override void Awake()
     {
         base.Awake();
-        runtimeData = new Player_ScatterRuntimeData(baseData);
     }
 
     public void ResetRuntimeStats()
     {
-        runtimeData = new Player_ScatterRuntimeData(baseData);
+        damageBonus = 0f;
+        speedBonus = 0f;
     }
 
     public void ApplyBuff(float dmgBonus, float speedBonus)
     {
-        runtimeData.ApplyUpgrade(dmgBonus, speedBonus);
+        damageBonus += dmgBonus;
+        speedBonus += speedBonus;
     }
 
     protected override void FireProjectile()
     {
         if (projectile == null || muzzle == null) return;
 
-        for (int i = 0; i < 5; i++)
+        // Safety check: use muzzle forward if cached direction is invalid
+        Vector3 baseDir = cachedDirection.sqrMagnitude > DirectionEpsilon 
+            ? cachedDirection 
+            : muzzle.forward;
+        baseDir.Normalize();
+
+        // Calculate final damage and speed with buffs from Player_DataSO
+        // Scatter damage is base projectile damage divided by pellet count
+        float pelletDamage = (player.Stats.projectileDamage + damageBonus) / player.Stats.scatterPelletCount;
+        float pelletSpeed = player.Stats.scatterPelletSpeed + speedBonus;
+
+        for (int i = 0; i < player.Stats.scatterPelletCount; i++)
         {
             // Slight random Y-axis rotation to simulate spread
-            Quaternion spreadRot = Quaternion.Euler(0f, Random.Range(-runtimeData.spreadAngle, runtimeData.spreadAngle), 0f);
-            Vector3 dir = spreadRot * cachedDirection;
+            Quaternion spreadRot = Quaternion.Euler(0f, Random.Range(-player.Stats.scatterSpreadAngle, player.Stats.scatterSpreadAngle), 0f);
+            Vector3 dir = spreadRot * baseDir;
 
-            Vector3 spawnPos = muzzle.position + dir.normalized * 0.25f;
-            spawnPos.y -= 0.3f;
+            Vector3 spawnPos = muzzle.position + dir.normalized * muzzleForwardOffset;
+            spawnPos.y -= muzzleHeightOffset;
 
             Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
 
@@ -48,7 +62,7 @@ public class Player_ScatterRangeAttack : Player_RangeAttack
                     Physics.IgnoreCollision(projCol, c, true);
             }
 
-            p.Launch(dir.normalized * runtimeData.pelletSpeed, runtimeData.pelletDamage, this);
+            p.Launch(dir.normalized * pelletSpeed, pelletDamage, this);
         }
     }
 }

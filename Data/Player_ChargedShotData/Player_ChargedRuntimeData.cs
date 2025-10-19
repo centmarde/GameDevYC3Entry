@@ -3,14 +3,17 @@ public class Player_ChargedRuntimeData
 {
     public float chargedAttackDamage;
     public float chargedAttackSpeed;
+    public float chargedAttackRange;
     public float maxChargeTime;
     public float minChargeMultiplier;
     public float maxChargeMultiplier;
 
-    public Player_ChargedRuntimeData(Player_ChargedRangeAtkData_SO baseData)
+    public Player_ChargedRuntimeData(Player_ChargedRangeAtkData_SO baseData, Player_DataSO playerStats)
     {
-        chargedAttackDamage = baseData.chargedAttackDamage;
+        // Use player stats projectile damage as base
+        chargedAttackDamage = playerStats.projectileDamage;
         chargedAttackSpeed = baseData.chargedAttackSpeed;
+        chargedAttackRange = baseData.chargedAttackRange;
         maxChargeTime   =   baseData.maxChargeTime;
         minChargeMultiplier = baseData.minChargeMultiplier;
         maxChargeMultiplier = baseData.maxChargeMultiplier;

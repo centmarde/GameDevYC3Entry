@@ -20,8 +20,7 @@ public class Player_Combat : MonoBehaviour
 
 
     [Header("Attack Settings")]
-    [SerializeField] private PlayerAttack defaultAttack;
-
+    private PlayerAttack defaultAttack;
 
     public PlayerAttack currentAttack =>
         rangeAttackController != null && rangeAttackController.CurrentAttack != null
@@ -40,6 +39,17 @@ public class Player_Combat : MonoBehaviour
         player = GetComponent<Player>();
         rb = GetComponent<Rigidbody>();
         mainCamera = Camera.main;
+
+        // Auto-detect default attack (base Player_RangeAttack)
+        if (defaultAttack == null)
+        {
+            defaultAttack = GetComponent<Player_RangeAttack>();
+            
+            if (defaultAttack == null)
+            {
+                Debug.LogWarning("[Player_Combat] No default PlayerAttack found! Please attach a Player_RangeAttack component.");
+            }
+        }
     }
 
     private void Update()
