@@ -14,9 +14,12 @@ public class ResetPlayerData : MonoBehaviour
     [Tooltip("Drag the PlayerSkill_DataSO asset you want to reset (optional)")]
     public PlayerSkill_DataSO skillData;
     
-    [Header("Skill Component Reference")]
-    [Tooltip("If not assigned, will auto-find PlayerSkill_CirclingProjectiles on Player")]
-    public PlayerSkill_CirclingProjectiles circlingProjectilesSkill;
+    [Header("Skill Component References")]
+    [Tooltip("Array of circling projectile skills for Player1 (if not assigned, will auto-find)")]
+    public PlayerSkill_CirclingProjectiles[] player1CirclingProjectilesSkills;
+    
+    [Tooltip("Array of circling projectile skills for Player2 (if not assigned, will auto-find)")]
+    public PlayerSkill_CirclingProjectiles[] player2CirclingProjectilesSkills;
     
     [Header("Default Values")]
     [SerializeField] private float defaultMaxHealth = 100f;
@@ -216,25 +219,59 @@ public class ResetPlayerData : MonoBehaviour
             skillData.orbitSpeed = defaultOrbitSpeed;
         }
         
-        // Reset skill component if assigned or auto-find it (only for Player1)
+        // Reset Player1 circling projectiles skills
         if (playerData != null)
         {
-            if (circlingProjectilesSkill == null)
+            // Auto-find if array is empty or null
+            if (player1CirclingProjectilesSkills == null || player1CirclingProjectilesSkills.Length == 0)
             {
-                // Try to auto-find on player
                 GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
                 if (playerObj != null)
                 {
-                    circlingProjectilesSkill = playerObj.GetComponent<PlayerSkill_CirclingProjectiles>();
+                    player1CirclingProjectilesSkills = playerObj.GetComponents<PlayerSkill_CirclingProjectiles>();
                 }
             }
             
-            if (circlingProjectilesSkill != null)
+            if (player1CirclingProjectilesSkills != null && player1CirclingProjectilesSkills.Length > 0)
             {
-                circlingProjectilesSkill.ResetSkill(); // This resets isObtained back to the Inspector value
+                foreach (var skill in player1CirclingProjectilesSkills)
+                {
+                    if (skill != null)
+                    {
+                        skill.ResetSkill(); // This resets isObtained back to the Inspector value
+                    }
+                }
                 
                 if (showDebugMessages)
-                    Debug.Log("[ResetPlayerData] Circling projectiles skill reset");
+                    Debug.Log($"[ResetPlayerData] Reset {player1CirclingProjectilesSkills.Length} Player1 circling projectiles skills");
+            }
+        }
+        
+        // Reset Player2 circling projectiles skills
+        if (player2Data != null)
+        {
+            // Auto-find if array is empty or null
+            if (player2CirclingProjectilesSkills == null || player2CirclingProjectilesSkills.Length == 0)
+            {
+                Player2 player2Instance = FindObjectOfType<Player2>();
+                if (player2Instance != null)
+                {
+                    player2CirclingProjectilesSkills = player2Instance.GetComponents<PlayerSkill_CirclingProjectiles>();
+                }
+            }
+            
+            if (player2CirclingProjectilesSkills != null && player2CirclingProjectilesSkills.Length > 0)
+            {
+                foreach (var skill in player2CirclingProjectilesSkills)
+                {
+                    if (skill != null)
+                    {
+                        skill.ResetSkill(); // This resets isObtained back to the Inspector value
+                    }
+                }
+                
+                if (showDebugMessages)
+                    Debug.Log($"[ResetPlayerData] Reset {player2CirclingProjectilesSkills.Length} Player2 circling projectiles skills");
             }
         }
         

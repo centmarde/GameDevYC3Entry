@@ -83,10 +83,10 @@ public class ProjectileSlingshot : MonoBehaviour
             {
                 Debug.LogWarning($"{name}: Damage was not applied to {other.name} (invulnerable or dead)");
             }
-            else if (isCriticalHit)
+            else
             {
-                // Show critical hit indicator
-                CriticalHitIndicator.ShowCritical(hitPoint);
+                // Show damage number UI
+                DamageNumberUI.ShowDamage(finalDamage, hitPoint, isCriticalHit);
             }
         }
 

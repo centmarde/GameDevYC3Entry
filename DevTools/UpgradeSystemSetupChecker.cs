@@ -156,7 +156,7 @@ public class UpgradeSystemSetupChecker : MonoBehaviour
         if (player != null)
         {
             Vector3 pos = player.transform.position + Vector3.forward * 2f + Vector3.up;
-            CriticalHitIndicator.ShowCritical(pos);
+            DamageNumberUI.ShowDamage(50f, pos, true);
             // Debug.Log("Critical indicator shown at player position");
         }
         else

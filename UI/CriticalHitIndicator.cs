@@ -2,8 +2,11 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// Displays a floating "CRITICAL!" text indicator when a critical hit occurs
+/// [DEPRECATED] Old critical hit indicator system
+/// Use DamageNumberUI.ShowDamage() instead - it handles both normal and critical hits
+/// This file is kept for backward compatibility but should not be used in new code
 /// </summary>
+[System.Obsolete("Use DamageNumberUI.ShowDamage() instead", false)]
 public class CriticalHitIndicator : MonoBehaviour
 {
     [Header("Appearance")]
