@@ -9,6 +9,7 @@ public class PlayerUpgradeManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Player_DataSO playerStats;
+    [SerializeField] private Player2_DataSO player2Stats;
     [SerializeField] private WaveManager waveManager;
     [SerializeField] private PlayerUpgradeUI upgradeUI;
     
@@ -20,6 +21,12 @@ public class PlayerUpgradeManager : MonoBehaviour
     [SerializeField] private float criticalDamageUpgradeAmount = 0.25f;
     [SerializeField] private float evasionChanceUpgradeAmount = 3f; // Amount to increase evasion chance
     
+    [Header("Player2 Specific Upgrades")]
+    [SerializeField] private float blinkDistanceUpgradeAmount = 1f;
+    [SerializeField] private float blinkCooldownReduction = 0.3f;
+    [SerializeField] private float dashCooldownReduction = 0.2f;
+    [SerializeField] private float blinkDashSpeedUpgrade = 3f;
+    
     [Header("Circling Projectiles Skill Upgrades")]
     [SerializeField] private float skillProjectileDamageUpgrade = 5f;
     [SerializeField] private float skillRadiusUpgrade = 0.5f;
@@ -29,6 +36,8 @@ public class PlayerUpgradeManager : MonoBehaviour
     [SerializeField] private bool autoFindReferences = true;
     
     private Player player;
+    private Player2 player2;
+    private bool isPlayer2;
     private PlayerSkill_CirclingProjectiles circlingProjectilesSkill;
     private bool upgradePending = false;
     private UpgradeType[] currentUpgradeOptions = new UpgradeType[3];
@@ -45,7 +54,12 @@ public class PlayerUpgradeManager : MonoBehaviour
         UpgradeProjectileCount,
         UpgradeProjectileDamage,
         UpgradeProjectileRadius,
-        UpgradeProjectileSpeed
+        UpgradeProjectileSpeed,
+        // Player2 specific upgrades
+        UpgradeBlinkDistance,
+        ReduceBlinkCooldown,
+        ReduceDashCooldown,
+        UpgradeBlinkDashSpeed
     }
     
     private void Awake()
@@ -85,16 +99,38 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     private void SetupReferences()
     {
-        // Find player
-        if (player == null)
+        // Find player (try Player2 first)
+        if (player2 == null)
         {
-            player = FindObjectOfType<Player>();
+            player2 = FindObjectOfType<Player2>();
         }
         
-        // Get player stats from player
-        if (playerStats == null && player != null)
+        if (player2 != null)
         {
-            playerStats = player.Stats;
+            isPlayer2 = true;
+            player = player2; // Player2 inherits from Player
+            
+            // Get Player2 stats
+            if (player2Stats == null)
+            {
+                player2Stats = player2.Stats;
+            }
+        }
+        else
+        {
+            // Find regular player
+            if (player == null)
+            {
+                player = FindObjectOfType<Player>();
+            }
+            
+            isPlayer2 = false;
+            
+            // Get player stats from player
+            if (playerStats == null && player != null)
+            {
+                playerStats = player.Stats;
+            }
         }
         
         // Find circling projectiles skill
@@ -160,34 +196,55 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     private void GenerateRandomUpgrades()
     {
-        // Get all possible upgrade types
-        var allUpgrades = new System.Collections.Generic.List<UpgradeType>
-        {
-            UpgradeType.Damage,
-            UpgradeType.MaxHealth,
-            UpgradeType.Heal,
-            UpgradeType.CriticalChance,
-            UpgradeType.CriticalDamage,
-            UpgradeType.Evasion
-        };
+        // Get all possible upgrade types based on player type
+        var allUpgrades = new System.Collections.Generic.List<UpgradeType>();
         
-        // Check if skill is obtained (from component state, not ScriptableObject)
-        bool skillObtained = circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained;
-        
-        if (skillObtained)
+        if (isPlayer2)
         {
-            // Add skill upgrades ONLY if skill is obtained
-            if (circlingProjectilesSkill.CurrentProjectileCount < 8)
-            {
-                allUpgrades.Add(UpgradeType.UpgradeProjectileCount);
-            }
-            allUpgrades.Add(UpgradeType.UpgradeProjectileDamage);
-            allUpgrades.Add(UpgradeType.UpgradeProjectileRadius);
-            allUpgrades.Add(UpgradeType.UpgradeProjectileSpeed);
+            // Player2 upgrade pool - focused on melee/dash combat
+            allUpgrades.Add(UpgradeType.Damage); // Increases dash damage
+            allUpgrades.Add(UpgradeType.MaxHealth);
+            allUpgrades.Add(UpgradeType.Heal);
+            allUpgrades.Add(UpgradeType.CriticalChance);
+            allUpgrades.Add(UpgradeType.CriticalDamage);
+            allUpgrades.Add(UpgradeType.Evasion);
+            allUpgrades.Add(UpgradeType.UpgradeBlinkDistance);
+            allUpgrades.Add(UpgradeType.ReduceBlinkCooldown);
+            allUpgrades.Add(UpgradeType.ReduceDashCooldown);
+            allUpgrades.Add(UpgradeType.UpgradeBlinkDashSpeed);
         }
         else
         {
-            // Skill NOT obtained - Do NOT add unlock option (reserved for future special unlock)
+            // Player1 upgrade pool - ranged combat focused
+            allUpgrades.Add(UpgradeType.Damage);
+            allUpgrades.Add(UpgradeType.MaxHealth);
+            allUpgrades.Add(UpgradeType.Heal);
+            allUpgrades.Add(UpgradeType.CriticalChance);
+            allUpgrades.Add(UpgradeType.CriticalDamage);
+            allUpgrades.Add(UpgradeType.Evasion);
+        }
+        
+        // Add circling projectiles upgrades only for Player1
+        if (!isPlayer2)
+        {
+            // Check if skill is obtained (from component state, not ScriptableObject)
+            bool skillObtained = circlingProjectilesSkill != null && circlingProjectilesSkill.IsObtained;
+            
+            if (skillObtained)
+            {
+                // Add skill upgrades ONLY if skill is obtained
+                if (circlingProjectilesSkill.CurrentProjectileCount < 8)
+                {
+                    allUpgrades.Add(UpgradeType.UpgradeProjectileCount);
+                }
+                allUpgrades.Add(UpgradeType.UpgradeProjectileDamage);
+                allUpgrades.Add(UpgradeType.UpgradeProjectileRadius);
+                allUpgrades.Add(UpgradeType.UpgradeProjectileSpeed);
+            }
+            else
+            {
+                // Skill NOT obtained - Do NOT add unlock option (reserved for future special unlock)
+            }
         }
         
         // Shuffle and pick 3
@@ -204,7 +261,11 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     public void ApplyUpgrade(UpgradeType upgradeType)
     {
-        if (playerStats == null)
+        if (isPlayer2 && player2Stats == null)
+        {
+            return;
+        }
+        else if (!isPlayer2 && playerStats == null)
         {
             return;
         }
@@ -212,11 +273,26 @@ public class PlayerUpgradeManager : MonoBehaviour
         switch (upgradeType)
         {
             case UpgradeType.Damage:
-                playerStats.projectileDamage += damageUpgradeAmount;
+                if (isPlayer2)
+                {
+                    player2Stats.projectileDamage += damageUpgradeAmount;
+                    Debug.Log($"[PlayerUpgradeManager] Player2 Damage upgraded to {player2Stats.projectileDamage} (Dash damage will scale accordingly)");
+                }
+                else
+                {
+                    playerStats.projectileDamage += damageUpgradeAmount;
+                }
                 break;
                 
             case UpgradeType.MaxHealth:
-                playerStats.maxHealth += maxHealthUpgradeAmount;
+                if (isPlayer2)
+                {
+                    player2Stats.maxHealth += maxHealthUpgradeAmount;
+                }
+                else
+                {
+                    playerStats.maxHealth += maxHealthUpgradeAmount;
+                }
                 // Only increase max health, do NOT heal
                 if (player != null)
                 {
@@ -242,17 +318,40 @@ public class PlayerUpgradeManager : MonoBehaviour
                 break;
                 
             case UpgradeType.CriticalChance:
-                playerStats.criticalChance += criticalChanceUpgradeAmount;
-                playerStats.criticalChance = Mathf.Min(playerStats.criticalChance, 100f); // Cap at 100%
+                if (isPlayer2)
+                {
+                    player2Stats.criticalChance += criticalChanceUpgradeAmount;
+                    player2Stats.criticalChance = Mathf.Min(player2Stats.criticalChance, 100f);
+                }
+                else
+                {
+                    playerStats.criticalChance += criticalChanceUpgradeAmount;
+                    playerStats.criticalChance = Mathf.Min(playerStats.criticalChance, 100f);
+                }
                 break;
                 
             case UpgradeType.CriticalDamage:
-                playerStats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
+                if (isPlayer2)
+                {
+                    player2Stats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
+                }
+                else
+                {
+                    playerStats.criticalDamageMultiplier += criticalDamageUpgradeAmount;
+                }
                 break;
                 
             case UpgradeType.Evasion:
-                playerStats.evasionChance += evasionChanceUpgradeAmount;
-                playerStats.evasionChance = Mathf.Min(playerStats.evasionChance, 100f); // Cap at 100%
+                if (isPlayer2)
+                {
+                    player2Stats.evasionChance += evasionChanceUpgradeAmount;
+                    player2Stats.evasionChance = Mathf.Min(player2Stats.evasionChance, 100f);
+                }
+                else
+                {
+                    playerStats.evasionChance += evasionChanceUpgradeAmount;
+                    playerStats.evasionChance = Mathf.Min(playerStats.evasionChance, 100f);
+                }
                 break;
                 
             case UpgradeType.UnlockCirclingProjectiles:
@@ -289,6 +388,41 @@ public class PlayerUpgradeManager : MonoBehaviour
                     circlingProjectilesSkill.UpgradeSpeed(skillSpeedUpgrade);
                 }
                 break;
+                
+            // Player2 specific upgrades
+            case UpgradeType.UpgradeBlinkDistance:
+                if (isPlayer2 && player2Stats != null)
+                {
+                    player2Stats.blinkDistance += blinkDistanceUpgradeAmount;
+                    Debug.Log($"[PlayerUpgradeManager] Blink/Dash distance upgraded to {player2Stats.blinkDistance}");
+                }
+                break;
+                
+            case UpgradeType.ReduceBlinkCooldown:
+                if (isPlayer2 && player2Stats != null)
+                {
+                    player2Stats.blinkCooldown -= blinkCooldownReduction;
+                    player2Stats.blinkCooldown = Mathf.Max(player2Stats.blinkCooldown, 0.5f); // Min 0.5s cooldown
+                    Debug.Log($"[PlayerUpgradeManager] Blink cooldown reduced to {player2Stats.blinkCooldown}s");
+                }
+                break;
+                
+            case UpgradeType.ReduceDashCooldown:
+                if (isPlayer2 && player2Stats != null)
+                {
+                    player2Stats.dashAttackCooldown -= dashCooldownReduction;
+                    player2Stats.dashAttackCooldown = Mathf.Max(player2Stats.dashAttackCooldown, 0.3f); // Min 0.3s cooldown
+                    Debug.Log($"[PlayerUpgradeManager] Dash cooldown reduced to {player2Stats.dashAttackCooldown}s");
+                }
+                break;
+                
+            case UpgradeType.UpgradeBlinkDashSpeed:
+                if (isPlayer2 && player2Stats != null)
+                {
+                    player2Stats.blinkDashSpeed += blinkDashSpeedUpgrade;
+                    Debug.Log($"[PlayerUpgradeManager] Blink/Dash speed upgraded to {player2Stats.blinkDashSpeed}");
+                }
+                break;
         }
         
         // Hide UI
@@ -316,11 +450,22 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetCriticalDamageUpgradeAmount() => criticalDamageUpgradeAmount;
     public float GetEvasionChanceUpgradeAmount() => evasionChanceUpgradeAmount;
     
-    public float GetCurrentDamage() => playerStats != null ? playerStats.projectileDamage : 0f;
-    public float GetCurrentHealth() => playerStats != null ? playerStats.maxHealth : 0f;
-    public float GetCurrentCriticalChance() => playerStats != null ? playerStats.criticalChance : 0f;
-    public float GetCurrentCriticalDamage() => playerStats != null ? playerStats.criticalDamageMultiplier : 0f;
-    public float GetCurrentEvasion() => playerStats != null ? playerStats.evasionChance : 0f;
+    public float GetCurrentDamage() => isPlayer2 ? (player2Stats != null ? player2Stats.projectileDamage : 0f) : (playerStats != null ? playerStats.projectileDamage : 0f);
+    public float GetCurrentHealth() => isPlayer2 ? (player2Stats != null ? player2Stats.maxHealth : 0f) : (playerStats != null ? playerStats.maxHealth : 0f);
+    public float GetCurrentCriticalChance() => isPlayer2 ? (player2Stats != null ? player2Stats.criticalChance : 0f) : (playerStats != null ? playerStats.criticalChance : 0f);
+    public float GetCurrentCriticalDamage() => isPlayer2 ? (player2Stats != null ? player2Stats.criticalDamageMultiplier : 0f) : (playerStats != null ? playerStats.criticalDamageMultiplier : 0f);
+    public float GetCurrentEvasion() => isPlayer2 ? (player2Stats != null ? player2Stats.evasionChance : 0f) : (playerStats != null ? playerStats.evasionChance : 0f);
+    
+    // Player2 specific getters
+    public float GetBlinkDistanceUpgradeAmount() => blinkDistanceUpgradeAmount;
+    public float GetBlinkCooldownReduction() => blinkCooldownReduction;
+    public float GetDashCooldownReduction() => dashCooldownReduction;
+    public float GetBlinkDashSpeedUpgrade() => blinkDashSpeedUpgrade;
+    
+    public float GetCurrentBlinkDistance() => isPlayer2 && player2Stats != null ? player2Stats.blinkDistance : 0f;
+    public float GetCurrentBlinkCooldown() => isPlayer2 && player2Stats != null ? player2Stats.blinkCooldown : 0f;
+    public float GetCurrentDashCooldown() => isPlayer2 && player2Stats != null ? player2Stats.dashAttackCooldown : 0f;
+    public float GetCurrentBlinkDashSpeed() => isPlayer2 && player2Stats != null ? player2Stats.blinkDashSpeed : 0f;
     
     // Circling Projectiles skill getters
     public float GetSkillDamageUpgradeAmount() => skillProjectileDamageUpgrade;

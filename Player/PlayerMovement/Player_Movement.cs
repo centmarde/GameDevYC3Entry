@@ -7,7 +7,7 @@ public class Player_Movement : MonoBehaviour
     //Movement 
     [Header("Movement details")]
     public Vector2 moveInput { get; private set; }
-    public Vector2 lastMoveDir { get; private set; }
+    public Vector3 lastMoveDir { get; private set; }
 
 
     public bool movementLocked;
@@ -37,6 +37,9 @@ public class Player_Movement : MonoBehaviour
         baseMoveSpeed = player.Stats.moveSpeed;
         turnSpeed = player.Stats.turnSpeed;
         currentSpeedMultiplier = player.Stats.currentSpeedMultiplier;
+        
+        // Initialize lastMoveDir to face forward (down in isometric view)
+        lastMoveDir = transform.forward;
     }
 
     private float MoveSpeed => baseMoveSpeed * currentSpeedMultiplier;
@@ -72,16 +75,18 @@ public class Player_Movement : MonoBehaviour
 
         if (playerDirection.sqrMagnitude > 0.0001f)
         {
+            // Update last move direction immediately
             lastMoveDir = playerDirection;
             RequestMove(playerDirection * MoveSpeed);
 
-            // Only rotate with movement if not aiming
+            // Always update facing direction in real-time when moving
             if (!isAiming)
                 RequestLook(playerDirection);
         }
         else
         {
             RequestMove(Vector3.zero);
+            // Keep facing the last direction when not moving
             if (!isAiming && lastMoveDir.sqrMagnitude > 0.0001f)
                 RequestLook(lastMoveDir);
         }
@@ -113,27 +118,37 @@ public class Player_Movement : MonoBehaviour
             return;
         }
 
+        // Check if player is in a state that allows movement
+        bool canMove = player.CurrentState == player.moveState || 
+                       player.CurrentState == player.chargedAttackState ||
+                       player.CurrentState == player.idleState;
+        
+        // For Player2, also allow movement during dash attack charging
+        if (player is Player2 player2 && player2.dashAttackState != null)
+        {
+            canMove = canMove || player.CurrentState == player2.dashAttackState;
+        }
 
-        if (player.CurrentState != player.moveState && player.CurrentState != player.chargedAttackState)
+        // Always allow rotation even if not moving
+        if (hasLookRotation)
+        {
+            var next = Quaternion.RotateTowards(rb.rotation, lookRotation, turnSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(next);
+        }
+
+        if (!canMove)
         {
             StopMovement();
             RequestMove(Vector3.zero);
             return;
         }
 
-
         rb.MovePosition(rb.position + moveVelocityXZ * Time.fixedDeltaTime);
-
-        if (hasLookRotation)
-        {
-            var next = Quaternion.RotateTowards(rb.rotation, lookRotation, turnSpeed * Time.fixedDeltaTime);
-            rb.MoveRotation(next);
-        }
     }
 
     public void SetMoveInput(Vector2 input)
     {
-        // Now that the variable is in this script, you can set its value
+        // Store the input - HandleMovement will process it
         moveInput = input;
     }
 
@@ -147,7 +162,8 @@ public class Player_Movement : MonoBehaviour
     {
         moveInput = Vector2.zero;
         moveVelocityXZ = Vector3.zero;
-        hasLookRotation = false;
+        // Don't clear hasLookRotation - keep the last facing direction
+        // hasLookRotation = false;
     }
 
     public Vector3 GetIsoDir()

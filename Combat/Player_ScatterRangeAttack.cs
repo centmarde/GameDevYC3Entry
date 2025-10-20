@@ -4,9 +4,9 @@ public class Player_ScatterRangeAttack : Player_RangeAttack
 {
     [Header("Scatter Damage Falloff")]
     [SerializeField] private float pointBlankRange = 3f; // Distance for double damage (point blank)
-    [SerializeField] private float maxDamageRange = 15f; // Distance for full damage
-    [SerializeField] private float minDamageRange = 30f; // Distance where damage becomes minimum
-    [SerializeField] private float minDamageMultiplier = 0.2f; // Minimum damage at max range (20% of base)
+    [SerializeField] private float maxDamageRange = 25f; // Distance for full damage
+    [SerializeField] private float minDamageRange = 50f; // Distance where damage becomes minimum
+    [SerializeField] private float minDamageMultiplier = 0.5f; // Minimum damage at max range (40% of base)
     [SerializeField] private float pointBlankMultiplier = 3f; // Damage multiplier at point blank range (200%)
 
     // Override to use scatter-specific range from Player_DataSO

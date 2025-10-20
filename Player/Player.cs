@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : Entity
 {
@@ -44,6 +45,16 @@ public class Player : Entity
     public InteractionProfile pendingProfile;
     public bool interactPressed;
 
+    [Header("Entrance Intro")]
+    [SerializeField] private float introMoveDistance = 15f;
+    [SerializeField] private float introMoveDuration = 2f;
+    [SerializeField] private float introFadeDuration = 1f;
+    [SerializeField] private AnimationCurve introMoveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    private bool hasPlayedIntro = false;
+    private bool isPlayingIntro = false;
+    private GameObject fadeOverlay;
+    private CanvasGroup fadeCanvasGroup;
+
 
     protected override void Awake()
     {
@@ -85,6 +96,12 @@ public class Player : Entity
         base.Start();
         stateMachine.Initialize(idleState);
 
+        // Play entrance intro animation on first mount
+        if (!hasPlayedIntro)
+        {
+            SetupFadeUI();
+            StartCoroutine(PlayEntranceIntro());
+        }
     }
 
     private void OnEnable()
@@ -195,6 +212,111 @@ public class Player : Entity
 
 
         Debug.Log("You died.");
+    }
+
+    private void SetupFadeUI()
+    {
+        // Find or create canvas for fade overlay
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
+        {
+            GameObject canvasObj = new GameObject("FadeCanvas");
+            canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 9999; // Render on top
+            canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+            canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        }
+
+        // Create fade overlay
+        fadeOverlay = new GameObject("FadeOverlay");
+        fadeOverlay.transform.SetParent(canvas.transform, false);
+        
+        // Setup RectTransform to cover full screen
+        RectTransform rectTransform = fadeOverlay.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.sizeDelta = Vector2.zero;
+        rectTransform.anchoredPosition = Vector2.zero;
+        
+        // Add Image component for black overlay
+        Image image = fadeOverlay.AddComponent<Image>();
+        image.color = Color.black;
+        
+        // Add CanvasGroup for fade control
+        fadeCanvasGroup = fadeOverlay.AddComponent<CanvasGroup>();
+        fadeCanvasGroup.alpha = 1f; // Start fully black
+        fadeCanvasGroup.blocksRaycasts = false; // Don't block input
+    }
+
+    private System.Collections.IEnumerator PlayEntranceIntro()
+    {
+        isPlayingIntro = true;
+        hasPlayedIntro = true;
+
+        // Disable player input during intro
+        input.Disable();
+
+        // Store the original spawn position
+        Vector3 originalPosition = transform.position;
+        
+        // Move player back by introMoveDistance to start the entrance
+        Vector3 startPosition = originalPosition - transform.forward * introMoveDistance;
+        transform.position = startPosition;
+
+        // End position is the original spawn position
+        Vector3 endPosition = originalPosition;
+
+        // Change to move state for walk animation
+        stateMachine.ChangeState(moveState);
+        
+        // Simulate forward movement input for animation
+        playerMovement.SetMoveInput(Vector2.up);
+
+        float elapsedTime = 0f;
+
+        // Animate the movement forward while fading in
+        while (elapsedTime < introMoveDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float normalizedTime = Mathf.Clamp01(elapsedTime / introMoveDuration);
+            float curveValue = introMoveCurve.Evaluate(normalizedTime);
+
+            // Lerp position using the animation curve
+            transform.position = Vector3.Lerp(startPosition, endPosition, curveValue);
+            
+            // Fade in overlay (fade out from black)
+            if (fadeCanvasGroup != null)
+            {
+                float fadeProgress = Mathf.Clamp01(elapsedTime / introFadeDuration);
+                fadeCanvasGroup.alpha = 1f - fadeProgress; // Fade from 1 to 0
+            }
+
+            yield return null;
+        }
+
+        // Ensure we reach the exact end position
+        transform.position = endPosition;
+        
+        // Ensure fade is complete
+        if (fadeCanvasGroup != null)
+        {
+            fadeCanvasGroup.alpha = 0f;
+        }
+        
+        // Clean up fade overlay
+        if (fadeOverlay != null)
+        {
+            Destroy(fadeOverlay);
+        }
+
+        // Stop movement input and return to idle
+        playerMovement.SetMoveInput(Vector2.zero);
+        stateMachine.ChangeState(idleState);
+
+        // Re-enable player input
+        input.Enable();
+        isPlayingIntro = false;
     }
 
     private void OnDrawGizmosSelected()

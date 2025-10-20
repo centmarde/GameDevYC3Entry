@@ -345,6 +345,29 @@ public class PlayerUpgradeUI : MonoBehaviour
                 }
                 return "ERROR";
                 
+            // Player2 specific upgrades
+            case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
+                float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
+                float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
+                return $"🎯 BLINK RANGE\n<size=24>{currentBlinkDist:F1}m → {currentBlinkDist + blinkDistUpgrade:F1}m</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.ReduceBlinkCooldown:
+                float currentBlinkCD = upgradeManager.GetCurrentBlinkCooldown();
+                float blinkCDReduction = upgradeManager.GetBlinkCooldownReduction();
+                float newBlinkCD = Mathf.Max(currentBlinkCD - blinkCDReduction, 0.5f);
+                return $"⏱ BLINK COOLDOWN\n<size=24>{currentBlinkCD:F1}s → {newBlinkCD:F1}s</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.ReduceDashCooldown:
+                float currentDashCD = upgradeManager.GetCurrentDashCooldown();
+                float dashCDReduction = upgradeManager.GetDashCooldownReduction();
+                float newDashCD = Mathf.Max(currentDashCD - dashCDReduction, 0.3f);
+                return $"⏱ DASH COOLDOWN\n<size=24>{currentDashCD:F1}s → {newDashCD:F1}s</size>";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDashSpeed:
+                float currentSpeed2 = upgradeManager.GetCurrentBlinkDashSpeed();
+                float speedUpgrade2 = upgradeManager.GetBlinkDashSpeedUpgrade();
+                return $"💨 DASH SPEED\n<size=24>{currentSpeed2:F0} → {currentSpeed2 + speedUpgrade2:F0}</size>";
+                
             default:
                 return "UNKNOWN";
         }

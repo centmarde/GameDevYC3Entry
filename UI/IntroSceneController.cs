@@ -61,7 +61,7 @@ public class IntroSceneController : MonoBehaviour
 
     [Header("Fade Settings")]
     [SerializeField] private CanvasGroup slideCanvasGroup;
-    [SerializeField] private float fadeDuration = 0.5f;
+    [SerializeField] private float fadeDuration = 1.5f;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -197,8 +197,25 @@ public class IntroSceneController : MonoBehaviour
             slideCanvasGroup.alpha = 0f;
         }
 
+        // Reset image transform before updating content
+        if (slideImage != null)
+        {
+            RectTransform imageRect = slideImage.GetComponent<RectTransform>();
+            if (imageRect != null)
+            {
+                imageRect.localScale = Vector3.one;
+                imageRect.localRotation = Quaternion.identity;
+            }
+        }
+
         // Update content
         DisplaySlideContent(index);
+
+        // Start image animation BEFORE fade-in so it's visible immediately
+        if (enableImageAnimation && slideImage != null)
+        {
+            StartCoroutine(AnimateSlideImage());
+        }
 
         // Fade in
         if (slideCanvasGroup != null)
@@ -214,12 +231,6 @@ public class IntroSceneController : MonoBehaviour
         }
 
         isTransitioning = false;
-
-        // Start image animation
-        if (enableImageAnimation && slideImage != null)
-        {
-            StartCoroutine(AnimateSlideImage());
-        }
 
         // Start auto-advance if enabled
         if (autoAdvance)
@@ -265,6 +276,18 @@ public class IntroSceneController : MonoBehaviour
 
         // Update button states
         UpdateButtonStates();
+
+        // Start animation for first slide (when useFade is false)
+        if (enableImageAnimation && slideImage != null && !isTransitioning)
+        {
+            StartCoroutine(AnimateSlideImage());
+        }
+
+        // Start auto-advance for first slide
+        if (autoAdvance && !isTransitioning)
+        {
+            autoAdvanceCoroutine = StartCoroutine(AutoAdvanceCoroutine());
+        }
     }
 
     /// <summary>
