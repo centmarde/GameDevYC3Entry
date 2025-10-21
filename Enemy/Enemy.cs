@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class Enemy : Entity, ITargetable
 {
@@ -131,9 +132,140 @@ public class Enemy : Entity, ITargetable
             deathTracker.NotifyDeath();
         }
 
-        // finally, remove the object after the animation window
-        float delay = Stats != null ? Stats.deathDelay : 2f;
-        Destroy(gameObject, delay);
+        // Start shrink effect and destroy after animation
+        StartCoroutine(ShrinkAndDestroy());
+    }
+
+    private IEnumerator ShrinkAndDestroy()
+    {
+        float delayBeforeDecay = 1.5f; // Wait 1.5 seconds before starting decay
+        float decayDuration = 1.5f; // Duration of the decay/sink effect
+        
+        // Wait before starting the decay effect
+        yield return new WaitForSeconds(delayBeforeDecay);
+
+        // Create particle effect
+        GameObject particleObj = CreateGlowingParticles();
+
+        // Store original position
+        Vector3 startPosition = transform.position;
+        float sinkDepth = 2f; // How far into the ground the enemy sinks
+        float elapsed = 0f;
+
+        // Get all renderers to fade them out
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        
+        // Store original materials to fade
+        Material[][] originalMaterials = new Material[renderers.Length][];
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            originalMaterials[i] = renderers[i].materials;
+        }
+
+        // Decay/sink into the ground
+        while (elapsed < decayDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / decayDuration;
+            
+            // Ease-in decay (accelerating downward)
+            float easeT = t * t;
+            
+            // Sink into the ground
+            transform.position = new Vector3(
+                startPosition.x,
+                startPosition.y - (easeT * sinkDepth),
+                startPosition.z
+            );
+
+            // Update particle position to follow enemy
+            if (particleObj != null)
+            {
+                particleObj.transform.position = transform.position + Vector3.up * 0.5f;
+            }
+
+            // Fade out all materials
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer != null)
+                {
+                    foreach (Material mat in renderer.materials)
+                    {
+                        if (mat.HasProperty("_Color"))
+                        {
+                            Color color = mat.color;
+                            color.a = 1f - easeT; // Fade from 1 to 0
+                            mat.color = color;
+                        }
+                    }
+                }
+            }
+
+            yield return null;
+        }
+        
+        // Destroy particle effect
+        if (particleObj != null)
+        {
+            Destroy(particleObj, 0.5f);
+        }
+        
+        // Destroy the game object
+        Destroy(gameObject);
+    }
+
+    private GameObject CreateGlowingParticles()
+    {
+        GameObject particleObj = new GameObject("DeathParticles");
+        particleObj.transform.position = transform.position + Vector3.up * 0.5f;
+        particleObj.transform.parent = null; // Don't parent to enemy so it stays visible
+
+        ParticleSystem ps = particleObj.AddComponent<ParticleSystem>();
+        
+        var main = ps.main;
+        main.startLifetime = 0.8f;
+        main.startSpeed = 2f;
+        main.startSize = 0.2f;
+        main.startColor = new Color(1f, 0.8f, 0.3f, 1f); // Golden glow
+        main.maxParticles = 50;
+        main.loop = true;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 30f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 1f;
+
+        var colorOverLifetime = ps.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] { 
+                new GradientColorKey(new Color(1f, 0.8f, 0.3f), 0.0f), // Golden
+                new GradientColorKey(new Color(1f, 0.5f, 0.1f), 0.5f), // Orange
+                new GradientColorKey(new Color(0.5f, 0.2f, 0.0f), 1.0f)  // Dark orange
+            },
+            new GradientAlphaKey[] { 
+                new GradientAlphaKey(1.0f, 0.0f), 
+                new GradientAlphaKey(0.8f, 0.5f),
+                new GradientAlphaKey(0.0f, 1.0f) 
+            }
+        );
+        colorOverLifetime.color = gradient;
+
+        var sizeOverLifetime = ps.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 1, 1, 0));
+
+        // Renderer settings for glow
+        var renderer = particleObj.GetComponent<ParticleSystemRenderer>();
+        renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
+        renderer.material.SetColor("_Color", new Color(1f, 0.8f, 0.3f, 1f));
+        renderer.renderMode = ParticleSystemRenderMode.Billboard;
+
+        return particleObj;
     }
 
     private void OnDrawGizmos()
