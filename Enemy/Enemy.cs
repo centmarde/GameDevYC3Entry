@@ -225,14 +225,14 @@ public class Enemy : Entity, ITargetable
         var main = ps.main;
         main.startLifetime = 0.8f;
         main.startSpeed = 2f;
-        main.startSize = 0.2f;
-        main.startColor = new Color(1f, 0.8f, 0.3f, 1f); // Golden glow
-        main.maxParticles = 50;
+        main.startSize = 0.15f;
+        main.startColor = new Color(1f, 0.6f, 0.2f, 1f); // Orange glow
+        main.maxParticles = 20;
         main.loop = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
 
         var emission = ps.emission;
-        emission.rateOverTime = 30f;
+        emission.rateOverTime = 15f;
 
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
@@ -243,9 +243,9 @@ public class Enemy : Entity, ITargetable
         Gradient gradient = new Gradient();
         gradient.SetKeys(
             new GradientColorKey[] { 
-                new GradientColorKey(new Color(1f, 0.8f, 0.3f), 0.0f), // Golden
+                new GradientColorKey(new Color(1f, 0.9f, 0.5f), 0.0f), // Bright yellow-orange
                 new GradientColorKey(new Color(1f, 0.5f, 0.1f), 0.5f), // Orange
-                new GradientColorKey(new Color(0.5f, 0.2f, 0.0f), 1.0f)  // Dark orange
+                new GradientColorKey(new Color(0.8f, 0.2f, 0.0f), 1.0f)  // Deep red-orange
             },
             new GradientAlphaKey[] { 
                 new GradientAlphaKey(1.0f, 0.0f), 
@@ -259,10 +259,37 @@ public class Enemy : Entity, ITargetable
         sizeOverLifetime.enabled = true;
         sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 1, 1, 0));
 
+        // Enable lights on particles
+        var lights = ps.lights;
+        lights.enabled = true;
+        lights.ratio = 0.3f; // 30% of particles emit light
+        lights.useRandomDistribution = true;
+        lights.maxLights = 6; // Limit for performance
+        
+        // Create a point light prefab for particles
+        GameObject lightTemplate = new GameObject("ParticleLight");
+        lightTemplate.transform.parent = particleObj.transform;
+        Light pointLight = lightTemplate.AddComponent<Light>();
+        pointLight.type = LightType.Point;
+        pointLight.color = new Color(1f, 0.6f, 0.2f); // Orange light
+        pointLight.intensity = 0.8f;
+        pointLight.range = 2.5f;
+        pointLight.shadows = LightShadows.Soft; // Enable soft shadows
+        pointLight.shadowStrength = 0.8f;
+        pointLight.shadowBias = 0.05f;
+        pointLight.shadowNormalBias = 0.4f;
+        
+        lights.light = pointLight;
+        
+        // Use intensity over lifetime to fade lights
+        lights.useParticleColor = true;
+        lights.intensityMultiplier = 1f; // Base intensity multiplier
+        lights.rangeMultiplier = 1f; // Base range multiplier
+
         // Renderer settings for glow
         var renderer = particleObj.GetComponent<ParticleSystemRenderer>();
         renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-        renderer.material.SetColor("_Color", new Color(1f, 0.8f, 0.3f, 1f));
+        renderer.material.SetColor("_Color", new Color(1f, 0.6f, 0.2f, 1f));
         renderer.renderMode = ParticleSystemRenderMode.Billboard;
 
         return particleObj;
