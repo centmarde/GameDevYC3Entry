@@ -23,6 +23,7 @@ public class Enemy : Entity, ITargetable
 
     private Entity_Health health;
     private EnemyDeathTracker deathTracker;
+    private bool isDead = false;
 
     private Player player;
 
@@ -81,10 +82,48 @@ public class Enemy : Entity, ITargetable
         }
     }
 
+    protected override void Update()
+    {
+        // Don't update state machine if dead
+        if (!isDead)
+        {
+            base.Update();
+        }
+    }
+
 
     public override void EntityDeath()
     {
+        if (isDead) return; // Prevent multiple death calls
+        isDead = true;
+
         base.EntityDeath(); // stop motion, trigger anim if any
+
+        // Disable components to prevent updates
+        if (combat != null) combat.enabled = false;
+        if (movement != null) movement.enabled = false;
+
+        // Set death animation boolean BEFORE exiting state
+        if (anim != null)
+        {
+            anim.SetBool("isDead", true);
+        }
+
+        // Stop the state machine from interfering with animations
+        // Note: We don't change state, we just let isDead flag prevent updates
+        if (stateMachine != null && stateMachine.currentState != null)
+        {
+            // Exit current state to stop its animation bools
+            stateMachine.currentState.Exit();
+        }
+
+        // Stop movement
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true; // Prevent physics interactions
+        }
 
         // IMPORTANT: Notify wave manager about enemy death
         if (deathTracker != null)
