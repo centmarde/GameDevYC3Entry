@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class IsoCameraFollow : MonoBehaviour
 {
-    private Transform target;
+    private Transform[] targets;
     private Camera mainCam;
     private float smoothSpeed = 5f;
 
@@ -27,17 +27,26 @@ public class IsoCameraFollow : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Player player = FindFirstObjectByType<Player>();
-        if (player != null)
-            target = player.transform;
+        Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
+        if (players != null && players.Length > 0)
+        {
+            targets = new Transform[players.Length];
+            for (int i = 0; i < players.Length; i++)
+            {
+                targets[i] = players[i].transform;
+            }
+        }
     }
 
     private void LateUpdate()
     {
-        if (target == null) return;
+        if (targets == null || targets.Length == 0) return;
 
-        // Follow player smoothly
-        Vector3 desiredPos = target.position;
+        // Calculate center point of all targets
+        Vector3 centerPoint = GetCenterPoint();
+        
+        // Follow center point smoothly
+        Vector3 desiredPos = centerPoint;
         Vector3 smoothedPos = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
         transform.position = smoothedPos;
 
@@ -62,5 +71,90 @@ public class IsoCameraFollow : MonoBehaviour
     public void ResetZoom()
     {
         targetOrthoSize = defaultOrthoSize;
+    }
+
+    /// <summary>
+    /// Calculate the center point of all targets
+    /// </summary>
+    private Vector3 GetCenterPoint()
+    {
+        if (targets == null || targets.Length == 0)
+            return transform.position;
+
+        if (targets.Length == 1)
+            return targets[0].position;
+
+        // Calculate average position
+        Vector3 center = Vector3.zero;
+        int validTargets = 0;
+
+        foreach (Transform target in targets)
+        {
+            if (target != null)
+            {
+                center += target.position;
+                validTargets++;
+            }
+        }
+
+        if (validTargets > 0)
+            center /= validTargets;
+
+        return center;
+    }
+
+    /// <summary>
+    /// Manually set camera targets
+    /// </summary>
+    public void SetTargets(Transform[] newTargets)
+    {
+        targets = newTargets;
+    }
+
+    /// <summary>
+    /// Add a target to the camera
+    /// </summary>
+    public void AddTarget(Transform newTarget)
+    {
+        if (newTarget == null) return;
+
+        if (targets == null || targets.Length == 0)
+        {
+            targets = new Transform[] { newTarget };
+        }
+        else
+        {
+            Transform[] newArray = new Transform[targets.Length + 1];
+            targets.CopyTo(newArray, 0);
+            newArray[targets.Length] = newTarget;
+            targets = newArray;
+        }
+    }
+
+    /// <summary>
+    /// Remove a target from the camera
+    /// </summary>
+    public void RemoveTarget(Transform targetToRemove)
+    {
+        if (targets == null || targets.Length == 0) return;
+
+        int newLength = 0;
+        foreach (Transform t in targets)
+        {
+            if (t != targetToRemove) newLength++;
+        }
+
+        Transform[] newArray = new Transform[newLength];
+        int index = 0;
+        foreach (Transform t in targets)
+        {
+            if (t != targetToRemove)
+            {
+                newArray[index] = t;
+                index++;
+            }
+        }
+
+        targets = newArray;
     }
 }

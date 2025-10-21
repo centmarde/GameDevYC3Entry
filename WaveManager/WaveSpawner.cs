@@ -8,7 +8,7 @@ public class WaveSpawner : MonoBehaviour
     
     [Header("Spawn Mode")]
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
-    [Tooltip("Reference to player transform (auto-finds if not set)")]
+    [Tooltip("Player transform reference (automatically set by WaveManager)")]
     [SerializeField] private Transform playerTransform;
     
     [Header("Manual Spawn Points (Manual Mode Only)")]
@@ -92,21 +92,20 @@ public class WaveSpawner : MonoBehaviour
     
     private void Awake()
     {
-        // Auto-find player if not assigned
-        if (playerTransform == null && spawnMode == SpawnMode.CircularAroundPlayer)
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-            {
-                playerTransform = player.transform;
-            }
-        }
-        
         // Auto-find WaveManager if not assigned
         if (waveManager == null)
         {
             waveManager = FindObjectOfType<WaveManager>();
         }
+    }
+    
+    /// <summary>
+    /// Public method to update player reference (useful if player changes)
+    /// </summary>
+    public void UpdatePlayerReference(Transform newPlayerTransform)
+    {
+        playerTransform = newPlayerTransform;
+        Debug.Log($"[WaveSpawner] Player reference updated to: {newPlayerTransform.name}");
     }
     
     /// <summary>

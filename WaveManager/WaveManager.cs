@@ -30,8 +30,14 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private AnimationCurve difficultyScaling; // Optional curve for non-linear scaling
     
     [Header("References")]
-    [SerializeField] private WaveSpawner waveSpawner;
+    [SerializeField] private WaveSpawner[] waveSpawners;
     [SerializeField] private WaveUI waveUI;
+    
+    [Header("Player Detection")]
+    [Tooltip("If enabled, automatically finds the active player (Player1 or Player2)")]
+    [SerializeField] private bool autoDetectPlayer = true;
+    [Tooltip("Manually assign a player if auto-detect is disabled")]
+    [SerializeField] private GameObject manualPlayerReference;
     
     [Header("Wave Events")]
     public UnityEvent<int> OnWaveStart; // Triggered when a wave starts (passes wave number)
@@ -39,6 +45,7 @@ public class WaveManager : MonoBehaviour
     public UnityEvent<int> OnAllEnemiesCleared; // Triggered when all enemies are defeated (passes wave number)
     
     private int currentWave = 0;
+    private GameObject activePlayer;
     private int enemiesInCurrentWave = 0;
     private int enemiesAlive = 0;
     private bool waveInProgress = false;
@@ -53,8 +60,14 @@ public class WaveManager : MonoBehaviour
     private void Awake()
     {
         // Find references if not assigned
-        if (waveSpawner == null)
-            waveSpawner = GetComponent<WaveSpawner>();
+        if (waveSpawners == null || waveSpawners.Length == 0)
+        {
+            WaveSpawner spawner = GetComponent<WaveSpawner>();
+            if (spawner != null)
+                waveSpawners = new WaveSpawner[] { spawner };
+            else
+                waveSpawners = FindObjectsOfType<WaveSpawner>();
+        }
         
         if (waveUI == null)
             waveUI = FindObjectOfType<WaveUI>();
@@ -73,14 +86,127 @@ public class WaveManager : MonoBehaviour
         {
             wavesActivated = true;
         }
+        
+        // Detect active player
+        DetectActivePlayer();
     }
     
     private void Start()
     {
+        // Re-check player detection in Start (in case PlayerSpawnManager runs after Awake)
+        if (activePlayer == null)
+        {
+            DetectActivePlayer();
+        }
+        
+        // Pass player reference to all WaveSpawners
+        if (activePlayer != null && waveSpawners != null && waveSpawners.Length > 0)
+        {
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null)
+                {
+                    spawner.UpdatePlayerReference(activePlayer.transform);
+                }
+            }
+            Debug.Log($"[WaveManager] Passed player reference to {waveSpawners.Length} WaveSpawner(s): {activePlayer.name}");
+        }
+        
         // Start first wave after a short delay (only if auto-start is enabled)
         if (autoStartWaves && wavesActivated)
         {
             Invoke(nameof(StartNextWave), 2f);
+        }
+    }
+    
+    /// <summary>
+    /// Detects which player is active (Player1 or Player2) based on character selection
+    /// </summary>
+    private void DetectActivePlayer()
+    {
+        if (!autoDetectPlayer)
+        {
+            activePlayer = manualPlayerReference;
+            if (activePlayer != null)
+            {
+                Debug.Log($"[WaveManager] Using manually assigned player: {activePlayer.name}");
+            }
+            return;
+        }
+        
+        // Method 1: Try to get from CharacterSelectionManager and PlayerSpawnManager
+        PlayerSpawnManager spawnManager = FindObjectOfType<PlayerSpawnManager>();
+        if (spawnManager != null)
+        {
+            activePlayer = spawnManager.GetActivePlayer();
+            if (activePlayer != null)
+            {
+                Debug.Log($"[WaveManager] Detected active player from PlayerSpawnManager: {activePlayer.name}");
+                return;
+            }
+        }
+        
+        // Method 2: Look for Player1 or Player2 in scene
+        GameObject player1 = GameObject.Find("Player1");
+        GameObject player2 = GameObject.Find("Player2");
+        
+        // Check which one exists
+        if (player1 != null && player2 == null)
+        {
+            activePlayer = player1;
+            Debug.Log("[WaveManager] Detected Player1 as active player");
+        }
+        else if (player2 != null && player1 == null)
+        {
+            activePlayer = player2;
+            Debug.Log("[WaveManager] Detected Player2 as active player");
+        }
+        else if (player1 != null && player2 != null)
+        {
+            // Both exist - check which one is active
+            if (player1.activeInHierarchy && !player2.activeInHierarchy)
+            {
+                activePlayer = player1;
+                Debug.Log("[WaveManager] Both players exist, Player1 is active");
+            }
+            else if (player2.activeInHierarchy && !player1.activeInHierarchy)
+            {
+                activePlayer = player2;
+                Debug.Log("[WaveManager] Both players exist, Player2 is active");
+            }
+            else
+            {
+                // Both active, use CharacterSelectionManager to decide
+                if (CharacterSelectionManager.Instance != null)
+                {
+                    int selectedIndex = CharacterSelectionManager.Instance.SelectedCharacterIndex;
+                    activePlayer = selectedIndex == 0 ? player1 : player2;
+                    Debug.Log($"[WaveManager] Both players active, using selection: {activePlayer.name}");
+                }
+                else
+                {
+                    // Default to player1
+                    activePlayer = player1;
+                    Debug.LogWarning("[WaveManager] Both players active, defaulting to Player1");
+                }
+            }
+        }
+        
+        // Method 3: Try finding by component type
+        if (activePlayer == null)
+        {
+            Player player = FindObjectOfType<Player>();
+            if (player != null)
+            {
+                activePlayer = player.gameObject;
+                Debug.Log($"[WaveManager] Detected player by component: {activePlayer.name}");
+            }
+        }
+        
+        // Final fallback
+        if (activePlayer == null)
+        {
+            Debug.LogWarning("[WaveManager] Could not detect active player! Waves may not function correctly.");
         }
     }
     
@@ -153,10 +279,20 @@ public class WaveManager : MonoBehaviour
         // Trigger event
         OnWaveStart?.Invoke(currentWave);
         
-        // Start spawning with current stat bonuses
-        if (waveSpawner != null)
+        // Start spawning with current stat bonuses across all spawners
+        if (waveSpawners != null && waveSpawners.Length > 0)
         {
-            waveSpawner.StartWave(enemiesInCurrentWave, currentHealthBonus, currentDamageBonus);
+            // Distribute enemies across all spawners
+            int enemiesPerSpawner = Mathf.CeilToInt((float)enemiesInCurrentWave / waveSpawners.Length);
+            
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null)
+                {
+                    spawner.StartWave(enemiesPerSpawner, currentHealthBonus, currentDamageBonus);
+                }
+            }
+            
             // Check for spawning completion
             Invoke(nameof(CheckSpawningCompletion), 1f);
         }
@@ -193,7 +329,21 @@ public class WaveManager : MonoBehaviour
     /// </summary>
     private void CheckSpawningCompletion()
     {
-        if (waveSpawner != null && !waveSpawner.IsSpawning())
+        bool allSpawnersComplete = true;
+        
+        if (waveSpawners != null && waveSpawners.Length > 0)
+        {
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null && spawner.IsSpawning())
+                {
+                    allSpawnersComplete = false;
+                    break;
+                }
+            }
+        }
+        
+        if (allSpawnersComplete)
         {
             spawningComplete = true;
             OnWaveComplete?.Invoke(currentWave);
@@ -261,9 +411,15 @@ public class WaveManager : MonoBehaviour
     /// </summary>
     public void ForceNextWave()
     {
-        if (waveSpawner != null)
+        if (waveSpawners != null && waveSpawners.Length > 0)
         {
-            waveSpawner.StopSpawning();
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null)
+                {
+                    spawner.StopSpawning();
+                }
+            }
         }
         
         // Clear all remaining enemies
@@ -307,6 +463,24 @@ public class WaveManager : MonoBehaviour
     public bool AreWavesPaused() => wavesPaused;
     public float GetCurrentHealthBonus() => currentHealthBonus;
     public float GetCurrentDamageBonus() => currentDamageBonus;
+    public GameObject GetActivePlayer() => activePlayer;
+    
+    /// <summary>
+    /// Manually set the active player (useful for custom setups)
+    /// </summary>
+    public void SetActivePlayer(GameObject player)
+    {
+        activePlayer = player;
+        Debug.Log($"[WaveManager] Active player manually set to: {(player != null ? player.name : "null")}");
+    }
+    
+    /// <summary>
+    /// Force re-detection of active player
+    /// </summary>
+    public void RefreshPlayerDetection()
+    {
+        DetectActivePlayer();
+    }
     
     /// <summary>
     /// Activate the wave system (call this from trigger or manually)
@@ -343,9 +517,15 @@ public class WaveManager : MonoBehaviour
         wavesPaused = true;
         
         // Pause spawning if in progress
-        if (waveSpawner != null && waveSpawner.IsSpawning())
+        if (waveSpawners != null && waveSpawners.Length > 0)
         {
-            waveSpawner.StopSpawning();
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null && spawner.IsSpawning())
+                {
+                    spawner.StopSpawning();
+                }
+            }
         }
     }
     
@@ -366,5 +546,28 @@ public class WaveManager : MonoBehaviour
             ResumeWaves();
         else
             PauseWaves();
+    }
+    
+    /// <summary>
+    /// Update the player reference dynamically
+    /// </summary>
+    public void UpdatePlayerReference(GameObject newPlayer)
+    {
+        activePlayer = newPlayer;
+        
+        // Also update all WaveSpawners' references
+        if (waveSpawners != null && waveSpawners.Length > 0 && newPlayer != null)
+        {
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null)
+                {
+                    spawner.UpdatePlayerReference(newPlayer.transform);
+                }
+            }
+            Debug.Log($"[WaveManager] Updated {waveSpawners.Length} WaveSpawner(s) player reference to: {newPlayer.name}");
+        }
+        
+        Debug.Log($"[WaveManager] Player reference updated to: {newPlayer.name}");
     }
 }
