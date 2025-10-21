@@ -71,6 +71,13 @@ public class Player_ScatterRangeAttack : Player_RangeAttack
             ScatterPelletDamageFalloff falloff = p.gameObject.AddComponent<ScatterPelletDamageFalloff>();
             falloff.Initialize(spawnPos, pointBlankRange, maxDamageRange, minDamageRange, minDamageMultiplier, pointBlankMultiplier);
 
+            // Add visual tracer effect (like ChargeUI but for projectiles)
+            ProjectileTracer tracer = p.gameObject.AddComponent<ProjectileTracer>();
+            if (isCritical)
+            {
+                tracer.SetCriticalHit();
+            }
+
             p.Launch(dir.normalized * pelletSpeed, pelletDamage, this, isCritical);
         }
     }

@@ -181,6 +181,15 @@ public class Player_ChargedRangeAttack : Player_RangeAttack
         float finalDamage = isCritical ? chargedDamage * player.Stats.criticalDamageMultiplier : chargedDamage;
         float finalSpeed = player.Stats.chargedAttackSpeed + speedBonus;
 
+        // Add visual tracer effect (like ChargeUI but for projectiles)
+        ProjectileTracer tracer = p.gameObject.AddComponent<ProjectileTracer>();
+        float chargePercent = chargeTimer / player.Stats.chargedMaxChargeTime;
+        tracer.SetChargingState(chargePercent);
+        if (isCritical)
+        {
+            tracer.SetCriticalHit();
+        }
+
         p.Launch(direction * finalSpeed, finalDamage, this, isCritical);
     }
 }

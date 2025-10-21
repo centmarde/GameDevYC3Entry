@@ -59,6 +59,13 @@ public class Player_NormalShotAttack : Player_RangeAttack
         float finalDamage = isCritical ? baseDamage * player.Stats.criticalDamageMultiplier : baseDamage;
         float finalSpeed = player.Stats.normalAttackSpeed + speedBonus;
 
+        // Add visual tracer effect (like ChargeUI but for projectiles)
+        ProjectileTracer tracer = p.gameObject.AddComponent<ProjectileTracer>();
+        if (isCritical)
+        {
+            tracer.SetCriticalHit();
+        }
+
         // Launch single projectile with normal attack stats
         p.Launch(
             dir * finalSpeed,

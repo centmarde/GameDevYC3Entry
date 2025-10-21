@@ -16,7 +16,7 @@ public class IntroTrigger : MonoBehaviour
     [SerializeField] private bool useVirtualCamera = false; // Use a separate cutscene camera
     
     [Header("Player Reference")]
-    [SerializeField] private GameObject player;
+    [SerializeField] private GameObject[] players;
     [SerializeField] private float distanceInFrontOfPlayer = 1f;
     [SerializeField] private float heightOffset = 1.5f;
     
@@ -38,10 +38,11 @@ public class IntroTrigger : MonoBehaviour
     private bool isInCutscene = false;
     
     // For player control
-    private MonoBehaviour[] playerScripts;
-    private Rigidbody playerRigidbody;
-    private CharacterController playerCharController;
-    private Animator playerAnimator;
+    private MonoBehaviour[][] playerScripts;
+    private Rigidbody[] playerRigidbodies;
+    private CharacterController[] playerCharControllers;
+    private Animator[] playerAnimators;
+    private GameObject triggeringPlayer; // Track which player triggered the cutscene
     
     // Store animation state
     private AnimatorStateInfo originalAnimState;
@@ -61,23 +62,35 @@ public class IntroTrigger : MonoBehaviour
             dialogCanvas.gameObject.SetActive(false);
         }
         
-        // Find player if not assigned
-        if (player == null)
+        // Find players if not assigned
+        if (players == null || players.Length == 0)
         {
-            player = GameObject.FindGameObjectWithTag("Player");
+            players = GameObject.FindGameObjectsWithTag("Player");
         }
         
-        // Get player components for disabling during cutscene
-        if (player != null)
+        // Initialize arrays for player components
+        if (players != null && players.Length > 0)
         {
-            playerRigidbody = player.GetComponent<Rigidbody>();
-            playerCharController = player.GetComponent<CharacterController>();
-            playerAnimator = player.GetComponent<Animator>();
+            playerRigidbodies = new Rigidbody[players.Length];
+            playerCharControllers = new CharacterController[players.Length];
+            playerAnimators = new Animator[players.Length];
+            playerScripts = new MonoBehaviour[players.Length][];
             
-            // If animator not on player, check children
-            if (playerAnimator == null)
+            // Get player components for disabling during cutscene
+            for (int i = 0; i < players.Length; i++)
             {
-                playerAnimator = player.GetComponentInChildren<Animator>();
+                if (players[i] != null)
+                {
+                    playerRigidbodies[i] = players[i].GetComponent<Rigidbody>();
+                    playerCharControllers[i] = players[i].GetComponent<CharacterController>();
+                    playerAnimators[i] = players[i].GetComponent<Animator>();
+                    
+                    // If animator not on player, check children
+                    if (playerAnimators[i] == null)
+                    {
+                        playerAnimators[i] = players[i].GetComponentInChildren<Animator>();
+                    }
+                }
             }
         }
         
@@ -98,6 +111,8 @@ public class IntroTrigger : MonoBehaviour
                 hasTriggered = true;
             }
             
+            // Store which player triggered the cutscene
+            triggeringPlayer = other.gameObject;
             StartCoroutine(PlayCutscene());
         }
     }
@@ -134,14 +149,14 @@ public class IntroTrigger : MonoBehaviour
         }
         else
         {
-            // Calculate position in front of player
-            Vector3 playerForward = player.transform.forward;
-            targetPosition = player.transform.position + 
+            // Calculate position in front of triggering player
+            Vector3 playerForward = triggeringPlayer.transform.forward;
+            targetPosition = triggeringPlayer.transform.position + 
                            playerForward * distanceInFrontOfPlayer + 
                            Vector3.up * heightOffset;
             
-            // Look at player
-            Vector3 lookAtTarget = player.transform.position + Vector3.up * heightOffset;
+            // Look at triggering player
+            Vector3 lookAtTarget = triggeringPlayer.transform.position + Vector3.up * heightOffset;
             targetRotation = Quaternion.LookRotation(lookAtTarget - targetPosition);
             
             //Debug.Log("Calculated cutscene position: " + targetPosition);
@@ -266,70 +281,76 @@ public class IntroTrigger : MonoBehaviour
     
     void DisablePlayerControl()
     {
-        if (player == null) return;
+        if (players == null || players.Length == 0) return;
         
        // Debug.Log("Disabling player controls");
         
-        // Set animation to idle state only (let animation continue playing)
-        if (playerAnimator != null && playerAnimator.isActiveAndEnabled)
+        // Disable controls for all players
+        for (int i = 0; i < players.Length; i++)
         {
-            // Set your specific animation parameters to idle state
-            TrySetAnimatorParameter("idle", true);          // Set Idle to true
-            TrySetAnimatorParameter("poseOrLook", 0f);      // Set to 0 for idle pose
-            TrySetAnimatorParameter("move", false);         // Set to false for no movement
+            if (players[i] == null) continue;
             
-          //  Debug.Log("Player animation set to idle");
-        }
-        
-        // Disable all MonoBehaviour scripts on player (except this one)
-        playerScripts = player.GetComponents<MonoBehaviour>();
-        foreach (MonoBehaviour script in playerScripts)
-        {
-            if (script != this && script.enabled)
+            // Set animation to idle state only (let animation continue playing)
+            if (playerAnimators[i] != null && playerAnimators[i].isActiveAndEnabled)
             {
-                script.enabled = false;
+                // Set your specific animation parameters to idle state
+                TrySetAnimatorParameter(playerAnimators[i], "idle", true);          // Set Idle to true
+                TrySetAnimatorParameter(playerAnimators[i], "poseOrLook", 0f);      // Set to 0 for idle pose
+                TrySetAnimatorParameter(playerAnimators[i], "move", false);         // Set to false for no movement
+                
+              //  Debug.Log("Player animation set to idle");
             }
-        }
-        
-        // Stop player movement
-        if (playerRigidbody != null)
-        {
-            playerRigidbody.linearVelocity = Vector3.zero;
-            playerRigidbody.angularVelocity = Vector3.zero;
-            playerRigidbody.isKinematic = true;
-        }
-        
-        // Disable character controller if present
-        if (playerCharController != null)
-        {
-            playerCharController.enabled = false;
+            
+            // Disable all MonoBehaviour scripts on player (except this one)
+            playerScripts[i] = players[i].GetComponents<MonoBehaviour>();
+            foreach (MonoBehaviour script in playerScripts[i])
+            {
+                if (script != this && script.enabled)
+                {
+                    script.enabled = false;
+                }
+            }
+            
+            // Stop player movement
+            if (playerRigidbodies[i] != null)
+            {
+                playerRigidbodies[i].linearVelocity = Vector3.zero;
+                playerRigidbodies[i].angularVelocity = Vector3.zero;
+                playerRigidbodies[i].isKinematic = true;
+            }
+            
+            // Disable character controller if present
+            if (playerCharControllers[i] != null)
+            {
+                playerCharControllers[i].enabled = false;
+            }
         }
     }
     
-    void TrySetAnimatorParameter(string paramName, float value)
+    void TrySetAnimatorParameter(Animator animator, string paramName, float value)
     {
-        if (playerAnimator != null)
+        if (animator != null)
         {
-            foreach (AnimatorControllerParameter param in playerAnimator.parameters)
+            foreach (AnimatorControllerParameter param in animator.parameters)
             {
                 if (param.name == paramName && param.type == AnimatorControllerParameterType.Float)
                 {
-                    playerAnimator.SetFloat(paramName, value);
+                    animator.SetFloat(paramName, value);
                     return;
                 }
             }
         }
     }
     
-    void TrySetAnimatorParameter(string paramName, bool value)
+    void TrySetAnimatorParameter(Animator animator, string paramName, bool value)
     {
-        if (playerAnimator != null)
+        if (animator != null)
         {
-            foreach (AnimatorControllerParameter param in playerAnimator.parameters)
+            foreach (AnimatorControllerParameter param in animator.parameters)
             {
                 if (param.name == paramName && param.type == AnimatorControllerParameterType.Bool)
                 {
-                    playerAnimator.SetBool(paramName, value);
+                    animator.SetBool(paramName, value);
                     return;
                 }
             }
@@ -338,43 +359,49 @@ public class IntroTrigger : MonoBehaviour
     
     void EnablePlayerControl()
     {
-        if (player == null) return;
+        if (players == null || players.Length == 0) return;
         
       //  Debug.Log("Re-enabling player controls");
         
-        // Keep animation in idle state when exiting cutscene
-        if (playerAnimator != null && playerAnimator.isActiveAndEnabled)
+        // Re-enable controls for all players
+        for (int i = 0; i < players.Length; i++)
         {
-            // Keep idle state
-            TrySetAnimatorParameter("idle", false);         // Reset Idle trigger (set to false when cutscene ends)
-            TrySetAnimatorParameter("poseOrLook", 0f);      // Idle pose
-            TrySetAnimatorParameter("move", false);         // No movement
+            if (players[i] == null) continue;
             
-         //   Debug.Log("Player animation restored to idle");
-        }
-        
-        // Re-enable all MonoBehaviour scripts on player
-        if (playerScripts != null)
-        {
-            foreach (MonoBehaviour script in playerScripts)
+            // Keep animation in idle state when exiting cutscene
+            if (playerAnimators[i] != null && playerAnimators[i].isActiveAndEnabled)
             {
-                if (script != null)
+                // Keep idle state
+                TrySetAnimatorParameter(playerAnimators[i], "idle", false);         // Reset Idle trigger (set to false when cutscene ends)
+                TrySetAnimatorParameter(playerAnimators[i], "poseOrLook", 0f);      // Idle pose
+                TrySetAnimatorParameter(playerAnimators[i], "move", false);         // No movement
+                
+             //   Debug.Log("Player animation restored to idle");
+            }
+            
+            // Re-enable all MonoBehaviour scripts on player
+            if (playerScripts[i] != null)
+            {
+                foreach (MonoBehaviour script in playerScripts[i])
                 {
-                    script.enabled = true;
+                    if (script != null)
+                    {
+                        script.enabled = true;
+                    }
                 }
             }
-        }
-        
-        // Re-enable player physics
-        if (playerRigidbody != null)
-        {
-            playerRigidbody.isKinematic = false;
-        }
-        
-        // Re-enable character controller if present
-        if (playerCharController != null)
-        {
-            playerCharController.enabled = true;
+            
+            // Re-enable player physics
+            if (playerRigidbodies[i] != null)
+            {
+                playerRigidbodies[i].isKinematic = false;
+            }
+            
+            // Re-enable character controller if present
+            if (playerCharControllers[i] != null)
+            {
+                playerCharControllers[i].enabled = true;
+            }
         }
     }
     
