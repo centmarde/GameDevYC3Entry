@@ -1,5 +1,8 @@
 using UnityEngine;
 using System.Collections;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [RequireComponent(typeof(Player2))]
 public class Player2_BlinkSkill : MonoBehaviour
@@ -282,6 +285,7 @@ public class Player2_BlinkSkill : MonoBehaviour
         return gameObject.activeInHierarchy && player2 != null;
     }
     
+#if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         // Only draw gizmos for active Player2
@@ -296,6 +300,7 @@ public class Player2_BlinkSkill : MonoBehaviour
         Gizmos.DrawWireSphere(blinkEnd, 0.5f);
         
         // Draw distance text
-        UnityEditor.Handles.Label(blinkEnd, $"Blink: {currentDistance:F1}m");
+        Handles.Label(blinkEnd, $"Blink: {currentDistance:F1}m");
     }
+#endif
 }
