@@ -94,6 +94,13 @@ public class Player : Entity
     protected override void Start()
     {
         base.Start();
+        
+        // Check if this player instance is active and not being destroyed
+        if (!gameObject.activeInHierarchy)
+        {
+            return;
+        }
+        
         stateMachine.Initialize(idleState);
 
         // Play entrance intro animation on first mount
@@ -216,6 +223,12 @@ public class Player : Entity
 
     private void SetupFadeUI()
     {
+        // Don't setup UI if this player is being destroyed or inactive
+        if (!gameObject.activeInHierarchy || !this || this == null)
+        {
+            return;
+        }
+        
         // Find or create canvas for fade overlay
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas == null)
@@ -251,6 +264,12 @@ public class Player : Entity
 
     private System.Collections.IEnumerator PlayEntranceIntro()
     {
+        // Don't play intro if this player is being destroyed or inactive
+        if (!gameObject.activeInHierarchy || !this || this == null)
+        {
+            yield break;
+        }
+        
         isPlayingIntro = true;
         hasPlayedIntro = true;
 

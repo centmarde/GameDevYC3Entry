@@ -55,6 +55,14 @@ public class Player2_ChargedDashAttack : MonoBehaviour
         player2 = GetComponent<Player2>();
         rb = GetComponent<Rigidbody>();
         
+        // If this is not Player2 or is Player1, disable this component
+        if (player2 == null || !IsPlayer2Active())
+        {
+            Debug.Log($"[Player2_ChargedDashAttack] Disabling on {gameObject.name} - Not Player2 or Player2 not active");
+            enabled = false;
+            return;
+        }
+        
         // Setup LineRenderer if not assigned
         if (dashLineRenderer == null)
         {
@@ -380,13 +388,29 @@ public class Player2_ChargedDashAttack : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Check if Player2 is the active character
+    /// </summary>
+    private bool IsPlayer2Active()
+    {
+        // Check CharacterSelectionManager
+        if (CharacterSelectionManager.Instance != null)
+        {
+            return CharacterSelectionManager.Instance.SelectedCharacterIndex == 1;
+        }
+        
+        // Fallback: check if gameObject is active and is Player2
+        return gameObject.activeInHierarchy && player2 != null;
+    }
+    
     private void OnDrawGizmosSelected()
     {
-        if (player2 != null && player2.Stats != null && isExecutingDash)
-        {
-            // Show the current hit detection sphere during dash
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, player2.Stats.dashAttackRadius);
-        }
+        // Only draw gizmos for active Player2
+        if (!enabled || player2 == null || player2.Stats == null || !IsPlayer2Active() || !isExecutingDash)
+            return;
+        
+        // Show the current hit detection sphere during dash
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, player2.Stats.dashAttackRadius);
     }
 }

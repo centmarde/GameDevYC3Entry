@@ -40,6 +40,14 @@ public class Player2_BlinkSkill : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
         
+        // If this is not Player2 or is Player1, disable this component
+        if (player2 == null || !IsPlayer2Active())
+        {
+            Debug.Log($"[Player2_BlinkSkill] Disabling on {gameObject.name} - Not Player2 or Player2 not active");
+            enabled = false;
+            return;
+        }
+        
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
@@ -259,19 +267,35 @@ public class Player2_BlinkSkill : MonoBehaviour
         Debug.Log("[Player2_BlinkSkill] Cooldown reset");
     }
     
+    /// <summary>
+    /// Check if Player2 is the active character
+    /// </summary>
+    private bool IsPlayer2Active()
+    {
+        // Check CharacterSelectionManager
+        if (CharacterSelectionManager.Instance != null)
+        {
+            return CharacterSelectionManager.Instance.SelectedCharacterIndex == 1;
+        }
+        
+        // Fallback: check if gameObject is active and is Player2
+        return gameObject.activeInHierarchy && player2 != null;
+    }
+    
     private void OnDrawGizmosSelected()
     {
+        // Only draw gizmos for active Player2
+        if (!enabled || player2 == null || player2.Stats == null || !IsPlayer2Active())
+            return;
+        
         // Draw blink distance preview (shows current upgraded distance)
-        if (player2 != null && player2.Stats != null)
-        {
-            Gizmos.color = Color.cyan;
-            float currentDistance = GetBlinkDistance();
-            Vector3 blinkEnd = transform.position + (transform.forward * currentDistance);
-            Gizmos.DrawLine(transform.position, blinkEnd);
-            Gizmos.DrawWireSphere(blinkEnd, 0.5f);
-            
-            // Draw distance text
-            UnityEditor.Handles.Label(blinkEnd, $"Blink: {currentDistance:F1}m");
-        }
+        Gizmos.color = Color.cyan;
+        float currentDistance = GetBlinkDistance();
+        Vector3 blinkEnd = transform.position + (transform.forward * currentDistance);
+        Gizmos.DrawLine(transform.position, blinkEnd);
+        Gizmos.DrawWireSphere(blinkEnd, 0.5f);
+        
+        // Draw distance text
+        UnityEditor.Handles.Label(blinkEnd, $"Blink: {currentDistance:F1}m");
     }
 }

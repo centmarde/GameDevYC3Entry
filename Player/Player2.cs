@@ -55,6 +55,12 @@ public class Player2 : Player
     
     protected override void Start()
     {
+        // Check if this player instance is active and not being destroyed
+        if (!gameObject.activeInHierarchy)
+        {
+            return;
+        }
+        
         // Call base to properly initialize state machine
         base.Start();
     }
