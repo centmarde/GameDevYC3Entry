@@ -62,9 +62,10 @@ public class Player_Combat : MonoBehaviour
     private void Update()
     {
         // Only rotate with movement if not attacking and not locked
+        // Priority: keyboard movement direction over mouse attack direction
         if (canAttack && !player.playerMovement.movementLocked)
         {
-            FaceMoveDirection();
+            FaceLastKeyboardDirection();
         }
     }
 
@@ -112,9 +113,14 @@ public class Player_Combat : MonoBehaviour
     {
         canAttack = false;
 
+        // Get attack direction from mouse
         cachedAimDirection = GetAimDirection();
 
+        // Face attack direction instantly during attack
         FaceInstant(cachedAimDirection);
+        
+        // NOTE: After attack ends, Update() will resume using keyboard direction
+        // This ensures player returns to facing keyboard input direction when idle
 
         var current = player.playerCombat.currentAttack;
 
@@ -235,6 +241,23 @@ public class Player_Combat : MonoBehaviour
         if (moveDir.sqrMagnitude < 0.0001f) return;
 
         Quaternion look = Quaternion.LookRotation(moveDir, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation, look, faceTurnSpeed * 360f * Time.deltaTime);
+    }
+    
+    /// <summary>
+    /// Face the direction of the last keyboard input (not mouse attack direction)
+    /// This ensures the player faces their last movement direction when idle
+    /// </summary>
+    private void FaceLastKeyboardDirection()
+    {
+        // Get the last keyboard movement direction from Player_Movement
+        Vector3 lastKeyboardDir = player.playerMovement.GetLastMoveDirection();
+        
+        // Only rotate if we have a valid direction
+        if (lastKeyboardDir.sqrMagnitude < 0.0001f) return;
+
+        Quaternion look = Quaternion.LookRotation(lastKeyboardDir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, look, faceTurnSpeed * 360f * Time.deltaTime);
     }

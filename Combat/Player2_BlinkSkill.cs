@@ -116,8 +116,16 @@ public class Player2_BlinkSkill : MonoBehaviour
         // Get current blink distance from Stats (allows real-time upgrades)
         float currentBlinkDistance = GetBlinkDistance();
         
-        // Get the player's forward direction
-        Vector3 blinkDirection = transform.forward.normalized;
+        // Get the player's facing direction based on last keyboard input
+        Vector3 blinkDirection = player2.playerMovement.GetLastMoveDirection();
+        
+        // Fallback to transform.forward if no keyboard input yet
+        if (blinkDirection.sqrMagnitude < 0.0001f)
+        {
+            blinkDirection = transform.forward;
+        }
+        
+        blinkDirection = blinkDirection.normalized;
         blinkDirection.y = 0f; // Keep blink on horizontal plane
         
         // Calculate target position

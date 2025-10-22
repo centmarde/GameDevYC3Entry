@@ -20,6 +20,7 @@ public class Player_Movement : MonoBehaviour
     private Vector3 moveVelocityXZ;
     private Quaternion lookRotation;
     private bool hasLookRotation;
+    private Vector3 lastNonZeroMoveDir; // Track last non-zero movement direction
 
     private float slowdownTimer;
     public bool isAiming;
@@ -40,6 +41,7 @@ public class Player_Movement : MonoBehaviour
         
         // Initialize lastMoveDir to face forward (down in isometric view)
         lastMoveDir = transform.forward;
+        lastNonZeroMoveDir = transform.forward;
     }
 
     private float MoveSpeed => baseMoveSpeed * currentSpeedMultiplier;
@@ -71,24 +73,33 @@ public class Player_Movement : MonoBehaviour
 
     private void HandleMovement()
     {
+        // Get current movement direction from input (real-time)
         Vector3 playerDirection = GetIsoDir();
 
         if (playerDirection.sqrMagnitude > 0.0001f)
         {
-            // Update last move direction immediately
+            // CRITICAL: Update both movement directions in real-time
             lastMoveDir = playerDirection;
+            lastNonZeroMoveDir = playerDirection; // Store as last valid direction
+            
             RequestMove(playerDirection * MoveSpeed);
 
             // Always update facing direction in real-time when moving
             if (!isAiming)
+            {
                 RequestLook(playerDirection);
+            }
         }
         else
         {
+            // Not moving - stop movement but maintain facing direction
             RequestMove(Vector3.zero);
-            // Keep facing the last direction when not moving
-            if (!isAiming && lastMoveDir.sqrMagnitude > 0.0001f)
-                RequestLook(lastMoveDir);
+            
+            // Keep facing the last non-zero direction when not moving
+            if (!isAiming && lastNonZeroMoveDir.sqrMagnitude > 0.0001f)
+            {
+                RequestLook(lastNonZeroMoveDir);
+            }
         }
     }
 
@@ -129,10 +140,21 @@ public class Player_Movement : MonoBehaviour
             canMove = canMove || player.CurrentState == player2.dashAttackState;
         }
 
-        // Always allow rotation even if not moving
+        // CRITICAL: Always update rotation based on current look direction
+        // This ensures the player always faces the direction of their last input
         if (hasLookRotation)
         {
             var next = Quaternion.RotateTowards(rb.rotation, lookRotation, turnSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(next);
+            
+            // Update transform.forward to match the rotation (for external systems)
+            // This ensures other systems can read the correct facing direction
+        }
+        else if (lastNonZeroMoveDir.sqrMagnitude > 0.0001f)
+        {
+            // If no explicit look rotation, use last movement direction
+            Quaternion targetRotation = Quaternion.LookRotation(lastNonZeroMoveDir, Vector3.up);
+            var next = Quaternion.RotateTowards(rb.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime);
             rb.MoveRotation(next);
         }
 
@@ -162,20 +184,43 @@ public class Player_Movement : MonoBehaviour
     {
         moveInput = Vector2.zero;
         moveVelocityXZ = Vector3.zero;
-        // Don't clear hasLookRotation - keep the last facing direction
+        // Don't clear hasLookRotation or lastNonZeroMoveDir - keep the last facing direction
+        // This ensures the player maintains their facing direction when movement is cleared
         // hasLookRotation = false;
     }
 
     public Vector3 GetIsoDir()
     {
+        // Convert 2D input to 3D world direction
         Vector3 rawXZ = new Vector3(moveInput.x, 0f, moveInput.y);
 
         // Ignore tiny noise from keyboard/analog input
         if (rawXZ.sqrMagnitude < 0.02f)
             return Vector3.zero;
 
+        // Apply isometric camera rotation (45 degrees)
         Vector3 iso = Quaternion.Euler(0f, 45f, 0f) * rawXZ;
         return iso.normalized;
+    }
+    
+    /// <summary>
+    /// Gets the player's current facing direction (real-time)
+    /// This can be used by other systems (like enemies) to know where the player is facing
+    /// </summary>
+    public Vector3 GetFacingDirection()
+    {
+        // Return the current forward direction from transform
+        // This is updated in real-time by FixedUpdate
+        return transform.forward;
+    }
+    
+    /// <summary>
+    /// Gets the last non-zero movement direction
+    /// Useful for systems that need to know the player's intended direction
+    /// </summary>
+    public Vector3 GetLastMoveDirection()
+    {
+        return lastNonZeroMoveDir;
     }
 
 

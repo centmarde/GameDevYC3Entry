@@ -34,7 +34,20 @@ public class Player2_MeleeCombat : MonoBehaviour
         // Only rotate with movement if not attacking and not locked
         if (canAttack && !player2.playerMovement.movementLocked && !isCharging)
         {
-            FaceMoveDirection();
+            FaceLastKeyboardDirection();
+        }
+    }
+    
+    private void FaceLastKeyboardDirection()
+    {
+        // Get the last non-zero movement direction from Player_Movement
+        Vector3 lastMoveDir = player2.playerMovement.GetLastMoveDirection();
+        
+        if (lastMoveDir.sqrMagnitude > 0.0001f)
+        {
+            Quaternion look = Quaternion.LookRotation(lastMoveDir, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation, look, faceTurnSpeed * 360f * Time.deltaTime);
         }
     }
     
