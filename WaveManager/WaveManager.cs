@@ -328,7 +328,7 @@ public class WaveManager : MonoBehaviour
             
             if (activeSpawnerCount == 0)
             {
-                Debug.LogError($"[WaveManager] No active spawners found! Spawners array length: {waveSpawners.Length}");
+                Debug.Log($"[WaveManager] No active spawners found! Spawners array length: {waveSpawners.Length}");
                 
                 // Debug each spawner
                 for (int i = 0; i < waveSpawners.Length; i++)
@@ -336,11 +336,11 @@ public class WaveManager : MonoBehaviour
                     WaveSpawner spawner = waveSpawners[i];
                     if (spawner == null)
                     {
-                        Debug.LogError($"  Spawner[{i}]: NULL");
+                        Debug.Log($"  Spawner[{i}]: NULL");
                     }
                     else
                     {
-                        Debug.LogError($"  Spawner[{i}]: {spawner.gameObject.name} - Active: {spawner.gameObject.activeInHierarchy}, Enabled: {spawner.enabled}");
+                        Debug.Log($"  Spawner[{i}]: {spawner.gameObject.name} - Active: {spawner.gameObject.activeInHierarchy}, Enabled: {spawner.enabled}");
                     }
                 }
                 
