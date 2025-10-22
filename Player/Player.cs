@@ -8,7 +8,7 @@ public class Player : Entity
     public Player_DataSO Stats => playerStats;
 
     private Entity_Health health;
-    public PlayerInputSet input { get; private set; }
+    public PlayerInputSet input { get; protected set; }
     public PlayerSkill_Manager skillManager { get; private set; }
     public Player_Movement playerMovement { get; private set; }
 
@@ -48,7 +48,7 @@ public class Player : Entity
     [Header("Entrance Intro")]
     [SerializeField] private float introMoveDistance = 15f;
     [SerializeField] private float introMoveDuration = 2f;
-    [SerializeField] private float introFadeDuration = 1f;
+    [SerializeField] private float introFadeDuration = 3f;
     [SerializeField] private AnimationCurve introMoveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     private bool hasPlayedIntro = false;
     private bool isPlayingIntro = false;
@@ -58,9 +58,19 @@ public class Player : Entity
 
     protected override void Awake()
     {
+        Debug.Log($"[Player] Awake called for {gameObject.name}");
         base.Awake();
+        
+        // Double-check animator after base.Awake()
+        if (anim == null)
+        {
+            Debug.LogError($"[Player] Animator is NULL after base.Awake()! GameObject: {gameObject.name}", gameObject);
+        }
 
-        rb.useGravity = false;
+        if (rb != null)
+        {
+            rb.useGravity = false;
+        }
 
 
         skillManager = GetComponent<PlayerSkill_Manager>();
@@ -98,9 +108,43 @@ public class Player : Entity
         // Check if this player instance is active and not being destroyed
         if (!gameObject.activeInHierarchy)
         {
+            Debug.LogWarning($"[Player] Start called but GameObject is not active: {gameObject.name}");
             return;
         }
         
+        // Final animator check before initializing state machine
+        if (anim == null)
+        {
+            Debug.LogError($"[Player] CRITICAL: Animator is still NULL in Start! Cannot initialize properly. GameObject: {gameObject.name}", gameObject);
+            // Last desperate attempt
+            ReinitializeAnimator();
+            if (anim != null)
+            {
+                Debug.Log($"[Player] Emergency animator recovery successful!");
+            }
+            else
+            {
+                Debug.LogError($"[Player] FATAL: Cannot recover animator! Check prefab structure!", gameObject);
+                LogAnimatorDiagnostics();
+            }
+        }
+        else
+        {
+            // Verify animator is working
+            if (!anim.enabled)
+            {
+                Debug.LogWarning($"[Player] Animator was disabled! Enabling now.", gameObject);
+                anim.enabled = true;
+            }
+            
+            if (anim.runtimeAnimatorController == null)
+            {
+                Debug.LogError($"[Player] Animator has NO RuntimeAnimatorController! Animations cannot play!", gameObject);
+                LogAnimatorDiagnostics();
+            }
+        }
+        
+        Debug.Log($"[Player] Initializing state machine for {gameObject.name} with animator: {(anim != null ? anim.gameObject.name : "NULL")}");
         stateMachine.Initialize(idleState);
 
         // Play entrance intro animation on first mount
@@ -113,36 +157,82 @@ public class Player : Entity
 
     private void OnEnable()
     {
+        // Don't enable input if this player is being destroyed or inactive
+        if (!gameObject.activeInHierarchy || !this || this == null)
+        {
+            return;
+        }
+        
+        // CRITICAL: Re-validate animator at OnEnable (can become null between Awake and OnEnable)
+        if (anim == null)
+        {
+            Debug.LogWarning($"[Player] Animator is NULL in OnEnable! Attempting recovery for {gameObject.name}");
+            if (animatorOverride != null)
+            {
+                anim = animatorOverride;
+            }
+            else
+            {
+                anim = GetComponentInChildren<Animator>(true);
+            }
+            
+            if (anim == null)
+            {
+                Debug.LogError($"[Player] FAILED to recover animator in OnEnable for {gameObject.name}!", gameObject);
+            }
+            else
+            {
+                Debug.Log($"[Player] Successfully recovered animator in OnEnable: {anim.gameObject.name}");
+            }
+        }
+        
+        if (input == null)
+        {
+            input = new PlayerInputSet();
+        }
+        
         input.Enable();
-        input.Player.Attack.performed += playerCombat.OnFirePerformed;
-        input.Player.Attack.canceled += playerCombat.OnFirePerformed;
-        input.Player.Attack.performed += playerCombat.OnFirePerformed;
+        
+        if (playerCombat != null)
+        {
+            input.Player.Attack.performed += playerCombat.OnFirePerformed;
+            input.Player.Attack.canceled += playerCombat.OnFirePerformed;
+        }
 
-        input.Player.SwitchAttackType.performed += rangeAttackController.OnScroll;
+        if (rangeAttackController != null)
+        {
+            input.Player.SwitchAttackType.performed += rangeAttackController.OnScroll;
+        }
+        
         input.Player.Roll.performed += ctx => TryStartRoll();
 
-
-
-
         // Movement Input
-        input.Player.Movement.performed += ctx => playerMovement.SetMoveInput(ctx.ReadValue<Vector2>());
-        input.Player.Movement.canceled += ctx => playerMovement.SetMoveInput(Vector2.zero);
-
-
-
+        if (playerMovement != null)
+        {
+            input.Player.Movement.performed += ctx => playerMovement.SetMoveInput(ctx.ReadValue<Vector2>());
+            input.Player.Movement.canceled += ctx => playerMovement.SetMoveInput(Vector2.zero);
+        }
     }
 
     private void OnDisable()
     {
+        if (input == null)
+            return;
+            
         input.Disable();
-        input.Player.Attack.performed -= playerCombat.OnFirePerformed;
-        input.Player.Attack.canceled -= playerCombat.OnFirePerformed;
-        input.Player.Attack.performed -= playerCombat.OnFirePerformed;
+        
+        if (playerCombat != null)
+        {
+            input.Player.Attack.performed -= playerCombat.OnFirePerformed;
+            input.Player.Attack.canceled -= playerCombat.OnFirePerformed;
+        }
 
-        input.Player.SwitchAttackType.performed -= rangeAttackController.OnScroll;
+        if (rangeAttackController != null)
+        {
+            input.Player.SwitchAttackType.performed -= rangeAttackController.OnScroll;
+        }
+        
         input.Player.Roll.performed -= ctx => TryStartRoll();
-
-
     }
 
     public void RequestStateChange(PlayerState newState)
@@ -276,33 +366,15 @@ public class Player : Entity
         // Disable player input during intro
         input.Disable();
 
-        // Store the original spawn position
-        Vector3 originalPosition = transform.position;
-        
-        // Move player back by introMoveDistance to start the entrance
-        Vector3 startPosition = originalPosition - transform.forward * introMoveDistance;
-        transform.position = startPosition;
-
-        // End position is the original spawn position
-        Vector3 endPosition = originalPosition;
-
-        // Change to move state for walk animation
-        stateMachine.ChangeState(moveState);
-        
-        // Simulate forward movement input for animation
-        playerMovement.SetMoveInput(Vector2.up);
+        // Keep player in idle state (no movement)
+        stateMachine.ChangeState(idleState);
 
         float elapsedTime = 0f;
 
-        // Animate the movement forward while fading in
-        while (elapsedTime < introMoveDuration)
+        // Fade in from black without moving
+        while (elapsedTime < introFadeDuration)
         {
             elapsedTime += Time.deltaTime;
-            float normalizedTime = Mathf.Clamp01(elapsedTime / introMoveDuration);
-            float curveValue = introMoveCurve.Evaluate(normalizedTime);
-
-            // Lerp position using the animation curve
-            transform.position = Vector3.Lerp(startPosition, endPosition, curveValue);
             
             // Fade in overlay (fade out from black)
             if (fadeCanvasGroup != null)
@@ -313,9 +385,6 @@ public class Player : Entity
 
             yield return null;
         }
-
-        // Ensure we reach the exact end position
-        transform.position = endPosition;
         
         // Ensure fade is complete
         if (fadeCanvasGroup != null)
@@ -328,10 +397,6 @@ public class Player : Entity
         {
             Destroy(fadeOverlay);
         }
-
-        // Stop movement input and return to idle
-        playerMovement.SetMoveInput(Vector2.zero);
-        stateMachine.ChangeState(idleState);
 
         // Re-enable player input
         input.Enable();
@@ -350,6 +415,28 @@ public class Player : Entity
         // optional: show forward direction (handy in isometric)
         Gizmos.color = Color.cyan;
         Gizmos.DrawRay(transform.position, transform.forward * iRadius);
+    }
+    
+    /// <summary>
+    /// Logs detailed animator diagnostics for debugging
+    /// </summary>
+    private void LogAnimatorDiagnostics()
+    {
+        Debug.Log($"=== Animator Diagnostics for {gameObject.name} ===");
+        Debug.Log($"  Active in Hierarchy: {gameObject.activeInHierarchy}");
+        Debug.Log($"  Active Self: {gameObject.activeSelf}");
+        
+        Animator[] allAnimators = GetComponentsInChildren<Animator>(true);
+        Debug.Log($"  Total Animators found (including inactive): {allAnimators.Length}");
+        
+        for (int i = 0; i < allAnimators.Length; i++)
+        {
+            Animator a = allAnimators[i];
+            Debug.Log($"    [{i}] Animator on: {a.gameObject.name}");
+            Debug.Log($"        - Active: {a.gameObject.activeInHierarchy}");
+            Debug.Log($"        - Enabled: {a.enabled}");
+            Debug.Log($"        - Controller: {(a.runtimeAnimatorController != null ? a.runtimeAnimatorController.name : "NULL")}");
+        }
     }
 
 

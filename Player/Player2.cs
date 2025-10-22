@@ -17,8 +17,15 @@ public class Player2 : Player
     
     protected override void Awake()
     {
+        Debug.Log($"[Player2] Awake called for {gameObject.name}");
         // Call base Awake first to initialize Player components
         base.Awake();
+        
+        // Validate animator after base initialization
+        if (anim == null)
+        {
+            Debug.LogError($"[Player2] Animator is NULL after base.Awake()! GameObject: {gameObject.name}", gameObject);
+        }
         
         // Now initialize Player2-specific components
         meleeCombat = GetComponent<Player2_MeleeCombat>();
@@ -58,15 +65,63 @@ public class Player2 : Player
         // Check if this player instance is active and not being destroyed
         if (!gameObject.activeInHierarchy)
         {
+            Debug.LogWarning($"[Player2] Start called but GameObject is not active: {gameObject.name}");
             return;
         }
         
+        // Validate animator before calling base.Start()
+        if (anim == null)
+        {
+            Debug.LogError($"[Player2] CRITICAL: Animator is NULL in Start! GameObject: {gameObject.name}", gameObject);
+            anim = GetComponentInChildren<Animator>(true);
+            if (anim != null)
+            {
+                Debug.Log($"[Player2] Emergency animator recovery successful!");
+            }
+        }
+        
+        Debug.Log($"[Player2] Calling base.Start() for {gameObject.name} with animator: {(anim != null ? anim.gameObject.name : "NULL")}");
         // Call base to properly initialize state machine
         base.Start();
     }
     
     private void OnEnable()
     {
+        // Don't enable input if this player is being destroyed or inactive
+        if (!gameObject.activeInHierarchy || !this || this == null)
+        {
+            return;
+        }
+        
+        // CRITICAL: Re-validate animator at OnEnable (can become null between Awake and OnEnable)
+        if (anim == null)
+        {
+            Debug.LogWarning($"[Player2] Animator is NULL in OnEnable! Attempting recovery for {gameObject.name}");
+            if (animatorOverride != null)
+            {
+                anim = animatorOverride;
+            }
+            else
+            {
+                anim = GetComponentInChildren<Animator>(true);
+            }
+            
+            if (anim == null)
+            {
+                Debug.LogError($"[Player2] FAILED to recover animator in OnEnable for {gameObject.name}!", gameObject);
+            }
+            else
+            {
+                Debug.Log($"[Player2] Successfully recovered animator in OnEnable: {anim.gameObject.name}");
+            }
+        }
+        
+        // Ensure input is initialized
+        if (input == null)
+        {
+            input = new PlayerInputSet();
+        }
+        
         // Enable input system
         input.Enable();
         
@@ -98,12 +153,18 @@ public class Player2 : Player
         input.Player.Search.performed += ctx => TryStartBlink();
         
         // Subscribe to Movement Input
-        input.Player.Movement.performed += ctx => playerMovement.SetMoveInput(ctx.ReadValue<Vector2>());
-        input.Player.Movement.canceled += ctx => playerMovement.SetMoveInput(Vector2.zero);
+        if (playerMovement != null)
+        {
+            input.Player.Movement.performed += ctx => playerMovement.SetMoveInput(ctx.ReadValue<Vector2>());
+            input.Player.Movement.canceled += ctx => playerMovement.SetMoveInput(Vector2.zero);
+        }
     }
     
     private void OnDisable()
     {
+        if (input == null)
+            return;
+            
         // Disable input system
         input.Disable();
         

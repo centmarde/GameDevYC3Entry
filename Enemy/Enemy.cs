@@ -144,8 +144,16 @@ public class Enemy : Entity, ITargetable
         // Wait before starting the decay effect
         yield return new WaitForSeconds(delayBeforeDecay);
 
-        // Create particle effect
-        GameObject particleObj = CreateGlowingParticles();
+        // Create particle effect (wrapped in try-catch for build safety)
+        GameObject particleObj = null;
+        try
+        {
+            particleObj = CreateGlowingParticles();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"Failed to create death particles: {e.Message}");
+        }
 
         // Store original position
         Vector3 startPosition = transform.position;
@@ -155,16 +163,15 @@ public class Enemy : Entity, ITargetable
         // Get all renderers to fade them out
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         
-        // Store original materials to fade
-        Material[][] originalMaterials = new Material[renderers.Length][];
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            originalMaterials[i] = renderers[i].materials;
-        }
-
         // Decay/sink into the ground
         while (elapsed < decayDuration)
         {
+            // Safety check: if object is already destroyed, exit
+            if (this == null || gameObject == null)
+            {
+                yield break;
+            }
+
             elapsed += Time.deltaTime;
             float t = elapsed / decayDuration;
             
@@ -191,7 +198,7 @@ public class Enemy : Entity, ITargetable
                 {
                     foreach (Material mat in renderer.materials)
                     {
-                        if (mat.HasProperty("_Color"))
+                        if (mat != null && mat.HasProperty("_Color"))
                         {
                             Color color = mat.color;
                             color.a = 1f - easeT; // Fade from 1 to 0
@@ -210,8 +217,11 @@ public class Enemy : Entity, ITargetable
             Destroy(particleObj, 0.5f);
         }
         
-        // Destroy the game object
-        Destroy(gameObject);
+        // Final safety check before destroying
+        if (this != null && gameObject != null)
+        {
+            Destroy(gameObject);
+        }
     }
 
     private GameObject CreateGlowingParticles()
@@ -259,37 +269,91 @@ public class Enemy : Entity, ITargetable
         sizeOverLifetime.enabled = true;
         sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 1, 1, 0));
 
-        // Enable lights on particles
-        var lights = ps.lights;
-        lights.enabled = true;
-        lights.ratio = 0.3f; // 30% of particles emit light
-        lights.useRandomDistribution = true;
-        lights.maxLights = 6; // Limit for performance
-        
-        // Create a point light prefab for particles
-        GameObject lightTemplate = new GameObject("ParticleLight");
-        lightTemplate.transform.parent = particleObj.transform;
-        Light pointLight = lightTemplate.AddComponent<Light>();
-        pointLight.type = LightType.Point;
-        pointLight.color = new Color(1f, 0.6f, 0.2f); // Orange light
-        pointLight.intensity = 0.8f;
-        pointLight.range = 2.5f;
-        pointLight.shadows = LightShadows.Soft; // Enable soft shadows
-        pointLight.shadowStrength = 0.8f;
-        pointLight.shadowBias = 0.05f;
-        pointLight.shadowNormalBias = 0.4f;
-        
-        lights.light = pointLight;
-        
-        // Use intensity over lifetime to fade lights
-        lights.useParticleColor = true;
-        lights.intensityMultiplier = 1f; // Base intensity multiplier
-        lights.rangeMultiplier = 1f; // Base range multiplier
+        // Try to enable lights on particles (may fail in some builds)
+        try
+        {
+            var lights = ps.lights;
+            lights.enabled = true;
+            lights.ratio = 0.3f; // 30% of particles emit light
+            lights.useRandomDistribution = true;
+            lights.maxLights = 6; // Limit for performance
+            
+            // Create a point light prefab for particles
+            GameObject lightTemplate = new GameObject("ParticleLight");
+            lightTemplate.transform.parent = particleObj.transform;
+            Light pointLight = lightTemplate.AddComponent<Light>();
+            pointLight.type = LightType.Point;
+            pointLight.color = new Color(1f, 0.6f, 0.2f); // Orange light
+            pointLight.intensity = 0.8f;
+            pointLight.range = 2.5f;
+            pointLight.shadows = LightShadows.Soft; // Enable soft shadows
+            pointLight.shadowStrength = 0.8f;
+            pointLight.shadowBias = 0.05f;
+            pointLight.shadowNormalBias = 0.4f;
+            
+            lights.light = pointLight;
+            
+            // Use intensity over lifetime to fade lights
+            lights.useParticleColor = true;
+            lights.intensityMultiplier = 1f; // Base intensity multiplier
+            lights.rangeMultiplier = 1f; // Base range multiplier
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"Failed to create particle lights: {e.Message}");
+        }
 
         // Renderer settings for glow
         var renderer = particleObj.GetComponent<ParticleSystemRenderer>();
-        renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-        renderer.material.SetColor("_Color", new Color(1f, 0.6f, 0.2f, 1f));
+        
+        // Try to find shader, fallback to default if not found
+        Shader particleShader = Shader.Find("Particles/Standard Unlit");
+        if (particleShader == null)
+        {
+            particleShader = Shader.Find("Mobile/Particles/Additive");
+        }
+        if (particleShader == null)
+        {
+            particleShader = Shader.Find("Legacy Shaders/Particles/Additive");
+        }
+        if (particleShader == null)
+        {
+            // Final fallback - use default particle shader
+            particleShader = Shader.Find("Particles/Additive");
+        }
+        
+        Color particleColor = new Color(1f, 0.6f, 0.2f, 1f); // Orange color
+        
+        if (particleShader != null)
+        {
+            renderer.material = new Material(particleShader);
+            
+            // Try multiple property names to ensure color is set
+            if (renderer.material.HasProperty("_Color"))
+            {
+                renderer.material.SetColor("_Color", particleColor);
+            }
+            if (renderer.material.HasProperty("_TintColor"))
+            {
+                renderer.material.SetColor("_TintColor", particleColor);
+            }
+            if (renderer.material.HasProperty("_EmissionColor"))
+            {
+                renderer.material.SetColor("_EmissionColor", particleColor);
+            }
+            
+            // Enable emission if available
+            if (renderer.material.HasProperty("_EmissionEnabled"))
+            {
+                renderer.material.SetFloat("_EmissionEnabled", 1f);
+            }
+        }
+        else
+        {
+            // No shader found, use default material color
+            renderer.material.color = particleColor;
+        }
+        
         renderer.renderMode = ParticleSystemRenderMode.Billboard;
 
         return particleObj;

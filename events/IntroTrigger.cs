@@ -43,6 +43,7 @@ public class IntroTrigger : MonoBehaviour
     private CharacterController[] playerCharControllers;
     private Animator[] playerAnimators;
     private GameObject triggeringPlayer; // Track which player triggered the cutscene
+    private Player triggeringPlayerComponent; // Track triggering player's component for input control
     
     // Store animation state
     private AnimatorStateInfo originalAnimState;
@@ -113,6 +114,13 @@ public class IntroTrigger : MonoBehaviour
             
             // Store which player triggered the cutscene
             triggeringPlayer = other.gameObject;
+            triggeringPlayerComponent = other.GetComponent<Player>();
+            
+            if (triggeringPlayerComponent == null)
+            {
+                Debug.LogWarning("[IntroTrigger] No Player component found on triggering object!");
+            }
+            
             StartCoroutine(PlayCutscene());
         }
     }
@@ -283,7 +291,14 @@ public class IntroTrigger : MonoBehaviour
     {
         if (players == null || players.Length == 0) return;
         
-       // Debug.Log("Disabling player controls");
+        Debug.Log("[IntroTrigger] Disabling player controls and input");
+        
+        // CRITICAL: Disable input for the triggering player (Player tag)
+        if (triggeringPlayerComponent != null && triggeringPlayerComponent.input != null)
+        {
+            triggeringPlayerComponent.input.Disable();
+            Debug.Log($"[IntroTrigger] Disabled input for {triggeringPlayer.name}");
+        }
         
         // Disable controls for all players
         for (int i = 0; i < players.Length; i++)
@@ -361,7 +376,14 @@ public class IntroTrigger : MonoBehaviour
     {
         if (players == null || players.Length == 0) return;
         
-      //  Debug.Log("Re-enabling player controls");
+        Debug.Log("[IntroTrigger] Re-enabling player controls and input");
+        
+        // CRITICAL: Re-enable input for the triggering player (Player tag)
+        if (triggeringPlayerComponent != null && triggeringPlayerComponent.input != null)
+        {
+            triggeringPlayerComponent.input.Enable();
+            Debug.Log($"[IntroTrigger] Re-enabled input for {triggeringPlayer.name}");
+        }
         
         // Re-enable controls for all players
         for (int i = 0; i < players.Length; i++)
@@ -376,7 +398,7 @@ public class IntroTrigger : MonoBehaviour
                 TrySetAnimatorParameter(playerAnimators[i], "poseOrLook", 0f);      // Idle pose
                 TrySetAnimatorParameter(playerAnimators[i], "move", false);         // No movement
                 
-             //   Debug.Log("Player animation restored to idle");
+                Debug.Log("[IntroTrigger] Player animation restored to idle");
             }
             
             // Re-enable all MonoBehaviour scripts on player
