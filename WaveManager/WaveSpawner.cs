@@ -223,6 +223,7 @@ public class WaveSpawner : MonoBehaviour
         // Validate enemy configuration
         if (enemyGroups == null || enemyGroups.Length == 0)
         {
+            Debug.LogError("[WaveSpawner] Cannot start wave - enemyGroups is null or empty!");
             return;
         }
         
@@ -230,11 +231,21 @@ public class WaveSpawner : MonoBehaviour
         int randomGroupIndex = Random.Range(0, enemyGroups.Length);
         currentWaveGroup = enemyGroups[randomGroupIndex];
         
+        // Validate the selected group
+        if (currentWaveGroup == null || currentWaveGroup.enemies == null || currentWaveGroup.enemies.Length == 0)
+        {
+            Debug.LogError($"[WaveSpawner] Selected enemy group {randomGroupIndex} is invalid or has no enemies!");
+            return;
+        }
+        
+        Debug.Log($"[WaveSpawner] Starting wave with {enemyCount} enemies from group '{currentWaveGroup.groupName}'");
+        
         // Validate spawn mode requirements
         if (spawnMode == SpawnMode.Manual)
         {
             if (spawnPoints == null || spawnPoints.Length == 0)
             {
+                Debug.LogError("[WaveSpawner] Cannot start wave - Manual mode requires spawn points!");
                 return;
             }
         }
@@ -242,7 +253,13 @@ public class WaveSpawner : MonoBehaviour
         {
             if (playerTransform == null)
             {
-                return;
+                Debug.LogError("[WaveSpawner] Cannot start wave - Circular mode requires player transform!");
+                RefreshPlayerReference();
+                if (playerTransform == null)
+                {
+                    Debug.LogError("[WaveSpawner] Player transform still null after refresh attempt!");
+                    return;
+                }
             }
         }
         
@@ -262,6 +279,7 @@ public class WaveSpawner : MonoBehaviour
         {
             CancelInvoke(nameof(SpawnEnemy));
             isSpawning = false;
+            Debug.Log($"[WaveSpawner] Wave complete - spawned {enemiesSpawned}/{enemiesToSpawn} enemies");
             return;
         }
         
@@ -271,6 +289,24 @@ public class WaveSpawner : MonoBehaviour
         if (currentWaveGroup != null)
         {
             enemyPrefab = currentWaveGroup.GetRandomEnemy();
+        }
+        
+        // Critical: If we can't get a prefab, this is a serious error
+        if (enemyPrefab == null)
+        {
+            Debug.LogError($"[WaveSpawner] Failed to get enemy prefab! Group: {(currentWaveGroup != null ? currentWaveGroup.groupName : "NULL")}, Spawned: {enemiesSpawned}/{enemiesToSpawn}");
+            
+            // Still increment to prevent infinite loop
+            enemiesSpawned++;
+            
+            // If we've failed too many times, stop spawning
+            if (enemiesSpawned >= enemiesToSpawn)
+            {
+                CancelInvoke(nameof(SpawnEnemy));
+                isSpawning = false;
+                Debug.LogError($"[WaveSpawner] Stopping spawn loop due to repeated failures");
+            }
+            return;
         }
         
         // Get spawn position based on mode
@@ -309,35 +345,40 @@ public class WaveSpawner : MonoBehaviour
             }
         }
         
-        // Spawn the enemy
-        if (enemyPrefab != null)
+        // Spawn the enemy (enemyPrefab null check already done above)
+        GameObject spawnedEnemy = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
+        
+        if (spawnedEnemy == null)
         {
-            GameObject spawnedEnemy = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
-            
-            // Ensure enemy has the "Enemy" tag
-            if (!spawnedEnemy.CompareTag("Enemy"))
-            {
-                spawnedEnemy.tag = "Enemy";
-            }
-            
-            // Apply stat bonuses
-            ApplyStatBonuses(spawnedEnemy);
-            
-            // Add enemy death tracker component if not present
-            EnemyDeathTracker deathTracker = spawnedEnemy.GetComponent<EnemyDeathTracker>();
-            if (deathTracker == null)
-            {
-                deathTracker = spawnedEnemy.AddComponent<EnemyDeathTracker>();
-            }
-            
-            // Register the spawn with wave manager
-            if (waveManager != null)
-            {
-                waveManager.RegisterEnemySpawned();
-            }
-            
+            Debug.LogError($"[WaveSpawner] Instantiate returned null for prefab: {enemyPrefab.name}");
             enemiesSpawned++;
+            return;
         }
+        
+        // Ensure enemy has the "Enemy" tag
+        if (!spawnedEnemy.CompareTag("Enemy"))
+        {
+            spawnedEnemy.tag = "Enemy";
+        }
+        
+        // Apply stat bonuses
+        ApplyStatBonuses(spawnedEnemy);
+        
+        // Add enemy death tracker component if not present
+        EnemyDeathTracker deathTracker = spawnedEnemy.GetComponent<EnemyDeathTracker>();
+        if (deathTracker == null)
+        {
+            deathTracker = spawnedEnemy.AddComponent<EnemyDeathTracker>();
+        }
+        
+        // Register the spawn with wave manager
+        if (waveManager != null)
+        {
+            waveManager.RegisterEnemySpawned();
+        }
+        
+        enemiesSpawned++;
+        Debug.Log($"[WaveSpawner] Successfully spawned enemy {enemiesSpawned}/{enemiesToSpawn}: {spawnedEnemy.name} at {spawnPosition}");
     }
     
     /// <summary>

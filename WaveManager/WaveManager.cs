@@ -59,14 +59,32 @@ public class WaveManager : MonoBehaviour
     
     private void Awake()
     {
-        // Find references if not assigned
+        // Find references if not assigned (but don't fail if not found yet)
         if (waveSpawners == null || waveSpawners.Length == 0)
         {
             WaveSpawner spawner = GetComponent<WaveSpawner>();
             if (spawner != null)
+            {
                 waveSpawners = new WaveSpawner[] { spawner };
+            }
             else
-                waveSpawners = FindObjectsOfType<WaveSpawner>();
+            {
+                // Only find active spawners (false = excludeInactive)
+                WaveSpawner[] foundSpawners = FindObjectsOfType<WaveSpawner>(false);
+                if (foundSpawners != null && foundSpawners.Length > 0)
+                {
+                    waveSpawners = foundSpawners;
+                }
+            }
+            
+            if (waveSpawners == null || waveSpawners.Length == 0)
+            {
+                Debug.LogWarning("[WaveManager] No active spawners found in Awake - will search again when player spawns");
+            }
+            else
+            {
+                Debug.Log($"[WaveManager] Found {waveSpawners.Length} spawner(s) in Awake");
+            }
         }
         
         if (waveUI == null)
@@ -97,6 +115,13 @@ public class WaveManager : MonoBehaviour
         if (activePlayer == null)
         {
             DetectActivePlayer();
+        }
+        
+        // Refresh spawner search after player is spawned
+        if ((waveSpawners == null || waveSpawners.Length == 0) && activePlayer != null)
+        {
+            Debug.Log("[WaveManager] Searching for spawners after player spawn...");
+            RefreshSpawnerReferences();
         }
         
         // Pass player reference to all WaveSpawners
@@ -264,6 +289,8 @@ public class WaveManager : MonoBehaviour
         }
         
         enemiesInCurrentWave = CalculateEnemyCount(currentWave);
+        Debug.Log($"[WaveManager] Wave {currentWave} starting - Total enemies: {enemiesInCurrentWave}, Base: {baseEnemyCount}, Increase: {enemyIncreasePerWave}, Dynamic: {useDynamicScaling}");
+        
         enemiesAlive = 0;
         waveInProgress = true;
         spawningComplete = false;
@@ -279,22 +306,98 @@ public class WaveManager : MonoBehaviour
         // Trigger event
         OnWaveStart?.Invoke(currentWave);
         
+        // Refresh spawners if not found or all null/inactive
+        if (waveSpawners == null || waveSpawners.Length == 0)
+        {
+            Debug.LogWarning("[WaveManager] No spawners assigned, searching now...");
+            RefreshSpawnerReferences();
+        }
+        
         // Start spawning with current stat bonuses across all spawners
         if (waveSpawners != null && waveSpawners.Length > 0)
         {
-            // Distribute enemies across all spawners
-            int enemiesPerSpawner = Mathf.CeilToInt((float)enemiesInCurrentWave / waveSpawners.Length);
-            
+            // Count active spawners (check enabled component, not just hierarchy)
+            int activeSpawnerCount = 0;
             foreach (WaveSpawner spawner in waveSpawners)
             {
-                if (spawner != null)
+                if (spawner != null && spawner.enabled && spawner.gameObject.activeInHierarchy)
                 {
-                    spawner.StartWave(enemiesPerSpawner, currentHealthBonus, currentDamageBonus);
+                    activeSpawnerCount++;
+                }
+            }
+            
+            if (activeSpawnerCount == 0)
+            {
+                Debug.LogError($"[WaveManager] No active spawners found! Spawners array length: {waveSpawners.Length}");
+                
+                // Debug each spawner
+                for (int i = 0; i < waveSpawners.Length; i++)
+                {
+                    WaveSpawner spawner = waveSpawners[i];
+                    if (spawner == null)
+                    {
+                        Debug.LogError($"  Spawner[{i}]: NULL");
+                    }
+                    else
+                    {
+                        Debug.LogError($"  Spawner[{i}]: {spawner.gameObject.name} - Active: {spawner.gameObject.activeInHierarchy}, Enabled: {spawner.enabled}");
+                    }
+                }
+                
+                // Try to refresh spawners one more time
+                Debug.Log("[WaveManager] Attempting to refresh spawner references...");
+                RefreshSpawnerReferences();
+                
+                // Recount after refresh
+                activeSpawnerCount = 0;
+                if (waveSpawners != null)
+                {
+                    foreach (WaveSpawner spawner in waveSpawners)
+                    {
+                        if (spawner != null && spawner.enabled && spawner.gameObject.activeInHierarchy)
+                        {
+                            activeSpawnerCount++;
+                        }
+                    }
+                }
+                
+                if (activeSpawnerCount == 0)
+                {
+                    Debug.LogError($"[WaveManager] Still no active spawners after refresh. Cannot start wave.");
+                    return;
+                }
+                else
+                {
+                    Debug.Log($"[WaveManager] Found {activeSpawnerCount} active spawner(s) after refresh!");
+                }
+            }
+            
+            // Distribute enemies evenly across spawners
+            int enemiesPerSpawner = enemiesInCurrentWave / activeSpawnerCount;
+            int remainderEnemies = enemiesInCurrentWave % activeSpawnerCount;
+            
+            Debug.Log($"[WaveManager] Distributing {enemiesInCurrentWave} enemies across {activeSpawnerCount} spawner(s): {enemiesPerSpawner} each + {remainderEnemies} remainder");
+            
+            int spawnerIndex = 0;
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null && spawner.enabled && spawner.gameObject.activeInHierarchy)
+                {
+                    // Give extra enemy to first spawners if there's a remainder
+                    int enemiesToGive = enemiesPerSpawner + (spawnerIndex < remainderEnemies ? 1 : 0);
+                    
+                    Debug.Log($"[WaveManager] Starting spawner {spawnerIndex} ({spawner.gameObject.name}) with {enemiesToGive} enemies (HP+{currentHealthBonus}, DMG+{currentDamageBonus})");
+                    spawner.StartWave(enemiesToGive, currentHealthBonus, currentDamageBonus);
+                    spawnerIndex++;
                 }
             }
             
             // Check for spawning completion
             Invoke(nameof(CheckSpawningCompletion), 1f);
+        }
+        else
+        {
+            Debug.LogError($"[WaveManager] No spawners available! Cannot start wave.");
         }
     }
     
@@ -312,14 +415,18 @@ public class WaveManager : MonoBehaviour
             if (difficultyScaling != null && difficultyScaling.length > 0)
             {
                 float multiplier = difficultyScaling.Evaluate(wave);
-                return Mathf.RoundToInt(linearCount * multiplier);
+                int finalCount = Mathf.RoundToInt(linearCount * multiplier);
+                Debug.Log($"[WaveManager] Enemy count calculation - Wave: {wave}, Linear: {linearCount}, Multiplier: {multiplier:F2}, Final: {finalCount}");
+                return finalCount;
             }
             
+            Debug.Log($"[WaveManager] Enemy count calculation - Wave: {wave}, Linear (no curve): {linearCount}");
             return linearCount;
         }
         else
         {
             // Simple: just return base count
+            Debug.Log($"[WaveManager] Enemy count calculation - Wave: {wave}, Static: {baseEnemyCount} (scaling disabled)");
             return baseEnemyCount;
         }
     }
@@ -472,6 +579,12 @@ public class WaveManager : MonoBehaviour
     {
         activePlayer = player;
         Debug.Log($"[WaveManager] Active player manually set to: {(player != null ? player.name : "null")}");
+        
+        // Refresh spawners when player is set
+        if (player != null)
+        {
+            RefreshSpawnerReferences();
+        }
     }
     
     /// <summary>
@@ -546,6 +659,77 @@ public class WaveManager : MonoBehaviour
             ResumeWaves();
         else
             PauseWaves();
+    }
+    
+    /// <summary>
+    /// Refresh the spawner references (useful when player spawns at runtime)
+    /// </summary>
+    public void RefreshSpawnerReferences()
+    {
+        // Method 1: Try to find on active player if we have one
+        if (activePlayer != null && activePlayer.activeInHierarchy)
+        {
+            // Search only in active player's children (includeInactive = false)
+            WaveSpawner[] playerSpawners = activePlayer.GetComponentsInChildren<WaveSpawner>(false);
+            if (playerSpawners != null && playerSpawners.Length > 0)
+            {
+                waveSpawners = playerSpawners;
+                Debug.Log($"[WaveManager] Found {waveSpawners.Length} spawner(s) on active player: {activePlayer.name}");
+                return;
+            }
+        }
+        
+        // Method 2: Search on this WaveManager object
+        WaveSpawner spawner = GetComponent<WaveSpawner>();
+        if (spawner != null && spawner.gameObject.activeInHierarchy)
+        {
+            waveSpawners = new WaveSpawner[] { spawner };
+            Debug.Log($"[WaveManager] Found spawner on WaveManager object");
+            return;
+        }
+        
+        // Method 3: Search scene for ONLY active spawners
+        WaveSpawner[] allSpawners = FindObjectsOfType<WaveSpawner>(false); // false = only active
+        if (allSpawners != null && allSpawners.Length > 0)
+        {
+            // Filter to only include spawners on active GameObjects
+            System.Collections.Generic.List<WaveSpawner> activeSpawners = new System.Collections.Generic.List<WaveSpawner>();
+            foreach (WaveSpawner s in allSpawners)
+            {
+                if (s != null && s.gameObject.activeInHierarchy && s.enabled)
+                {
+                    activeSpawners.Add(s);
+                }
+            }
+            
+            if (activeSpawners.Count > 0)
+            {
+                waveSpawners = activeSpawners.ToArray();
+                Debug.Log($"[WaveManager] Found {waveSpawners.Length} active spawner(s) in scene");
+            }
+            else
+            {
+                Debug.LogWarning($"[WaveManager] Found {allSpawners.Length} spawner(s) but none are active/enabled");
+                waveSpawners = new WaveSpawner[0];
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[WaveManager] No spawners found in scene at all");
+            waveSpawners = new WaveSpawner[0];
+        }
+        
+        // Pass player reference to newly found spawners
+        if (activePlayer != null && waveSpawners != null && waveSpawners.Length > 0)
+        {
+            foreach (WaveSpawner spawner2 in waveSpawners)
+            {
+                if (spawner2 != null)
+                {
+                    spawner2.UpdatePlayerReference(activePlayer.transform);
+                }
+            }
+        }
     }
     
     /// <summary>
