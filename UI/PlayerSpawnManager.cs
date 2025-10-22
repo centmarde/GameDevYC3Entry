@@ -11,8 +11,10 @@ public class PlayerSpawnManager : MonoBehaviour
     [SerializeField] private GameObject player2Prefab;
     
     [Header("Spawn Settings")]
-    [SerializeField] private Transform spawnPoint;
     [SerializeField] private bool executeOnStart = true;
+    [SerializeField] private Portal spawnPortal;
+    [Tooltip("If no portal is assigned, will try to find a Portal in the scene")]
+    [SerializeField] private bool autoFindPortal = true;
 
     private GameObject activePlayer;
     private bool hasSpawned = false; // Prevent multiple spawns
@@ -36,6 +38,20 @@ public class PlayerSpawnManager : MonoBehaviour
     private void Start()
     {
         Debug.Log($"[PlayerSpawnManager] Start called on {gameObject.name}, executeOnStart: {executeOnStart}, hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+        
+        // Try to find portal if auto-find is enabled and no portal assigned
+        if (autoFindPortal && spawnPortal == null)
+        {
+            spawnPortal = FindObjectOfType<Portal>();
+            if (spawnPortal != null)
+            {
+                Debug.Log($"[PlayerSpawnManager] Auto-found portal: {spawnPortal.GetPortalName()}");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerSpawnManager] No Portal found in scene! Player will spawn at origin.");
+            }
+        }
         
         // Only spawn if enabled, not spawned yet, and not spawned this session
         if (executeOnStart && !hasSpawned && !playerSpawnedThisSession)
@@ -95,9 +111,19 @@ public class PlayerSpawnManager : MonoBehaviour
             return;
         }
 
-        // Determine spawn position
-        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.position : Vector3.zero;
-        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
+        // Get spawn position and rotation from portal (or use origin as fallback)
+        Vector3 spawnPosition = Vector3.zero;
+        Quaternion spawnRotation = Quaternion.identity;
+        
+        if (spawnPortal != null && spawnPortal.IsActive())
+        {
+            spawnPortal.GetSpawnTransform(out spawnPosition, out spawnRotation);
+            Debug.Log($"[PlayerSpawnManager] Using Portal '{spawnPortal.GetPortalName()}' spawn point at {spawnPosition}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerSpawnManager] No active portal found! Spawning at origin (0,0,0)");
+        }
 
         // Destroy existing player if any (shouldn't happen due to check above, but just in case)
         if (activePlayer != null)
@@ -107,7 +133,7 @@ public class PlayerSpawnManager : MonoBehaviour
             activePlayer = null;
         }
 
-        // Spawn the player
+        // Spawn the player at portal location
         activePlayer = Instantiate(prefabToSpawn, spawnPosition, spawnRotation);
         activePlayer.name = selectedIndex == 0 ? "Player1" : "Player2";
         
@@ -274,6 +300,22 @@ public class PlayerSpawnManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Spawns the player at a specific portal
+    /// </summary>
+    /// <param name="portal">The portal to spawn at</param>
+    public void SpawnPlayerAtPortal(Portal portal)
+    {
+        if (portal == null)
+        {
+            Debug.LogError("[PlayerSpawnManager] Cannot spawn at null portal!");
+            return;
+        }
+        
+        spawnPortal = portal;
+        SpawnSelectedPlayer();
+    }
+
+    /// <summary>
     /// Validates the setup in the Inspector
     /// </summary>
     private void OnValidate()
@@ -282,25 +324,13 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             Debug.LogWarning("[PlayerSpawnManager] Both Player1 and Player2 prefabs must be assigned!");
         }
-        if (spawnPoint == null)
+        
+        if (autoFindPortal && spawnPortal == null)
         {
-            Debug.LogWarning("[PlayerSpawnManager] No spawn point assigned. Will spawn at (0,0,0)");
+            // This will only run in editor, not at runtime
+            spawnPortal = FindObjectOfType<Portal>();
         }
     }
 
-#if UNITY_EDITOR
-    /// <summary>
-    /// Draws gizmos in the editor to show spawn point
-    /// </summary>
-    private void OnDrawGizmosSelected()
-    {
-        if (spawnPoint != null)
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(spawnPoint.position, 1f);
-            Gizmos.DrawLine(spawnPoint.position, spawnPoint.position + spawnPoint.forward * 2f);
-            UnityEditor.Handles.Label(spawnPoint.position + Vector3.up * 2f, "Player Spawn Point");
-        }
-    }
-#endif
+
 }

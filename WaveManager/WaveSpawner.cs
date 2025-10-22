@@ -10,6 +10,10 @@ public class WaveSpawner : MonoBehaviour
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
     [Tooltip("Player transform reference (automatically set by WaveManager)")]
     [SerializeField] private Transform playerTransform;
+    [Tooltip("If true, continuously searches for player if not found (useful for runtime-spawned players)")]
+    [SerializeField] private bool autoFindPlayer = true;
+    [Tooltip("How often to refresh player reference (in seconds). Set to 0 to check every spawn.")]
+    [SerializeField] private float playerRefreshInterval = 0f;
     
     [Header("Manual Spawn Points (Manual Mode Only)")]
     [SerializeField] private Transform[] spawnPoints; // Array of spawn point transforms
@@ -32,6 +36,7 @@ public class WaveSpawner : MonoBehaviour
     private float currentHealthBonus = 0f;
     private float currentDamageBonus = 0f;
     private EnemyGroup currentWaveGroup = null; // The group selected for this wave
+    private float lastPlayerRefreshTime = 0f; // Track when we last refreshed player reference
     
     public enum SpawnMode
     {
@@ -97,6 +102,30 @@ public class WaveSpawner : MonoBehaviour
         {
             waveManager = FindObjectOfType<WaveManager>();
         }
+        
+        // Try to find player on awake if auto-find is enabled
+        if (autoFindPlayer && playerTransform == null)
+        {
+            RefreshPlayerReference();
+        }
+    }
+    
+    private void Update()
+    {
+        // Continuously check for player if auto-find is enabled and player is missing
+        if (autoFindPlayer && playerTransform == null)
+        {
+            RefreshPlayerReference();
+        }
+        // Or refresh periodically if interval is set
+        else if (autoFindPlayer && playerRefreshInterval > 0f)
+        {
+            if (Time.time - lastPlayerRefreshTime >= playerRefreshInterval)
+            {
+                RefreshPlayerReference();
+                lastPlayerRefreshTime = Time.time;
+            }
+        }
     }
     
     /// <summary>
@@ -105,7 +134,77 @@ public class WaveSpawner : MonoBehaviour
     public void UpdatePlayerReference(Transform newPlayerTransform)
     {
         playerTransform = newPlayerTransform;
-        Debug.Log($"[WaveSpawner] Player reference updated to: {newPlayerTransform.name}");
+        Debug.Log($"[WaveSpawner] Player reference updated to: {(newPlayerTransform != null ? newPlayerTransform.name : "NULL")}");
+    }
+    
+    /// <summary>
+    /// Attempts to re-acquire player reference from WaveManager
+    /// </summary>
+    private void UpdatePlayerReferenceFromWaveManager()
+    {
+        if (waveManager != null)
+        {
+            GameObject player = waveManager.GetActivePlayer();
+            if (player != null)
+            {
+                playerTransform = player.transform;
+                Debug.Log($"[WaveSpawner] Re-acquired player reference from WaveManager: {player.name}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Refreshes the player reference by searching for active player in scene
+    /// This is called automatically if autoFindPlayer is enabled
+    /// </summary>
+    private void RefreshPlayerReference()
+    {
+        // Method 1: Try to get from WaveManager first
+        if (waveManager != null)
+        {
+            GameObject player = waveManager.GetActivePlayer();
+            if (player != null && player.activeInHierarchy)
+            {
+                playerTransform = player.transform;
+                return;
+            }
+        }
+        
+        // Method 2: Try to find by tag
+        GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
+        if (playerByTag != null && playerByTag.activeInHierarchy)
+        {
+            playerTransform = playerByTag.transform;
+            Debug.Log($"[WaveSpawner] Found player by tag: {playerByTag.name} at position {playerTransform.position}");
+            return;
+        }
+        
+        // Method 3: Try to find by name
+        GameObject player1 = GameObject.Find("Player1");
+        GameObject player2 = GameObject.Find("Player2");
+        
+        if (player1 != null && player1.activeInHierarchy)
+        {
+            playerTransform = player1.transform;
+            Debug.Log($"[WaveSpawner] Found Player1 at position {playerTransform.position}");
+            return;
+        }
+        
+        if (player2 != null && player2.activeInHierarchy)
+        {
+            playerTransform = player2.transform;
+            Debug.Log($"[WaveSpawner] Found Player2 at position {playerTransform.position}");
+            return;
+        }
+        
+        // Method 4: Find by component type
+        Player playerComponent = FindObjectOfType<Player>();
+        if (playerComponent != null && playerComponent.gameObject.activeInHierarchy)
+        {
+            playerTransform = playerComponent.transform;
+            Debug.Log($"[WaveSpawner] Found player by component: {playerComponent.gameObject.name} at position {playerTransform.position}");
+            return;
+        }
     }
     
     /// <summary>
@@ -188,9 +287,26 @@ public class WaveSpawner : MonoBehaviour
         }
         else // CircularAroundPlayer
         {
-            // Calculate spawn position around player
+            // Calculate spawn position around player's CURRENT position
             spawnPosition = GetCircularSpawnPosition();
-            spawnRotation = Quaternion.LookRotation(playerTransform.position - spawnPosition);
+            
+            // Make enemy face towards player's CURRENT position
+            if (playerTransform != null)
+            {
+                Vector3 directionToPlayer = playerTransform.position - spawnPosition;
+                if (directionToPlayer != Vector3.zero)
+                {
+                    spawnRotation = Quaternion.LookRotation(directionToPlayer);
+                }
+                else
+                {
+                    spawnRotation = Quaternion.identity;
+                }
+            }
+            else
+            {
+                spawnRotation = Quaternion.identity;
+            }
         }
         
         // Spawn the enemy
@@ -226,10 +342,25 @@ public class WaveSpawner : MonoBehaviour
     
     /// <summary>
     /// Calculate a spawn position around the player in a circular pattern
+    /// Uses the player's CURRENT real-time position
     /// </summary>
     private Vector3 GetCircularSpawnPosition()
     {
-        if (playerTransform == null) return Vector3.zero;
+        // CRITICAL: Always refresh player reference before spawning if auto-find is enabled
+        if (autoFindPlayer && (playerTransform == null || !playerTransform.gameObject.activeInHierarchy))
+        {
+            RefreshPlayerReference();
+        }
+        
+        // Validate player transform
+        if (playerTransform == null)
+        {
+            Debug.LogError("[WaveSpawner] No player transform available! Cannot calculate spawn position.");
+            return Vector3.zero;
+        }
+        
+        // Get the player's CURRENT real-time position (this reads the transform every time!)
+        Vector3 currentPlayerPosition = playerTransform.position;
         
         // Pick a random direction (one of the cardinal/diagonal directions)
         int directionIndex = Random.Range(0, spawnDirections);
@@ -255,8 +386,10 @@ public class WaveSpawner : MonoBehaviour
             );
         }
         
-        // Return world position
-        return playerTransform.position + offset;
+        // Return world position based on CURRENT player position
+        Vector3 spawnPos = currentPlayerPosition + offset;
+        
+        return spawnPos;
     }
     
     /// <summary>
@@ -318,14 +451,32 @@ public class WaveSpawner : MonoBehaviour
     
     /// <summary>
     /// Visualize spawn points in editor
+    /// Uses real-time player position if available
     /// </summary>
     private void OnDrawGizmosSelected()
     {
         if (spawnMode == SpawnMode.CircularAroundPlayer)
         {
-            Transform target = playerTransform != null ? playerTransform : transform;
+            // Try to get real-time player position
+            Transform target = playerTransform;
             
-            // Draw spawn circle
+            // If no player transform, try to find one
+            if (target == null && Application.isPlaying)
+            {
+                GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+                if (playerObj != null)
+                {
+                    target = playerObj.transform;
+                }
+            }
+            
+            // Fallback to this transform
+            if (target == null)
+            {
+                target = transform;
+            }
+            
+            // Draw spawn circle using CURRENT position
             Gizmos.color = Color.yellow;
             DrawCircle(target.position, spawnDistance, 32);
             
