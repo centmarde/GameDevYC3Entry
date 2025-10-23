@@ -13,11 +13,8 @@ public class UpgradeSpriteManager
     [SerializeField] private Sprite criticalChanceUpgradeSprite;
     [SerializeField] private Sprite criticalDamageUpgradeSprite;
     [SerializeField] private Sprite evasionUpgradeSprite;
-    [SerializeField] private Sprite unlockSkillUpgradeSprite;
-    [SerializeField] private Sprite projectileCountUpgradeSprite;
-    [SerializeField] private Sprite projectileDamageUpgradeSprite;
-    [SerializeField] private Sprite projectileRadiusUpgradeSprite;
-    [SerializeField] private Sprite projectileSpeedUpgradeSprite;
+    [SerializeField] private Sprite circlingProjectilesUpgradeSprite;
+    [SerializeField] private Sprite pushWaveUpgradeSprite;
     [SerializeField] private Sprite blinkDistanceUpgradeSprite;
     [SerializeField] private Sprite blinkCooldownUpgradeSprite;
     [SerializeField] private Sprite dashCooldownUpgradeSprite;
@@ -43,16 +40,10 @@ public class UpgradeSpriteManager
                 return criticalDamageUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.Evasion:
                 return evasionUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UnlockCirclingProjectiles:
-                return unlockSkillUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileCount:
-                return projectileCountUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileDamage:
-                return projectileDamageUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileRadius:
-                return projectileRadiusUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileSpeed:
-                return projectileSpeedUpgradeSprite ?? defaultUpgradeSprite;
+            case PlayerUpgradeManager.UpgradeType.UpgradeCirclingProjectiles:
+                return circlingProjectilesUpgradeSprite ?? defaultUpgradeSprite;
+            case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
+                return pushWaveUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 return blinkDistanceUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.ReduceBlinkCooldown:

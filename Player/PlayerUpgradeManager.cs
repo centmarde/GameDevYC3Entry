@@ -38,6 +38,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     private Player[] players;
     private Player2[] player2s;
     private PlayerSkill_CirclingProjectiles[] circlingProjectilesSkills;
+    private PlayerSkill_PushWave[] pushWaveSkills;
     private bool upgradePending = false;
     private UpgradeType[] currentUpgradeOptions = new UpgradeType[3];
     
@@ -49,11 +50,8 @@ public class PlayerUpgradeManager : MonoBehaviour
         CriticalChance,
         CriticalDamage,
         Evasion,
-        UnlockCirclingProjectiles,
-        UpgradeProjectileCount,
-        UpgradeProjectileDamage,
-        UpgradeProjectileRadius,
-        UpgradeProjectileSpeed,
+        UpgradeCirclingProjectiles, // Level-based upgrade (1-10) that increases all stats
+        UpgradePushWave, // Level-based upgrade (1-10) that increases radius, force, damage, reduces cooldown
         // Player2 specific upgrades
         UpgradeBlinkDistance,
         ReduceBlinkCooldown,
@@ -98,17 +96,58 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     private void SetupReferences()
     {
-        // Find all Player2 instances
-        if (player2s == null || player2s.Length == 0)
+        RefreshPlayerReferences();
+    }
+    
+    /// <summary>
+    /// Refresh player references (call this when players might have changed)
+    /// </summary>
+    private void RefreshPlayerReferences()
+    {
+        // Find all Player2 instances (including inactive)
+        player2s = FindObjectsOfType<Player2>(true);
+        Debug.Log($"[PlayerUpgradeManager] Found {player2s.Length} Player2 instances");
+        
+        // Find all Player instances (including inactive) - this will also find Player2 since it inherits from Player
+        Player[] allPlayers = FindObjectsOfType<Player>(true);
+        
+        // Filter out Player2 instances to get only base Player
+        System.Collections.Generic.List<Player> player1List = new System.Collections.Generic.List<Player>();
+        foreach (Player p in allPlayers)
         {
-            player2s = FindObjectsOfType<Player2>();
+            if (!(p is Player2))
+            {
+                player1List.Add(p);
+            }
+        }
+        players = player1List.ToArray();
+        Debug.Log($"[PlayerUpgradeManager] Found {players.Length} Player instances");
+        
+        // Find circling projectiles skills on all players
+        System.Collections.Generic.List<PlayerSkill_CirclingProjectiles> circlingSkillsList = new System.Collections.Generic.List<PlayerSkill_CirclingProjectiles>();
+        System.Collections.Generic.List<PlayerSkill_PushWave> pushWaveSkillsList = new System.Collections.Generic.List<PlayerSkill_PushWave>();
+        
+        foreach (Player p in allPlayers)
+        {
+            if (p != null)
+            {
+                var circlingSkill = p.GetComponent<PlayerSkill_CirclingProjectiles>();
+                if (circlingSkill != null)
+                {
+                    circlingSkillsList.Add(circlingSkill);
+                }
+                
+                var pushWaveSkill = p.GetComponent<PlayerSkill_PushWave>();
+                if (pushWaveSkill != null)
+                {
+                    pushWaveSkillsList.Add(pushWaveSkill);
+                }
+            }
         }
         
-        // Find all Player instances
-        if (players == null || players.Length == 0)
-        {
-            players = FindObjectsOfType<Player>();
-        }
+        circlingProjectilesSkills = circlingSkillsList.ToArray();
+        pushWaveSkills = pushWaveSkillsList.ToArray();
+        Debug.Log($"[PlayerUpgradeManager] Found {circlingProjectilesSkills.Length} CirclingProjectiles skills and {pushWaveSkills.Length} PushWave skills");
         
         // Get stats from first available player
         if (player2s != null && player2s.Length > 0)
@@ -123,19 +162,6 @@ public class PlayerUpgradeManager : MonoBehaviour
             if (playerStats == null)
             {
                 playerStats = players[0].Stats;
-            }
-        }
-        
-        // Find circling projectiles skills on all players
-        if (players != null && players.Length > 0)
-        {
-            circlingProjectilesSkills = new PlayerSkill_CirclingProjectiles[players.Length];
-            for (int i = 0; i < players.Length; i++)
-            {
-                if (players[i] != null)
-                {
-                    circlingProjectilesSkills[i] = players[i].GetComponent<PlayerSkill_CirclingProjectiles>();
-                }
             }
         }
         
@@ -226,35 +252,33 @@ public class PlayerUpgradeManager : MonoBehaviour
             allUpgrades.Add(UpgradeType.CriticalChance);
             allUpgrades.Add(UpgradeType.CriticalDamage);
             allUpgrades.Add(UpgradeType.Evasion);
-        }
-        
-        // Add circling projectiles upgrades only for Player1
-        if (hasPlayer1 && circlingProjectilesSkills != null)
-        {
-            // Check if any player has the skill obtained
-            bool skillObtained = false;
-            PlayerSkill_CirclingProjectiles activeSkill = null;
             
-            foreach (var skill in circlingProjectilesSkills)
+            // Add circling projectiles upgrade by default
+            // Check if skill hasn't reached max level (10)
+            if (circlingProjectilesSkills != null)
             {
-                if (skill != null && skill.IsObtained)
+                foreach (var skill in circlingProjectilesSkills)
                 {
-                    skillObtained = true;
-                    activeSkill = skill;
-                    break;
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeCirclingProjectiles);
+                        break;
+                    }
                 }
             }
             
-            if (skillObtained && activeSkill != null)
+            // Add push wave upgrade by default
+            // Check if skill hasn't reached max level (10)
+            if (pushWaveSkills != null)
             {
-                // Add skill upgrades ONLY if skill is obtained
-                if (activeSkill.CurrentProjectileCount < 8)
+                foreach (var skill in pushWaveSkills)
                 {
-                    allUpgrades.Add(UpgradeType.UpgradeProjectileCount);
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradePushWave);
+                        break;
+                    }
                 }
-                allUpgrades.Add(UpgradeType.UpgradeProjectileDamage);
-                allUpgrades.Add(UpgradeType.UpgradeProjectileRadius);
-                allUpgrades.Add(UpgradeType.UpgradeProjectileSpeed);
             }
         }
         
@@ -272,16 +296,23 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     public void ApplyUpgrade(UpgradeType upgradeType)
     {
+        // Refresh player references in case players were spawned after Awake
+        RefreshPlayerReferences();
+        
         // Check which character is actually selected and active
         bool hasPlayer2 = IsPlayer2Active();
         bool hasPlayer1 = !hasPlayer2;
         
+        Debug.Log($"[PlayerUpgradeManager] Applying upgrade: {upgradeType}, hasPlayer2: {hasPlayer2}, hasPlayer1: {hasPlayer1}");
+        
         if (hasPlayer2 && player2Stats == null)
         {
+            Debug.LogWarning("[PlayerUpgradeManager] Player2 is active but player2Stats is null!");
             return;
         }
         else if (hasPlayer1 && playerStats == null)
         {
+            Debug.LogWarning("[PlayerUpgradeManager] Player1 is active but playerStats is null!");
             return;
         }
         
@@ -328,20 +359,72 @@ public class PlayerUpgradeManager : MonoBehaviour
                 
             case UpgradeType.Heal:
                 // Heal all players to full health
-                Player[] playersToHeal = hasPlayer2 ? player2s : players;
-                if (playersToHeal != null)
+                Debug.Log($"[PlayerUpgradeManager] Heal upgrade selected. hasPlayer2: {hasPlayer2}");
+                
+                if (hasPlayer2)
                 {
-                    foreach (Player p in playersToHeal)
+                    Debug.Log($"[PlayerUpgradeManager] Healing Player2 instances. Count: {(player2s != null ? player2s.Length : 0)}");
+                    if (player2s != null && player2s.Length > 0)
                     {
-                        if (p != null)
+                        foreach (Player2 p in player2s)
                         {
-                            var health = p.GetComponent<Entity_Health>();
-                            if (health != null)
+                            if (p != null && p.gameObject.activeInHierarchy)
                             {
-                                float maxHP = health.MaxHealth;
-                                health.Heal(maxHP);
+                                var health = p.GetComponent<Entity_Health>();
+                                if (health != null)
+                                {
+                                    float currentHP = health.CurrentHealth;
+                                    float maxHP = health.MaxHealth;
+                                    health.Heal(maxHP);
+                                    Debug.Log($"[PlayerUpgradeManager] Healed {p.name}: {currentHP} -> {health.CurrentHealth} (Max: {maxHP})");
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"[PlayerUpgradeManager] Player2 {p.name} has no Entity_Health component!");
+                                }
+                            }
+                            else if (p != null)
+                            {
+                                Debug.LogWarning($"[PlayerUpgradeManager] Player2 {p.name} is not active in hierarchy!");
                             }
                         }
+                    }
+                    else
+                    {
+                        Debug.LogError("[PlayerUpgradeManager] No Player2 instances found to heal!");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[PlayerUpgradeManager] Healing Player instances. Count: {(players != null ? players.Length : 0)}");
+                    if (players != null && players.Length > 0)
+                    {
+                        foreach (Player p in players)
+                        {
+                            if (p != null && p.gameObject.activeInHierarchy)
+                            {
+                                var health = p.GetComponent<Entity_Health>();
+                                if (health != null)
+                                {
+                                    float currentHP = health.CurrentHealth;
+                                    float maxHP = health.MaxHealth;
+                                    health.Heal(maxHP);
+                                    Debug.Log($"[PlayerUpgradeManager] Healed {p.name}: {currentHP} -> {health.CurrentHealth} (Max: {maxHP})");
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"[PlayerUpgradeManager] Player {p.name} has no Entity_Health component!");
+                                }
+                            }
+                            else if (p != null)
+                            {
+                                Debug.LogWarning($"[PlayerUpgradeManager] Player {p.name} is not active in hierarchy!");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("[PlayerUpgradeManager] No Player instances found to heal!");
                     }
                 }
                 break;
@@ -383,66 +466,51 @@ public class PlayerUpgradeManager : MonoBehaviour
                 }
                 break;
                 
-            case UpgradeType.UnlockCirclingProjectiles:
+            case UpgradeType.UpgradeCirclingProjectiles:
+                // Level-based upgrade that increases all stats
                 if (circlingProjectilesSkills != null)
                 {
                     foreach (var skill in circlingProjectilesSkills)
                     {
-                        if (skill != null && !skill.IsObtained)
+                        if (skill != null)
                         {
-                            skill.ObtainSkill();
+                            if (!skill.IsObtained)
+                            {
+                                // First time: Obtain the skill (Level 1)
+                                skill.ObtainSkill();
+                                Debug.Log($"[PlayerUpgradeManager] Obtained Circling Projectiles skill! Level: {skill.CurrentLevel}");
+                            }
+                            else if (skill.CurrentLevel < 10)
+                            {
+                                // Upgrade to next level (increases all stats)
+                                skill.UpgradeLevel();
+                                Debug.Log($"[PlayerUpgradeManager] Upgraded Circling Projectiles to Level {skill.CurrentLevel}");
+                            }
                         }
                     }
                 }
                 break;
                 
-            case UpgradeType.UpgradeProjectileCount:
-                if (circlingProjectilesSkills != null)
+            case UpgradeType.UpgradePushWave:
+                // Level-based upgrade that increases all stats
+                if (pushWaveSkills != null)
                 {
-                    foreach (var skill in circlingProjectilesSkills)
+                    foreach (var skill in pushWaveSkills)
                     {
-                        if (skill != null && skill.IsObtained)
+                        if (skill != null)
                         {
-                            skill.UpgradeProjectileCount();
-                        }
-                    }
-                }
-                break;
-                
-            case UpgradeType.UpgradeProjectileDamage:
-                if (circlingProjectilesSkills != null)
-                {
-                    foreach (var skill in circlingProjectilesSkills)
-                    {
-                        if (skill != null && skill.IsObtained)
-                        {
-                            skill.UpgradeDamage(skillProjectileDamageUpgrade);
-                        }
-                    }
-                }
-                break;
-                
-            case UpgradeType.UpgradeProjectileRadius:
-                if (circlingProjectilesSkills != null)
-                {
-                    foreach (var skill in circlingProjectilesSkills)
-                    {
-                        if (skill != null && skill.IsObtained)
-                        {
-                            skill.UpgradeRadius(skillRadiusUpgrade);
-                        }
-                    }
-                }
-                break;
-                
-            case UpgradeType.UpgradeProjectileSpeed:
-                if (circlingProjectilesSkills != null)
-                {
-                    foreach (var skill in circlingProjectilesSkills)
-                    {
-                        if (skill != null && skill.IsObtained)
-                        {
-                            skill.UpgradeSpeed(skillSpeedUpgrade);
+                            if (!skill.IsObtained)
+                            {
+                                // First time: Obtain the skill (Level 1)
+                                skill.ObtainSkill();
+                                Debug.Log($"[PlayerUpgradeManager] Obtained Push Wave skill! Level: {skill.CurrentLevel}");
+                            }
+                            else if (skill.CurrentLevel < 10)
+                            {
+                                // Upgrade to next level (increases all stats)
+                                skill.UpgradeLevel();
+                                Debug.Log($"[PlayerUpgradeManager] Upgraded Push Wave to Level {skill.CurrentLevel}");
+                            }
                         }
                     }
                 }
@@ -526,10 +594,111 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetCurrentDashCooldown() => IsPlayer2Active() && player2Stats != null ? player2Stats.dashAttackCooldown : 0f;
     public float GetCurrentBlinkDashSpeed() => IsPlayer2Active() && player2Stats != null ? player2Stats.blinkDashSpeed : 0f;
     
+    // Push Wave skill getters
+    public int GetPushWaveLevel()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null)
+                    return skill.CurrentLevel;
+            }
+        }
+        return 0;
+    }
+    
+    public int GetPushWaveMaxLevel()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null)
+                    return skill.MaxLevel;
+            }
+        }
+        return 10;
+    }
+    
+    public float GetPushWaveRadius()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentRadius;
+            }
+        }
+        return 0f;
+    }
+    
+    public float GetPushWaveForce()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentForce;
+            }
+        }
+        return 0f;
+    }
+    
+    public float GetPushWaveDamage()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentDamage;
+            }
+        }
+        return 0f;
+    }
+    
+    public float GetPushWaveInterval()
+    {
+        if (pushWaveSkills != null)
+        {
+            foreach (var skill in pushWaveSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentInterval;
+            }
+        }
+        return 0f;
+    }
+    
     // Circling Projectiles skill getters
-    public float GetSkillDamageUpgradeAmount() => skillProjectileDamageUpgrade;
-    public float GetSkillRadiusUpgradeAmount() => skillRadiusUpgrade;
-    public float GetSkillSpeedUpgradeAmount() => skillSpeedUpgrade;
+    public int GetCirclingProjectilesLevel()
+    {
+        if (circlingProjectilesSkills != null)
+        {
+            foreach (var skill in circlingProjectilesSkills)
+            {
+                if (skill != null)
+                    return skill.CurrentLevel;
+            }
+        }
+        return 0;
+    }
+    
+    public int GetCirclingProjectilesMaxLevel()
+    {
+        if (circlingProjectilesSkills != null)
+        {
+            foreach (var skill in circlingProjectilesSkills)
+            {
+                if (skill != null)
+                    return skill.MaxLevel;
+            }
+        }
+        return 10;
+    }
     
     // Return 0 if skill not obtained or component is null
     public int GetCurrentProjectileCount()

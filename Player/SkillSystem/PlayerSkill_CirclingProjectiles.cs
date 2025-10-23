@@ -27,18 +27,26 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     private int currentProjectileCount;
     private List<GameObject> activeProjectiles = new List<GameObject>();
     
-    // Upgrade levels
-    private int projectileCountLevel = 0;
-    private int damageLevel = 0;
-    private int radiusLevel = 0;
-    private int speedLevel = 0;
+    // Level-based upgrade system (1-10)
+    [SerializeField] private int currentLevel = 0; // 0 = not obtained, 1-10 = skill levels
+    private const int MAX_LEVEL = 10;
+    
+    // Base stats (level 1)
+    private float baseDamage;
+    private float baseRadius;
+    private float baseSpeed;
+    private int baseProjectileCount;
 
     protected override void Awake()
     {
         base.Awake();
-        currentProjectileCount = defaultProjectileCount;
         
-
+        // Store base stats for level calculations
+        baseDamage = projectileDamage;
+        baseRadius = orbitRadius;
+        baseSpeed = orbitSpeed;
+        baseProjectileCount = defaultProjectileCount;
+        currentProjectileCount = defaultProjectileCount;
     }
     
     private void Start()
@@ -71,7 +79,7 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     }
 
     /// <summary>
-    /// Obtain the skill and auto-activate it
+    /// Obtain the skill and auto-activate it (sets to Level 1)
     /// </summary>
     public void ObtainSkill()
     {
@@ -82,6 +90,8 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
         
         // Set the runtime-only flag (does NOT persist)
         isObtained = true;
+        currentLevel = 1;
+        ApplyLevelStats();
         ActivateSkill();
     }
 
@@ -206,68 +216,47 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
     #region Upgrade Methods
 
     /// <summary>
-    /// Upgrade: Add more projectiles
+    /// Upgrade to the next level (increases all stats)
+    /// Level 1: Base stats with 2 projectiles
+    /// Level 2-10: Each level increases damage, radius, speed, and adds projectiles
     /// </summary>
-    public void UpgradeProjectileCount()
+    public void UpgradeLevel()
     {
-        if (currentProjectileCount >= maxProjectileCount)
+        if (!isObtained || currentLevel >= MAX_LEVEL)
         {
+            Debug.LogWarning($"[CirclingProjectiles] Cannot upgrade - Level: {currentLevel}, Obtained: {isObtained}");
             return;
         }
 
-        projectileCountLevel++;
-        currentProjectileCount++;
+        currentLevel++;
+        ApplyLevelStats();
         
-        // Respawn projectiles if skill is active
+        // Update projectiles if skill is active
         if (isActive)
         {
             SpawnProjectiles();
         }
-    }
-
-    /// <summary>
-    /// Upgrade: Increase damage
-    /// </summary>
-    public void UpgradeDamage(float damageIncrease = 5f)
-    {
-        damageLevel++;
-        projectileDamage += damageIncrease;
         
-        // Update existing projectiles
-        if (isActive)
-        {
-            UpdateAllProjectiles();
-        }
+        Debug.Log($"[CirclingProjectiles] Upgraded to Level {currentLevel} - Count: {currentProjectileCount}, Damage: {projectileDamage:F1}, Radius: {orbitRadius:F1}, Speed: {orbitSpeed:F0}");
     }
-
+    
     /// <summary>
-    /// Upgrade: Increase orbit radius
+    /// Apply stats based on current level
+    /// Each level increases all stats progressively
     /// </summary>
-    public void UpgradeRadius(float radiusIncrease = 0.5f)
+    private void ApplyLevelStats()
     {
-        radiusLevel++;
-        orbitRadius += radiusIncrease;
+        // Damage scaling: +5 damage per level
+        projectileDamage = baseDamage + (currentLevel - 1) * 5f;
         
-        // Update existing projectiles
-        if (isActive)
-        {
-            UpdateAllProjectiles();
-        }
-    }
-
-    /// <summary>
-    /// Upgrade: Increase orbit speed
-    /// </summary>
-    public void UpgradeSpeed(float speedIncrease = 15f)
-    {
-        speedLevel++;
-        orbitSpeed += speedIncrease;
+        // Radius scaling: +0.5 radius per level
+        orbitRadius = baseRadius + (currentLevel - 1) * 0.5f;
         
-        // Update existing projectiles
-        if (isActive)
-        {
-            UpdateAllProjectiles();
-        }
+        // Speed scaling: +15 degrees/sec per level
+        orbitSpeed = baseSpeed + (currentLevel - 1) * 15f;
+        
+        // Projectile count: +1 every level, capped at maxProjectileCount
+        currentProjectileCount = Mathf.Min(baseProjectileCount + (currentLevel - 1), maxProjectileCount);
     }
 
     #endregion
@@ -276,15 +265,12 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
 
     public bool IsObtained => isObtained;
     public bool IsActive => isActive;
+    public int CurrentLevel => currentLevel;
+    public int MaxLevel => MAX_LEVEL;
     public int CurrentProjectileCount => currentProjectileCount;
     public float CurrentDamage => projectileDamage;
     public float CurrentRadius => orbitRadius;
     public float CurrentSpeed => orbitSpeed;
-    
-    public int ProjectileCountLevel => projectileCountLevel;
-    public int DamageLevel => damageLevel;
-    public int RadiusLevel => radiusLevel;
-    public int SpeedLevel => speedLevel;
 
     #endregion
 
@@ -312,11 +298,8 @@ public class PlayerSkill_CirclingProjectiles : PlayerSkill_Base
             currentProjectileCount = defaultProjectileCount;
         }
         
-        // Reset upgrade levels
-        projectileCountLevel = 0;
-        damageLevel = 0;
-        radiusLevel = 0;
-        speedLevel = 0;
+        // Reset level
+        currentLevel = 0;
     }
 
     private void OnDestroy()

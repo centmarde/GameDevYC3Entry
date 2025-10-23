@@ -40,43 +40,45 @@ public static class UpgradeTextProvider
                 float evasionUpgrade = upgradeManager.GetEvasionChanceUpgradeAmount();
                 return $"EVASION\n<size=24>{currentEvasion:F1}% → {Mathf.Min(currentEvasion + evasionUpgrade, 100f):F1}%</size>";
                 
-            case PlayerUpgradeManager.UpgradeType.UnlockCirclingProjectiles:
-                return $"UNLOCK SKILL\n<size=24>Circling Projectiles</size>";
+            case PlayerUpgradeManager.UpgradeType.UpgradeCirclingProjectiles:
+                int currentLevel = upgradeManager.GetCirclingProjectilesLevel();
+                int maxLevel = upgradeManager.GetCirclingProjectilesMaxLevel();
                 
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileCount:
-                if (upgradeManager.GetCurrentProjectileCount() > 0)
+                if (currentLevel == 0)
                 {
-                    int currentCount = upgradeManager.GetCurrentProjectileCount();
-                    return $"ADD PROJECTILE\n<size=24>{currentCount} → {currentCount + 1}</size>";
+                    // Not obtained yet - show as unlock
+                    return $"CIRCLING PROJECTILES\n<size=24>Unlock Skill (Level 1/{maxLevel})</size>";
                 }
-                return "ERROR";
+                else if (currentLevel < maxLevel)
+                {
+                    // Show level upgrade
+                    return $"CIRCLING PROJECTILES\n<size=24>Level {currentLevel} → {currentLevel + 1}</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"CIRCLING PROJECTILES\n<size=24>MAX LEVEL ({maxLevel})</size>";
+                }
                 
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileDamage:
-                if (upgradeManager.GetCurrentProjectileDamage() > 0)
-                {
-                    float currentSkillDmg = upgradeManager.GetCurrentProjectileDamage();
-                    float skillDmgUpgrade = upgradeManager.GetSkillDamageUpgradeAmount();
-                    return $"PROJECTILE DMG\n<size=24>{currentSkillDmg:F1} → {currentSkillDmg + skillDmgUpgrade:F1}</size>";
-                }
-                return "ERROR";
+            case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
+                int pushLevel = upgradeManager.GetPushWaveLevel();
+                int pushMaxLevel = upgradeManager.GetPushWaveMaxLevel();
                 
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileRadius:
-                if (upgradeManager.GetCurrentProjectileRadius() > 0)
+                if (pushLevel == 0)
                 {
-                    float currentRadius = upgradeManager.GetCurrentProjectileRadius();
-                    float radiusUpgrade = upgradeManager.GetSkillRadiusUpgradeAmount();
-                    return $"ORBIT RADIUS\n<size=24>{currentRadius:F1}m → {currentRadius + radiusUpgrade:F1}m</size>";
+                    // Not obtained yet - show as unlock
+                    return $"FIREFLIES\n<size=24>Unlock Skill (Level 1/{pushMaxLevel})</size>";
                 }
-                return "ERROR";
-                
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileSpeed:
-                if (upgradeManager.GetCurrentProjectileSpeed() > 0)
+                else if (pushLevel < pushMaxLevel)
                 {
-                    float currentSpeed = upgradeManager.GetCurrentProjectileSpeed();
-                    float speedUpgrade = upgradeManager.GetSkillSpeedUpgradeAmount();
-                    return $"ORBIT SPEED\n<size=24>{currentSpeed:F0}° → {currentSpeed + speedUpgrade:F0}°/s</size>";
+                    // Show level upgrade
+                    return $"FIREFLIES\n<size=24>Level {pushLevel} → {pushLevel + 1}</size>";
                 }
-                return "ERROR";
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"FIREFLIES\n<size=24>MAX LEVEL ({pushMaxLevel})</size>";
+                }
                 
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
@@ -130,20 +132,11 @@ public static class UpgradeTextProvider
             case PlayerUpgradeManager.UpgradeType.Evasion:
                 return "<b><color=#A8E6CF>EVASION</color></b>\n\nIncrease your chance to completely avoid incoming damage. When you evade, you take zero damage from that attack.\n\n<i>Great defensive option for risky playstyles!</i>";
                 
-            case PlayerUpgradeManager.UpgradeType.UnlockCirclingProjectiles:
-                return "<b><color=#C7CEEA>UNLOCK: CIRCLING PROJECTILES</color></b>\n\nUnlock a powerful passive skill! Projectiles will orbit around you, automatically damaging nearby enemies.\n\n<i>Great for close-range defense and crowd control!</i>";
+            case PlayerUpgradeManager.UpgradeType.UpgradeCirclingProjectiles:
+                return "<b><color=#C7CEEA>CIRCLING PROJECTILES</color></b>\n\nUnlock or upgrade this powerful passive skill! Each level increases:\n• <b>Projectile Count</b> (+1 per level)\n• <b>Damage</b> (+5 per level)\n• <b>Orbit Radius</b> (+0.5m per level)\n• <b>Orbit Speed</b> (+15°/s per level)\n\n<i>Max Level: 10 - A versatile skill that grows with you!</i>";
                 
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileCount:
-                return "<b><color=#FFDAC1>ADD PROJECTILE</color></b>\n\nAdd one more circling projectile to your orbit. More projectiles mean more damage output and better coverage.\n\n<i>Maximum: 8 projectiles</i>";
-                
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileDamage:
-                return "<b><color=#FF8B94>PROJECTILE DAMAGE</color></b>\n\nIncrease the damage dealt by your circling projectiles. Independent from your base weapon damage.\n\n<i>Scale your passive damage output!</i>";
-                
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileRadius:
-                return "<b><color=#B4A7D6>ORBIT RADIUS</color></b>\n\nIncrease the distance your projectiles orbit from you. Larger radius means wider coverage area.\n\n<i>Hit enemies before they get too close!</i>";
-                
-            case PlayerUpgradeManager.UpgradeType.UpgradeProjectileSpeed:
-                return "<b><color=#FFE66D>ORBIT SPEED</color></b>\n\nIncrease how fast your projectiles rotate around you. Faster rotation means more hits per second.\n\n<i>Higher DPS against clustered enemies!</i>";
+            case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
+                return "<b><color=#FFD700>FIREFLIES</color></b>\n\nUnlock or upgrade this magical automatic skill! Glowing fireflies orbit and damage enemies. Each level increases:\n• <b>Radius</b> (+0.2m per level)\n• <b>Push Force</b> (+1 per level)\n• <b>Damage</b> (+1 per level)\n• <b>Activation Speed</b> (4s → 2s at max level)\n\n<i>Max Level: 10 - Beautiful and deadly firefly swarm with lights!</i>";
                 
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";
