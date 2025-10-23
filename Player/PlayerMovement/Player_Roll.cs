@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class Player_Roll : MonoBehaviour
@@ -9,6 +9,8 @@ public class Player_Roll : MonoBehaviour
 
     private Rigidbody rb;
     private Player player;
+    private Player_Invulnerability invuln; // ✅ cached reference
+
 
     [Header("Invulnerability Settings")]
     public bool grantInvulnerability = true;
@@ -28,6 +30,8 @@ public class Player_Roll : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         player = GetComponent<Player>();
+        invuln = GetComponent<Player_Invulnerability>(); // get once, cached
+
     }
 
     public void BeginRoll(Vector3 direction)
@@ -39,7 +43,7 @@ public class Player_Roll : MonoBehaviour
         rollTimer = rollDuration;
         rollingActive = true;
 
-        if (grantInvulnerability)
+        if (grantInvulnerability && invuln != null)
             StartCoroutine(HandleInvulnerability());
 
         // start cooldown timer
@@ -70,12 +74,11 @@ public class Player_Roll : MonoBehaviour
 
     private IEnumerator HandleInvulnerability()
     {
-        // wait before granting invuln
+        // Wait before granting invulnerability
         yield return new WaitForSeconds(invulnStartTime);
 
-        invulnerable = true;
-        yield return new WaitForSeconds(invulnDuration);
-        invulnerable = false;
+        if (invuln != null)
+            invuln.SetTemporaryInvulnerability(invulnDuration); //  triggers proper logic
     }
 
     private IEnumerator RollCooldownRoutine()

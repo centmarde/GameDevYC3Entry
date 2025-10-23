@@ -65,6 +65,7 @@ public class Player_Feedback : Entity_Feedback
 
     protected override void OnDeath()
     {
-        anim.SetTrigger("Die");
+
+
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [DisallowMultipleComponent]
 public class Entity_Health : MonoBehaviour, IDamageable
@@ -8,7 +8,9 @@ public class Entity_Health : MonoBehaviour, IDamageable
     [SerializeField] private float maxHealth;
     [SerializeField] private float currentHealth;
     [SerializeField] private bool invulnerable = false;
-    
+
+    private Player_Invulnerability invuln;
+
     // Evasion system
     private System.Func<bool> evasionCheck;
 
@@ -21,6 +23,8 @@ public class Entity_Health : MonoBehaviour, IDamageable
     private void Awake()
     {
         entity = GetComponent<Entity>();
+        invuln = GetComponent<Player_Invulnerability>(); 
+
     }
 
     private void OnEnable()
@@ -31,6 +35,7 @@ public class Entity_Health : MonoBehaviour, IDamageable
     public bool TakeDamage(float damage, Vector3 hitPoint, Vector3 hitNormal, object source)
     {
         if (!IsAlive || invulnerable) return false;
+        if (invuln != null && invuln.ShouldIgnoreDamage()) return false;
 
         float applied = Mathf.Max(0f, damage);
         if (applied <= 0f) return false;
@@ -62,6 +67,14 @@ public class Entity_Health : MonoBehaviour, IDamageable
     {
         // Single path to death: let Entity coordinate what happens next
         OnDeath?.Invoke();
+
+        var playerComp = GetComponent<Player>();
+        if (playerComp != null)
+        {
+            // Player death flow handled by Player_DeathState
+            playerComp.RequestStateChange(playerComp.deathState);
+            return; // ⬅️ DO NOT call EntityDeath() here — wait for DeathState to do it
+        }
         entity?.EntityDeath();
         // Do NOT Destroy here; the concrete Entity (e.g., Enemy) decides timing.
     }

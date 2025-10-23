@@ -40,6 +40,8 @@ public class IsoCameraFollow : MonoBehaviour
 
     private void LateUpdate()
     {
+        CleanupNullTargets();
+
         if (targets == null || targets.Length == 0) return;
 
         // Calculate center point of all targets
@@ -157,4 +159,35 @@ public class IsoCameraFollow : MonoBehaviour
 
         targets = newArray;
     }
+
+    /// <summary>
+    /// Remove any destroyed or missing targets automatically
+    /// </summary>
+    private void CleanupNullTargets()
+    {
+        if (targets == null || targets.Length == 0) return;
+
+        int validCount = 0;
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (targets[i] != null)
+                validCount++;
+        }
+
+        if (validCount != targets.Length)
+        {
+            Transform[] newArray = new Transform[validCount];
+            int index = 0;
+            foreach (var t in targets)
+            {
+                if (t != null)
+                {
+                    newArray[index] = t;
+                    index++;
+                }
+            }
+            targets = newArray;
+        }
+    }
+
 }
