@@ -105,6 +105,19 @@ namespace PlayerUpgrades
                     }
                 }
             }
+            
+            // Check Defense
+            if (refs.DefenseSkills != null)
+            {
+                foreach (var skill in refs.DefenseSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeDefense);
+                        break;
+                    }
+                }
+            }
         }
         
         private UpgradeType[] PickRandomUpgrades(List<UpgradeType> allUpgrades)

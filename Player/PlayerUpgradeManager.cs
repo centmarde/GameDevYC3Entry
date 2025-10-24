@@ -265,5 +265,10 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetExtraHandShootInterval() => statsProvider.GetExtraHandShootInterval();
     public float GetExtraHandRange() => statsProvider.GetExtraHandRange();
     
+    public int GetDefenseLevel() => statsProvider.GetDefenseLevel();
+    public int GetDefenseMaxLevel() => statsProvider.GetDefenseMaxLevel();
+    public float GetDefenseAbsorptionPercent() => statsProvider.GetDefenseAbsorptionPercent();
+    public float GetDefenseAbsorptionChance() => statsProvider.GetDefenseAbsorptionChance();
+    
     #endregion
 }

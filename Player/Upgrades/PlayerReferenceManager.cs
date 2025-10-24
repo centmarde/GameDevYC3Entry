@@ -52,6 +52,7 @@ namespace PlayerUpgrades
             List<PlayerSkill_CirclingProjectiles> circlingSkillsList = new List<PlayerSkill_CirclingProjectiles>();
             List<PlayerSkill_PushWave> pushWaveSkillsList = new List<PlayerSkill_PushWave>();
             List<PlayerSkill_ExtraHand> extraHandSkillsList = new List<PlayerSkill_ExtraHand>();
+            List<PlayerSkill_Defense> defenseSkillsList = new List<PlayerSkill_Defense>();
             
             foreach (Player p in allPlayers)
             {
@@ -68,15 +69,21 @@ namespace PlayerUpgrades
                     var extraHandSkill = p.GetComponent<PlayerSkill_ExtraHand>();
                     if (extraHandSkill != null)
                         extraHandSkillsList.Add(extraHandSkill);
+                    
+                    var defenseSkill = p.GetComponent<PlayerSkill_Defense>();
+                    if (defenseSkill != null)
+                        defenseSkillsList.Add(defenseSkill);
                 }
             }
             
             references.CirclingProjectilesSkills = circlingSkillsList.ToArray();
             references.PushWaveSkills = pushWaveSkillsList.ToArray();
             references.ExtraHandSkills = extraHandSkillsList.ToArray();
+            references.DefenseSkills = defenseSkillsList.ToArray();
             
             Debug.Log($"[PlayerReferenceManager] Found {references.CirclingProjectilesSkills.Length} CirclingProjectiles skills, " +
-                     $"{references.PushWaveSkills.Length} PushWave skills, and {references.ExtraHandSkills.Length} ExtraHand skills");
+                     $"{references.PushWaveSkills.Length} PushWave skills, {references.ExtraHandSkills.Length} ExtraHand skills, " +
+                     $"and {references.DefenseSkills.Length} Defense skills");
         }
         
         private void ValidatePlayer2Skills()

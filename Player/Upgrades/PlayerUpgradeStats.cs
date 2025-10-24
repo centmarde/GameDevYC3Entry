@@ -103,6 +103,8 @@ namespace PlayerUpgrades
         public int GetCirclingProjectilesMaxLevel() => GetSkillMaxLevel(referenceManager.References.CirclingProjectilesSkills, 10);
         public int GetPushWaveLevel() => GetSkillLevel(referenceManager.References.PushWaveSkills);
         public int GetPushWaveMaxLevel() => GetSkillMaxLevel(referenceManager.References.PushWaveSkills, 10);
+        public int GetDefenseLevel() => GetSkillLevel(referenceManager.References.DefenseSkills);
+        public int GetDefenseMaxLevel() => GetSkillMaxLevel(referenceManager.References.DefenseSkills, 10);
         
         public int GetExtraHandLevel()
         {
@@ -146,6 +148,19 @@ namespace PlayerUpgrades
         }
         
         private int GetSkillLevel(PlayerSkill_PushWave[] skills)
+        {
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null)
+                        return skill.CurrentLevel;
+                }
+            }
+            return 0;
+        }
+        
+        private int GetSkillLevel(PlayerSkill_Defense[] skills)
         {
             if (skills != null)
             {
@@ -317,6 +332,34 @@ namespace PlayerUpgrades
                 {
                     if (skill != null && skill.IsObtained)
                         return skill.CurrentRange;
+                }
+            }
+            return 0f;
+        }
+        
+        public float GetDefenseAbsorptionPercent()
+        {
+            var skills = referenceManager.References.DefenseSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.DamageAbsorptionPercent;
+                }
+            }
+            return 0f;
+        }
+        
+        public float GetDefenseAbsorptionChance()
+        {
+            var skills = referenceManager.References.DefenseSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.AbsorptionChance;
                 }
             }
             return 0f;

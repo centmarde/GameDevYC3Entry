@@ -51,6 +51,20 @@ public class Entity_Health : MonoBehaviour, IDamageable
             
             return false; // Damage was evaded
         }
+        
+        // Check for Defense skill absorption (for players only)
+        PlayerSkill_Defense defenseSkill = GetComponent<PlayerSkill_Defense>();
+        if (defenseSkill != null && defenseSkill.IsObtained)
+        {
+            float absorbed = defenseSkill.ProcessIncomingDamage(applied, hitPoint, source);
+            applied -= absorbed; // Reduce damage by absorbed amount
+            
+            if (applied <= 0f)
+            {
+                // All damage was absorbed!
+                return false;
+            }
+        }
 
         currentHealth = Mathf.Max(0f, currentHealth - applied);
 

@@ -67,6 +67,9 @@ namespace PlayerUpgrades
                 case UpgradeType.UpgradeExtraHand:
                     ApplyExtraHandUpgrade(refs);
                     break;
+                case UpgradeType.UpgradeDefense:
+                    ApplyDefenseUpgrade(refs);
+                    break;
                 case UpgradeType.UpgradeBlinkDistance:
                     ApplyBlinkDistanceUpgrade(hasPlayer2, refs);
                     break;
@@ -277,6 +280,29 @@ namespace PlayerUpgrades
                                              config.extraHandIntervalReductionPerLevel, 
                                              config.extraHandRangePerLevel);
                             Debug.Log($"[UpgradeApplicator] Upgraded Extra Hand to Level {skill.ExtraHandLevel}");
+                        }
+                    }
+                }
+            }
+        }
+        
+        private void ApplyDefenseUpgrade(PlayerReferences refs)
+        {
+            if (refs.DefenseSkills != null)
+            {
+                foreach (var skill in refs.DefenseSkills)
+                {
+                    if (skill != null)
+                    {
+                        if (!skill.IsObtained)
+                        {
+                            skill.ObtainSkill();
+                            Debug.Log($"[UpgradeApplicator] Obtained Defense skill! Level: {skill.CurrentLevel}, Absorption: {skill.DamageAbsorptionPercent:F1}%");
+                        }
+                        else if (skill.CurrentLevel < 10)
+                        {
+                            skill.UpgradeSkill();
+                            Debug.Log($"[UpgradeApplicator] Upgraded Defense to Level {skill.CurrentLevel}, Absorption: {skill.DamageAbsorptionPercent:F1}%");
                         }
                     }
                 }

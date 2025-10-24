@@ -100,6 +100,30 @@ public static class UpgradeTextProvider
                     return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>MAX LEVEL ({extraHandMaxLevel})</size>";
                 }
                 
+            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
+                int defenseLevel = upgradeManager.GetDefenseLevel();
+                int defenseMaxLevel = upgradeManager.GetDefenseMaxLevel();
+                
+                if (defenseLevel == 0)
+                {
+                    // Not obtained yet - show as unlock
+                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>Unlock Skill (Level 1/{defenseMaxLevel})</size>";
+                }
+                else if (defenseLevel < defenseMaxLevel)
+                {
+                    // Show level upgrade
+                    float currentAbsorption = upgradeManager.GetDefenseAbsorptionPercent();
+                    // Calculate next level absorption (linear progression)
+                    float increment = (80f - 20f) / 9f; // (max - min) / (levels - 1)
+                    float nextAbsorption = Mathf.Min(currentAbsorption + increment, 80f);
+                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>Level {defenseLevel} → {defenseLevel + 1}\n{currentAbsorption:F1}% → {nextAbsorption:F1}% Absorb</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>MAX LEVEL ({defenseMaxLevel})</size>";
+                }
+                
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
                 float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
@@ -160,6 +184,9 @@ public static class UpgradeTextProvider
                 
             case PlayerUpgradeData.UpgradeType.UpgradeExtraHand:
                 return "<b><color=#00FF00>EXTRA HAND</color></b>\n\nUnlock or upgrade this auto-targeting skill! An ethereal hand shoots snake-like projectiles at nearby enemies. Each level increases:\n• <b>Damage</b> (+2 per level)\n• <b>Fire Rate</b> (-0.2s interval per level)\n• <b>Range</b> (+1m per level)\n• <b>Projectiles</b> (+1 on even levels 2,4,6,8,10)\n\n<i>Max Level: 10 - Never miss with this auto-aiming companion!</i>";
+                
+            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
+                return "<b><color=#5DADE2>DEFENSE</color></b>\n\nUnlock or upgrade this powerful defensive skill! Automatically absorbs incoming damage with 100% chance and reflects 100% of absorbed damage back to enemies. Each level increases:\n• <b>Absorption</b> (20% at Lv1 → 80% at Lv10)\n• <b>Reflection</b> (100% of absorbed damage)\n• <b>Chance</b> (Always 100%)\n\nDamage absorption scales linearly across all 10 levels. Reflected damage targets the attacker first, then nearest enemy within 5m radius.\n\n<i>Max Level: 10 - Turn enemy attacks into your weapon!</i>";
                 
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";

@@ -19,6 +19,7 @@ public static class PlayerUpgradeData
         UpgradeCirclingProjectiles,
         UpgradePushWave,
         UpgradeExtraHand,
+        UpgradeDefense,
         // Player2 specific upgrades
         UpgradeBlinkDistance,
         ReduceBlinkCooldown,
@@ -36,6 +37,7 @@ public static class PlayerUpgradeData
         public PlayerSkill_CirclingProjectiles[] CirclingProjectilesSkills;
         public PlayerSkill_PushWave[] PushWaveSkills;
         public PlayerSkill_ExtraHand[] ExtraHandSkills;
+        public PlayerSkill_Defense[] DefenseSkills;
         public Player_DataSO PlayerStats;
         public Player2_DataSO Player2Stats;
     }
