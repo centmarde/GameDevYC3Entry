@@ -25,35 +25,35 @@ public class UpgradeSpriteManager
     /// <summary>
     /// Get the sprite for a specific upgrade type
     /// </summary>
-    public Sprite GetSprite(PlayerUpgradeManager.UpgradeType upgradeType)
+    public Sprite GetSprite(PlayerUpgradeData.UpgradeType upgradeType)
     {
         switch (upgradeType)
         {
-            case PlayerUpgradeManager.UpgradeType.Damage:
+            case PlayerUpgradeData.UpgradeType.Damage:
                 return damageUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.MaxHealth:
+            case PlayerUpgradeData.UpgradeType.MaxHealth:
                 return maxHealthUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.Heal:
+            case PlayerUpgradeData.UpgradeType.Heal:
                 return healUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.CriticalChance:
+            case PlayerUpgradeData.UpgradeType.CriticalChance:
                 return criticalChanceUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.CriticalDamage:
+            case PlayerUpgradeData.UpgradeType.CriticalDamage:
                 return criticalDamageUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.Evasion:
+            case PlayerUpgradeData.UpgradeType.Evasion:
                 return evasionUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeCirclingProjectiles:
+            case PlayerUpgradeData.UpgradeType.UpgradeCirclingProjectiles:
                 return circlingProjectilesUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
+            case PlayerUpgradeData.UpgradeType.UpgradePushWave:
                 return pushWaveUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeExtraHand:
+            case PlayerUpgradeData.UpgradeType.UpgradeExtraHand:
                 return extraHandUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
+            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 return blinkDistanceUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.ReduceBlinkCooldown:
+            case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
                 return blinkCooldownUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.ReduceDashCooldown:
+            case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
                 return dashCooldownUpgradeSprite ?? defaultUpgradeSprite;
-            case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDashSpeed:
+            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
                 return blinkDashSpeedUpgradeSprite ?? defaultUpgradeSprite;
             default:
                 return defaultUpgradeSprite;
