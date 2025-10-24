@@ -1,17 +1,23 @@
 using UnityEngine;
 
 /// <summary>
-/// A projectile that orbits around the player like a windmill and damages enemies on contact.
+/// A projectile that orbits around the player like a windmill at an elevated height.
+/// Follows the player while maintaining its orbital path.
 /// </summary>
 public class CirclingProjectile : MonoBehaviour
 {
     [Header("Visual Settings")]
-    [SerializeField] private float rotationSpeed = 100f; // Visual rotation of the projectile itself
+    [SerializeField] private bool alignToXAxis = true; // Make the prefab lay flat (aligned on X-axis)
+    [SerializeField] private float spinSpeed = 720f; // Spin speed (degrees per second)
+    [SerializeField] private float spinSpeedVariation = 360f; // Random variation range for spin speed
     
     [Header("Shrink/Expand Settings")]
     [SerializeField] private bool enableRadiusPulse = true;
     [SerializeField] private float minRadiusMultiplier = 0.3f; // Shrink to 30% of max radius
     [SerializeField] private float radiusPulseSpeed = 2f; // How fast it shrinks/expands
+    
+    [Header("Orbit Height")]
+    [SerializeField] private float orbitHeightOffset = 0.8f; // Height above ground (Y-axis elevation)
     
     [Header("Blood Splatter Effect")]
     [SerializeField] private bool enableBloodSplatter = true;
@@ -19,7 +25,7 @@ public class CirclingProjectile : MonoBehaviour
     [SerializeField] private int bloodParticleCount = 20;
     [SerializeField] private float bloodParticleDuration = 1f;
     
-    private Transform playerTransform;
+    private Transform playerTransform; // Player to follow
     private float orbitRadius;
     private float maxOrbitRadius; // Store the maximum radius
     private float orbitSpeed;
@@ -30,12 +36,14 @@ public class CirclingProjectile : MonoBehaviour
     
     private bool isInitialized = false;
     private float radiusPulseTimer = 0f;
+    private float actualSpinSpeed; // The actual spin speed for this projectile instance
 
     /// <summary>
     /// Initialize the circling projectile with its parameters
     /// </summary>
     public void Initialize(Transform player, float radius, float speed, float angleOffset, float dmg, object src, LayerMask enemyMask)
     {
+        // Store player reference to follow
         playerTransform = player;
         maxOrbitRadius = radius; // Store the maximum radius
         orbitRadius = radius;
@@ -48,6 +56,21 @@ public class CirclingProjectile : MonoBehaviour
         
         // Start at a random phase for variety
         radiusPulseTimer = Random.Range(0f, Mathf.PI * 2f);
+        
+        // Align prefab to lay flat on X-axis if enabled
+        if (alignToXAxis)
+        {
+            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        }
+        
+        // Randomize spin speed for variety
+        actualSpinSpeed = spinSpeed + Random.Range(-spinSpeedVariation, spinSpeedVariation);
+        
+        // 50% chance to spin in opposite direction
+        if (Random.value > 0.5f)
+        {
+            actualSpinSpeed = -actualSpinSpeed;
+        }
     }
 
     private void Update()
@@ -77,26 +100,19 @@ public class CirclingProjectile : MonoBehaviour
             orbitRadius = Mathf.Lerp(minRadius, maxOrbitRadius, pulse);
         }
 
-        // Calculate position on the circle around the player
+        // Calculate position on the circle around the player at elevated height
         float radians = currentAngle * Mathf.Deg2Rad;
         Vector3 offset = new Vector3(
             Mathf.Cos(radians) * orbitRadius,
-            0f, // Keep at player's Y level
+            orbitHeightOffset, // Elevated above ground
             Mathf.Sin(radians) * orbitRadius
         );
 
-        // Set position relative to player
+        // Set position relative to player (follows player while orbiting at elevated height)
         transform.position = playerTransform.position + offset;
-
-        // Optional: Make the projectile face the direction of movement
-        Vector3 tangentDirection = new Vector3(-Mathf.Sin(radians), 0f, Mathf.Cos(radians));
-        if (tangentDirection != Vector3.zero)
-        {
-            transform.rotation = Quaternion.LookRotation(tangentDirection);
-        }
-
-        // Add visual rotation (spinning effect)
-        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
+        
+        // Spin the projectile like a throwing axe
+        transform.Rotate(Vector3.forward, actualSpinSpeed * Time.deltaTime, Space.Self);
     }
 
     private void OnTriggerEnter(Collider other)
