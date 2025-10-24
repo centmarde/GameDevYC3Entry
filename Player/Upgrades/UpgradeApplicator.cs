@@ -70,6 +70,9 @@ namespace PlayerUpgrades
                 case UpgradeType.UpgradeDefense:
                     ApplyDefenseUpgrade(refs);
                     break;
+                case UpgradeType.UpgradeVampireAura:
+                    ApplyVampireAuraUpgrade(refs);
+                    break;
                 case UpgradeType.UpgradeBlinkDistance:
                     ApplyBlinkDistanceUpgrade(hasPlayer2, refs);
                     break;
@@ -303,6 +306,29 @@ namespace PlayerUpgrades
                         {
                             skill.UpgradeSkill();
                             Debug.Log($"[UpgradeApplicator] Upgraded Defense to Level {skill.CurrentLevel}, Absorption: {skill.DamageAbsorptionPercent:F1}%");
+                        }
+                    }
+                }
+            }
+        }
+        
+        private void ApplyVampireAuraUpgrade(PlayerReferences refs)
+        {
+            if (refs.VampireAuraSkills != null)
+            {
+                foreach (var skill in refs.VampireAuraSkills)
+                {
+                    if (skill != null)
+                    {
+                        if (!skill.IsObtained)
+                        {
+                            skill.ObtainSkill();
+                            Debug.Log($"[UpgradeApplicator] Obtained Vampire Aura skill! Level: {skill.CurrentLevel}, Lifesteal: {skill.CurrentHealPercentage}%");
+                        }
+                        else if (skill.CurrentLevel < skill.MaxLevel)
+                        {
+                            skill.UpgradeSkill();
+                            Debug.Log($"[UpgradeApplicator] Upgraded Vampire Aura to Level {skill.CurrentLevel}, Lifesteal: {skill.CurrentHealPercentage}%");
                         }
                     }
                 }

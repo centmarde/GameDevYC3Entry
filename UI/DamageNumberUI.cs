@@ -121,6 +121,41 @@ public class DamageNumberUI : MonoBehaviour
     }
     
     /// <summary>
+    /// Initialize as a heal number (green color, + prefix)
+    /// </summary>
+    public void InitializeHeal(float healAmount, Vector3 worldPosition)
+    {
+        // Setup text content with + prefix and green color
+        string healText = "+" + Mathf.CeilToInt(healAmount).ToString();
+        textMesh.text = healText;
+        textMesh.color = new Color(0.2f, 1f, 0.2f, 1f); // Bright green
+        textMesh.fontSize = normalFontSize;
+        
+        // Convert world position to screen position
+        Camera mainCam = Camera.main;
+        if (mainCam == null)
+        {
+            Debug.LogError("No main camera found for heal numbers!");
+            Destroy(gameObject);
+            return;
+        }
+        
+        // Add offset to world position
+        Vector3 offsetWorldPos = worldPosition + Vector3.up * initialYOffset;
+        Vector3 screenPos = mainCam.WorldToScreenPoint(offsetWorldPos);
+        
+        // Add random horizontal spread in screen space
+        float randomX = Random.Range(-randomSpreadX * 50f, randomSpreadX * 50f);
+        screenPos.x += randomX;
+        
+        startPosition = screenPos;
+        transform.position = startPosition;
+        
+        // Setup velocity for floating animation (in screen space)
+        velocity = Vector3.up * floatSpeed * 30f; // Multiply for screen space
+    }
+    
+    /// <summary>
     /// Show a damage number at the specified world position
     /// </summary>
     public static void ShowDamage(float damage, Vector3 worldPosition, bool isCritical = false)
@@ -142,6 +177,30 @@ public class DamageNumberUI : MonoBehaviour
         // Add and initialize component
         DamageNumberUI damageNumber = damageObj.AddComponent<DamageNumberUI>();
         damageNumber.Initialize(damage, isCritical, worldPosition);
+    }
+    
+    /// <summary>
+    /// Show a heal number at the specified world position (green text)
+    /// </summary>
+    public static void ShowHeal(float healAmount, Vector3 worldPosition)
+    {
+        // Ensure we have a world canvas
+        if (worldCanvas == null)
+        {
+            CreateWorldCanvas();
+        }
+        
+        // Create heal number object
+        GameObject healObj = new GameObject("HealNumber");
+        healObj.transform.SetParent(worldCanvas.transform, false);
+        
+        // Add RectTransform for UI element
+        RectTransform rectTransform = healObj.AddComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(200, 60);
+        
+        // Add and initialize component with custom color
+        DamageNumberUI healNumber = healObj.AddComponent<DamageNumberUI>();
+        healNumber.InitializeHeal(healAmount, worldPosition);
     }
     
     /// <summary>

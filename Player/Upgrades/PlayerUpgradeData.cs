@@ -20,6 +20,7 @@ public static class PlayerUpgradeData
         UpgradePushWave,
         UpgradeExtraHand,
         UpgradeDefense,
+        UpgradeVampireAura,
         // Player2 specific upgrades
         UpgradeBlinkDistance,
         ReduceBlinkCooldown,
@@ -38,6 +39,7 @@ public static class PlayerUpgradeData
         public PlayerSkill_PushWave[] PushWaveSkills;
         public PlayerSkill_ExtraHand[] ExtraHandSkills;
         public PlayerSkill_Defense[] DefenseSkills;
+        public PlayerSkill_VampireAura[] VampireAuraSkills;
         public Player_DataSO PlayerStats;
         public Player2_DataSO Player2Stats;
     }

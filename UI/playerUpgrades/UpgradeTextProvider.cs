@@ -124,6 +124,28 @@ public static class UpgradeTextProvider
                     return $"<color=#5DADE2>DEFENSE</color>\n<size=24>MAX LEVEL ({defenseMaxLevel})</size>";
                 }
                 
+            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
+                int vampireLevel = upgradeManager.GetVampireAuraLevel();
+                int vampireMaxLevel = upgradeManager.GetVampireAuraMaxLevel();
+                
+                if (vampireLevel == 0)
+                {
+                    // Not obtained yet - show as unlock
+                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>Unlock Skill (Level 1/{vampireMaxLevel})</size>";
+                }
+                else if (vampireLevel < vampireMaxLevel)
+                {
+                    // Show level upgrade with lifesteal percentage progression
+                    float currentLifesteal = upgradeManager.GetVampireAuraHealPercentage();
+                    float nextLifesteal = currentLifesteal + 1f; // +1% per level
+                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>Level {vampireLevel} → {vampireLevel + 1}\n{currentLifesteal:F0}% → {nextLifesteal:F0}% Lifesteal</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>MAX LEVEL ({vampireMaxLevel})</size>";
+                }
+                
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
                 float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
@@ -187,6 +209,9 @@ public static class UpgradeTextProvider
                 
             case PlayerUpgradeData.UpgradeType.UpgradeDefense:
                 return "<b><color=#5DADE2>DEFENSE</color></b>\n\nUnlock or upgrade this powerful defensive skill! Automatically absorbs incoming damage with 100% chance and reflects 100% of absorbed damage back to enemies. Each level increases:\n• <b>Absorption</b> (20% at Lv1 → 80% at Lv10)\n• <b>Reflection</b> (100% of absorbed damage)\n• <b>Chance</b> (Always 100%)\n\nDamage absorption scales linearly across all 10 levels. Reflected damage targets the attacker first, then nearest enemy within 5m radius.\n\n<i>Max Level: 10 - Turn enemy attacks into your weapon!</i>";
+                
+            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
+                return "<b><color=#CC0033>VAMPIRE AURA</color></b>\n\nUnlock or upgrade this lifesteal skill! Passively restores health whenever you deal damage to enemies. Dark red particles flow from damaged enemies to you. Each level increases:\n• <b>Lifesteal</b> (5% at Lv1 → 14% at Lv10)\n• <b>+1% per level</b>\n\nHeals for 5-14% of all damage you deal. Works with projectiles, dash attacks, and skills. Rewards aggressive playstyle with constant healing!\n\n<i>Max Level: 10 - Sustain yourself through combat!</i>";
                 
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";

@@ -32,5 +32,9 @@ namespace PlayerUpgrades
         public float extraHandDamagePerLevel = 2f;
         public float extraHandIntervalReductionPerLevel = 0.2f;
         public float extraHandRangePerLevel = 1f;
+        
+        [Header("Vampire Aura Skill Upgrades")]
+        public float vampireAuraBaseLifestealPercentage = 5f; // Lifesteal percentage at level 1 (5% of damage dealt)
+        public float vampireAuraLifestealPercentagePerLevel = 1f; // +1% per level
     }
 }

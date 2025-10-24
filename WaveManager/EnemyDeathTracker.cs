@@ -18,7 +18,7 @@ public class EnemyDeathTracker : MonoBehaviour
     
     /// <summary>
     /// Call this method when the enemy dies.
-    /// This should be called from your enemy health/death script.
+    /// This should be called from your enemy death/health script.
     /// </summary>
     public void NotifyDeath()
     {
@@ -29,6 +29,12 @@ public class EnemyDeathTracker : MonoBehaviour
         if (waveManager != null)
         {
             waveManager.RegisterEnemyKilled();
+        }
+        
+        // Broadcast kill event for skills like Vampire Aura
+        if (EnemyKillEventBroadcaster.Instance != null)
+        {
+            EnemyKillEventBroadcaster.Instance.BroadcastEnemyKill(transform.position);
         }
     }
     

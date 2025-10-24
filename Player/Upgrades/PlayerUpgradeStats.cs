@@ -105,6 +105,8 @@ namespace PlayerUpgrades
         public int GetPushWaveMaxLevel() => GetSkillMaxLevel(referenceManager.References.PushWaveSkills, 10);
         public int GetDefenseLevel() => GetSkillLevel(referenceManager.References.DefenseSkills);
         public int GetDefenseMaxLevel() => GetSkillMaxLevel(referenceManager.References.DefenseSkills, 10);
+        public int GetVampireAuraLevel() => GetSkillLevel(referenceManager.References.VampireAuraSkills);
+        public int GetVampireAuraMaxLevel() => GetSkillMaxLevel(referenceManager.References.VampireAuraSkills, 10);
         
         public int GetExtraHandLevel()
         {
@@ -161,6 +163,19 @@ namespace PlayerUpgrades
         }
         
         private int GetSkillLevel(PlayerSkill_Defense[] skills)
+        {
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null)
+                        return skill.CurrentLevel;
+                }
+            }
+            return 0;
+        }
+        
+        private int GetSkillLevel(PlayerSkill_VampireAura[] skills)
         {
             if (skills != null)
             {
@@ -360,6 +375,20 @@ namespace PlayerUpgrades
                 {
                     if (skill != null && skill.IsObtained)
                         return skill.AbsorptionChance;
+                }
+            }
+            return 0f;
+        }
+        
+        public float GetVampireAuraHealPercentage()
+        {
+            var skills = referenceManager.References.VampireAuraSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.CurrentHealPercentage;
                 }
             }
             return 0f;

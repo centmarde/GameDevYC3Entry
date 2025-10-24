@@ -118,6 +118,19 @@ namespace PlayerUpgrades
                     }
                 }
             }
+            
+            // Check Vampire Aura
+            if (refs.VampireAuraSkills != null)
+            {
+                foreach (var skill in refs.VampireAuraSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeVampireAura);
+                        break;
+                    }
+                }
+            }
         }
         
         private UpgradeType[] PickRandomUpgrades(List<UpgradeType> allUpgrades)

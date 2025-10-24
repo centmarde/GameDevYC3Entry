@@ -95,6 +95,9 @@ public class ProjectileSlingshot : MonoBehaviour
             {
                 // Show damage number UI
                 DamageNumberUI.ShowDamage(finalDamage, hitPoint, isCriticalHit);
+                
+                // Broadcast damage dealt event for skills like Vampire Aura
+                DamageEventBroadcaster.BroadcastPlayerDamage(finalDamage, hitPoint, source);
             }
         }
 

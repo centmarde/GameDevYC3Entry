@@ -270,5 +270,9 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetDefenseAbsorptionPercent() => statsProvider.GetDefenseAbsorptionPercent();
     public float GetDefenseAbsorptionChance() => statsProvider.GetDefenseAbsorptionChance();
     
+    public int GetVampireAuraLevel() => statsProvider.GetVampireAuraLevel();
+    public int GetVampireAuraMaxLevel() => statsProvider.GetVampireAuraMaxLevel();
+    public float GetVampireAuraHealPercentage() => statsProvider.GetVampireAuraHealPercentage();
+    
     #endregion
 }

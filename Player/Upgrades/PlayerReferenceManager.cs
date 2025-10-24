@@ -53,6 +53,7 @@ namespace PlayerUpgrades
             List<PlayerSkill_PushWave> pushWaveSkillsList = new List<PlayerSkill_PushWave>();
             List<PlayerSkill_ExtraHand> extraHandSkillsList = new List<PlayerSkill_ExtraHand>();
             List<PlayerSkill_Defense> defenseSkillsList = new List<PlayerSkill_Defense>();
+            List<PlayerSkill_VampireAura> vampireAuraSkillsList = new List<PlayerSkill_VampireAura>();
             
             foreach (Player p in allPlayers)
             {
@@ -73,6 +74,10 @@ namespace PlayerUpgrades
                     var defenseSkill = p.GetComponent<PlayerSkill_Defense>();
                     if (defenseSkill != null)
                         defenseSkillsList.Add(defenseSkill);
+                    
+                    var vampireAuraSkill = p.GetComponent<PlayerSkill_VampireAura>();
+                    if (vampireAuraSkill != null)
+                        vampireAuraSkillsList.Add(vampireAuraSkill);
                 }
             }
             
@@ -80,10 +85,11 @@ namespace PlayerUpgrades
             references.PushWaveSkills = pushWaveSkillsList.ToArray();
             references.ExtraHandSkills = extraHandSkillsList.ToArray();
             references.DefenseSkills = defenseSkillsList.ToArray();
+            references.VampireAuraSkills = vampireAuraSkillsList.ToArray();
             
             Debug.Log($"[PlayerReferenceManager] Found {references.CirclingProjectilesSkills.Length} CirclingProjectiles skills, " +
                      $"{references.PushWaveSkills.Length} PushWave skills, {references.ExtraHandSkills.Length} ExtraHand skills, " +
-                     $"and {references.DefenseSkills.Length} Defense skills");
+                     $"{references.DefenseSkills.Length} Defense skills, and {references.VampireAuraSkills.Length} VampireAura skills");
         }
         
         private void ValidatePlayer2Skills()
