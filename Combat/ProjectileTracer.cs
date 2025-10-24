@@ -226,6 +226,25 @@ public class ProjectileTracer : MonoBehaviour
     }
     
     /// <summary>
+    /// Configure snake-like trail (longer, thinner trail for snake effect)
+    /// </summary>
+    public void SetSnakeTrail(float time = 1.0f, float startWidth = 0.15f)
+    {
+        if (trailRenderer != null)
+        {
+            trailRenderer.time = time;
+            trailRenderer.startWidth = startWidth;
+            trailRenderer.endWidth = startWidth * 0.1f;
+        }
+        
+        if (lineRenderer != null)
+        {
+            lineRenderer.startWidth = startWidth * 0.5f;
+            lineRenderer.endWidth = startWidth * 0.05f;
+        }
+    }
+    
+    /// <summary>
     /// Set tracer to charging state
     /// </summary>
     public void SetChargingState(float chargeProgress)

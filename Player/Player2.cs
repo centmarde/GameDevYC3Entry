@@ -47,6 +47,9 @@ public class Player2 : Player
             Debug.Log("[Player2] Auto-added Player2_BlinkSkill component");
         }
         
+        // Auto-add skill components if missing (for upgrade system)
+        EnsureSkillComponentsExist();
+        
         // Create Player2-specific states
         dashAttackState = new Player2_DashAttackState(this, stateMachine, "isCharging");
         blinkState = new Player2_BlinkState(this, stateMachine, "isOpeningChest");
@@ -226,6 +229,34 @@ public class Player2 : Player
             Destroy(gameObject, 0.1f);
         }
         Debug.Log("Player2 died.");
+    }
+    
+    /// <summary>
+    /// Ensures that Player2 has all required skill components for the upgrade system
+    /// This allows Player2 to access skill upgrades like ExtraHand, CirclingProjectiles, and Fireflies
+    /// </summary>
+    private void EnsureSkillComponentsExist()
+    {
+        // Check and add PlayerSkill_ExtraHand
+        if (GetComponent<PlayerSkill_ExtraHand>() == null)
+        {
+            gameObject.AddComponent<PlayerSkill_ExtraHand>();
+            Debug.Log("[Player2] Auto-added PlayerSkill_ExtraHand component for upgrade system");
+        }
+        
+        // Check and add PlayerSkill_CirclingProjectiles
+        if (GetComponent<PlayerSkill_CirclingProjectiles>() == null)
+        {
+            gameObject.AddComponent<PlayerSkill_CirclingProjectiles>();
+            Debug.Log("[Player2] Auto-added PlayerSkill_CirclingProjectiles component for upgrade system");
+        }
+        
+        // Check and add PlayerSkill_PushWave (Fireflies)
+        if (GetComponent<PlayerSkill_PushWave>() == null)
+        {
+            gameObject.AddComponent<PlayerSkill_PushWave>();
+            Debug.Log("[Player2] Auto-added PlayerSkill_PushWave (Fireflies) component for upgrade system");
+        }
     }
     
     private void OnDrawGizmosSelected()

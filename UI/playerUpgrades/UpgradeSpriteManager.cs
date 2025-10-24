@@ -15,6 +15,7 @@ public class UpgradeSpriteManager
     [SerializeField] private Sprite evasionUpgradeSprite;
     [SerializeField] private Sprite circlingProjectilesUpgradeSprite;
     [SerializeField] private Sprite pushWaveUpgradeSprite;
+    [SerializeField] private Sprite extraHandUpgradeSprite;
     [SerializeField] private Sprite blinkDistanceUpgradeSprite;
     [SerializeField] private Sprite blinkCooldownUpgradeSprite;
     [SerializeField] private Sprite dashCooldownUpgradeSprite;
@@ -44,6 +45,8 @@ public class UpgradeSpriteManager
                 return circlingProjectilesUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
                 return pushWaveUpgradeSprite ?? defaultUpgradeSprite;
+            case PlayerUpgradeManager.UpgradeType.UpgradeExtraHand:
+                return extraHandUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 return blinkDistanceUpgradeSprite ?? defaultUpgradeSprite;
             case PlayerUpgradeManager.UpgradeType.ReduceBlinkCooldown:

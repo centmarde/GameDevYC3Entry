@@ -12,10 +12,17 @@ public class PlayerSkill_Base : MonoBehaviour
 
     protected virtual void Awake()
     {
+        // Only run in play mode to avoid issues when editing prefabs
+        if (!Application.isPlaying) return;
+        
         skillManager = GetComponentInParent<PlayerSkill_Manager>();
         player = GetComponentInParent<Player>();
-        lastTimeUsed = lastTimeUsed - Data.cooldown;
-
+        
+        // Only set cooldown if Data exists
+        if (Data != null)
+        {
+            lastTimeUsed = lastTimeUsed - Data.cooldown;
+        }
     }
     public virtual bool CanUseSkill()
     {

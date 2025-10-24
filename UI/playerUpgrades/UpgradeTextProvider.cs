@@ -80,6 +80,26 @@ public static class UpgradeTextProvider
                     return $"FIREFLIES\n<size=24>MAX LEVEL ({pushMaxLevel})</size>";
                 }
                 
+            case PlayerUpgradeManager.UpgradeType.UpgradeExtraHand:
+                int extraHandLevel = upgradeManager.GetExtraHandLevel();
+                int extraHandMaxLevel = upgradeManager.GetExtraHandMaxLevel();
+                
+                if (extraHandLevel == 0)
+                {
+                    // Not obtained yet - show as unlock
+                    return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>Unlock Skill (Level 1/{extraHandMaxLevel})</size>";
+                }
+                else if (extraHandLevel < extraHandMaxLevel)
+                {
+                    // Show level upgrade
+                    return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>Level {extraHandLevel} → {extraHandLevel + 1}</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>MAX LEVEL ({extraHandMaxLevel})</size>";
+                }
+                
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
                 float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
@@ -137,6 +157,9 @@ public static class UpgradeTextProvider
                 
             case PlayerUpgradeManager.UpgradeType.UpgradePushWave:
                 return "<b><color=#FFD700>FIREFLIES</color></b>\n\nUnlock or upgrade this magical automatic skill! Glowing fireflies orbit and damage enemies. Each level increases:\n• <b>Radius</b> (+0.2m per level)\n• <b>Push Force</b> (+1 per level)\n• <b>Damage</b> (+1 per level)\n• <b>Activation Speed</b> (4s → 2s at max level)\n\n<i>Max Level: 10 - Beautiful and deadly firefly swarm with lights!</i>";
+                
+            case PlayerUpgradeManager.UpgradeType.UpgradeExtraHand:
+                return "<b><color=#00FF00>EXTRA HAND</color></b>\n\nUnlock or upgrade this auto-targeting skill! An ethereal hand shoots snake-like projectiles at nearby enemies. Each level increases:\n• <b>Damage</b> (+2 per level)\n• <b>Fire Rate</b> (-0.2s interval per level)\n• <b>Range</b> (+1m per level)\n• <b>Projectiles</b> (+1 on even levels 2,4,6,8,10)\n\n<i>Max Level: 10 - Never miss with this auto-aiming companion!</i>";
                 
             case PlayerUpgradeManager.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";

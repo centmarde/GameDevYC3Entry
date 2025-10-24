@@ -9,6 +9,14 @@ public class ProjectileSlingshot : MonoBehaviour
     private float damage;
     private bool isCriticalHit;
     private object source;
+    
+    /// <summary>
+    /// Set the hit mask for this projectile (used when creating projectiles at runtime)
+    /// </summary>
+    public void SetHitMask(LayerMask mask)
+    {
+        hitMask = mask;
+    }
 
     private void Awake()
     {

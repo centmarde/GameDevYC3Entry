@@ -32,6 +32,11 @@ public class PlayerUpgradeManager : MonoBehaviour
     [SerializeField] private float skillRadiusUpgrade = 0.5f;
     [SerializeField] private float skillSpeedUpgrade = 15f;
     
+    [Header("Extra Hand Skill Upgrades")]
+    [SerializeField] private float extraHandDamagePerLevel = 2f;
+    [SerializeField] private float extraHandIntervalReductionPerLevel = 0.2f;
+    [SerializeField] private float extraHandRangePerLevel = 1f;
+    
     [Header("Auto-Setup")]
     [SerializeField] private bool autoFindReferences = true;
     
@@ -39,6 +44,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     private Player2[] player2s;
     private PlayerSkill_CirclingProjectiles[] circlingProjectilesSkills;
     private PlayerSkill_PushWave[] pushWaveSkills;
+    private PlayerSkill_ExtraHand[] extraHandSkills;
     private bool upgradePending = false;
     private UpgradeType[] currentUpgradeOptions = new UpgradeType[3];
     
@@ -52,6 +58,7 @@ public class PlayerUpgradeManager : MonoBehaviour
         Evasion,
         UpgradeCirclingProjectiles, // Level-based upgrade (1-10) that increases all stats
         UpgradePushWave, // Level-based upgrade (1-10) that increases radius, force, damage, reduces cooldown
+        UpgradeExtraHand, // Level-based upgrade (1-10) that increases damage, fire rate, and range
         // Player2 specific upgrades
         UpgradeBlinkDistance,
         ReduceBlinkCooldown,
@@ -126,6 +133,7 @@ public class PlayerUpgradeManager : MonoBehaviour
         // Find circling projectiles skills on all players
         System.Collections.Generic.List<PlayerSkill_CirclingProjectiles> circlingSkillsList = new System.Collections.Generic.List<PlayerSkill_CirclingProjectiles>();
         System.Collections.Generic.List<PlayerSkill_PushWave> pushWaveSkillsList = new System.Collections.Generic.List<PlayerSkill_PushWave>();
+        System.Collections.Generic.List<PlayerSkill_ExtraHand> extraHandSkillsList = new System.Collections.Generic.List<PlayerSkill_ExtraHand>();
         
         foreach (Player p in allPlayers)
         {
@@ -142,12 +150,34 @@ public class PlayerUpgradeManager : MonoBehaviour
                 {
                     pushWaveSkillsList.Add(pushWaveSkill);
                 }
+                
+                var extraHandSkill = p.GetComponent<PlayerSkill_ExtraHand>();
+                if (extraHandSkill != null)
+                {
+                    extraHandSkillsList.Add(extraHandSkill);
+                }
             }
         }
         
         circlingProjectilesSkills = circlingSkillsList.ToArray();
         pushWaveSkills = pushWaveSkillsList.ToArray();
-        Debug.Log($"[PlayerUpgradeManager] Found {circlingProjectilesSkills.Length} CirclingProjectiles skills and {pushWaveSkills.Length} PushWave skills");
+        extraHandSkills = extraHandSkillsList.ToArray();
+        Debug.Log($"[PlayerUpgradeManager] Found {circlingProjectilesSkills.Length} CirclingProjectiles skills, {pushWaveSkills.Length} PushWave skills, and {extraHandSkills.Length} ExtraHand skills");
+        
+        // Warn if Player2 is active but has no skills attached
+        if (player2s != null && player2s.Length > 0)
+        {
+            foreach (var p2 in player2s)
+            {
+                if (p2 != null && p2.gameObject.activeInHierarchy)
+                {
+                    if (circlingSkillsList.Count == 0 && pushWaveSkillsList.Count == 0 && extraHandSkillsList.Count == 0)
+                    {
+                        Debug.LogWarning($"[PlayerUpgradeManager] Player2 '{p2.gameObject.name}' has NO skill components attached! Add PlayerSkill_ExtraHand, PlayerSkill_CirclingProjectiles, and PlayerSkill_PushWave components to Player2 in Unity Editor.", p2.gameObject);
+                    }
+                }
+            }
+        }
         
         // Get stats from first available player
         if (player2s != null && player2s.Length > 0)
@@ -242,6 +272,46 @@ public class PlayerUpgradeManager : MonoBehaviour
             allUpgrades.Add(UpgradeType.ReduceBlinkCooldown);
             allUpgrades.Add(UpgradeType.ReduceDashCooldown);
             allUpgrades.Add(UpgradeType.UpgradeBlinkDashSpeed);
+            
+            // Add skill upgrades for Player2 as well
+            // Check if circling projectiles skill hasn't reached max level (10)
+            if (circlingProjectilesSkills != null)
+            {
+                foreach (var skill in circlingProjectilesSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeCirclingProjectiles);
+                        break;
+                    }
+                }
+            }
+            
+            // Check if push wave skill hasn't reached max level (10)
+            if (pushWaveSkills != null)
+            {
+                foreach (var skill in pushWaveSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradePushWave);
+                        break;
+                    }
+                }
+            }
+            
+            // Check if extra hand skill hasn't reached max level (10)
+            if (extraHandSkills != null)
+            {
+                foreach (var skill in extraHandSkills)
+                {
+                    if (skill != null && skill.ExtraHandLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeExtraHand);
+                        break;
+                    }
+                }
+            }
         }
         else
         {
@@ -276,6 +346,20 @@ public class PlayerUpgradeManager : MonoBehaviour
                     if (skill != null && skill.CurrentLevel < 10)
                     {
                         allUpgrades.Add(UpgradeType.UpgradePushWave);
+                        break;
+                    }
+                }
+            }
+            
+            // Add extra hand upgrade by default
+            // Check if skill hasn't reached max level (10)
+            if (extraHandSkills != null)
+            {
+                foreach (var skill in extraHandSkills)
+                {
+                    if (skill != null && skill.ExtraHandLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeExtraHand);
                         break;
                     }
                 }
@@ -516,6 +600,31 @@ public class PlayerUpgradeManager : MonoBehaviour
                 }
                 break;
                 
+            case UpgradeType.UpgradeExtraHand:
+                // Level-based upgrade that increases damage, fire rate, and range
+                if (extraHandSkills != null)
+                {
+                    foreach (var skill in extraHandSkills)
+                    {
+                        if (skill != null)
+                        {
+                            if (!skill.IsObtained)
+                            {
+                                // First time: Obtain the skill (Level 1)
+                                skill.ObtainSkill();
+                                Debug.Log($"[PlayerUpgradeManager] Obtained Extra Hand skill! Level: {skill.ExtraHandLevel}");
+                            }
+                            else if (skill.ExtraHandLevel < 10)
+                            {
+                                // Upgrade to next level (increases damage, reduces interval, increases range)
+                                skill.UpgradeLevel(extraHandDamagePerLevel, extraHandIntervalReductionPerLevel, extraHandRangePerLevel);
+                                Debug.Log($"[PlayerUpgradeManager] Upgraded Extra Hand to Level {skill.ExtraHandLevel}");
+                            }
+                        }
+                    }
+                }
+                break;
+                
             // Player2 specific upgrades
             case UpgradeType.UpgradeBlinkDistance:
                 if (hasPlayer2 && player2Stats != null)
@@ -748,6 +857,72 @@ public class PlayerUpgradeManager : MonoBehaviour
             {
                 if (skill != null && skill.IsObtained)
                     return skill.CurrentSpeed;
+            }
+        }
+        return 0f;
+    }
+    
+    // Extra Hand skill getters
+    public int GetExtraHandLevel()
+    {
+        if (extraHandSkills != null)
+        {
+            foreach (var skill in extraHandSkills)
+            {
+                if (skill != null)
+                    return skill.ExtraHandLevel;
+            }
+        }
+        return 0;
+    }
+    
+    public int GetExtraHandMaxLevel()
+    {
+        if (extraHandSkills != null)
+        {
+            foreach (var skill in extraHandSkills)
+            {
+                if (skill != null)
+                    return skill.MaxLevel;
+            }
+        }
+        return 10;
+    }
+    
+    public float GetExtraHandDamage()
+    {
+        if (extraHandSkills != null)
+        {
+            foreach (var skill in extraHandSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentDamage;
+            }
+        }
+        return 0f;
+    }
+    
+    public float GetExtraHandShootInterval()
+    {
+        if (extraHandSkills != null)
+        {
+            foreach (var skill in extraHandSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentShootInterval;
+            }
+        }
+        return 0f;
+    }
+    
+    public float GetExtraHandRange()
+    {
+        if (extraHandSkills != null)
+        {
+            foreach (var skill in extraHandSkills)
+            {
+                if (skill != null && skill.IsObtained)
+                    return skill.CurrentRange;
             }
         }
         return 0f;
