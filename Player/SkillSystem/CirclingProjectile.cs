@@ -21,9 +21,7 @@ public class CirclingProjectile : MonoBehaviour
     
     [Header("Blood Splatter Effect")]
     [SerializeField] private bool enableBloodSplatter = true;
-    [SerializeField] private Color bloodColor = new Color(0.8f, 0f, 0.2f, 0.8f); // Dark red blood
-    [SerializeField] private int bloodParticleCount = 20;
-    [SerializeField] private float bloodParticleDuration = 1f;
+    [SerializeField] private GameObject bloodSplatterPrefab; // Prefab for the blood splatter particle effect
     
     private Transform playerTransform; // Player to follow
     private float orbitRadius;
@@ -170,79 +168,30 @@ public class CirclingProjectile : MonoBehaviour
     /// </summary>
     private void CreateBloodSplatterEffect(Vector3 hitPosition)
     {
-        // Create particle system object
-        GameObject effectObj = new GameObject("BloodSplatter_Effect");
-        effectObj.transform.position = hitPosition;
+        if (bloodSplatterPrefab == null)
+        {
+            Debug.LogWarning("Blood splatter prefab is not assigned!");
+            return;
+        }
         
-        // Add and configure particle system
-        ParticleSystem ps = effectObj.AddComponent<ParticleSystem>();
+        // Instantiate the blood splatter prefab at hit position
+        GameObject effectObj = Instantiate(bloodSplatterPrefab, hitPosition, Quaternion.identity);
         
-        // Main module - particles explode outward like blood splatter
-        var main = ps.main;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.8f); // Shorter lifetime for splatter
-        main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 8f); // Fast initial burst
-        main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.3f); // Varied sizes
-        main.startColor = bloodColor;
-        main.maxParticles = bloodParticleCount * 2; // More particles for splatter effect
-        main.loop = false;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.gravityModifier = 2f; // Gravity pulls particles down like blood
-        
-        // Emission module - single burst for splatter
-        var emission = ps.emission;
-        emission.enabled = true;
-        emission.rateOverTime = 0;
-        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, (short)(bloodParticleCount * 2)) });
-        
-        // Shape module - emit in all directions like blood splatter
-        var shape = ps.shape;
-        shape.enabled = true;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.1f; // Small radius for tight origin
-        shape.radiusThickness = 1f; // Emit from surface
-        
-        // Color over lifetime - blood darkens and fades
-        var colorOverLifetime = ps.colorOverLifetime;
-        colorOverLifetime.enabled = true;
-        Gradient gradient = new Gradient();
-        gradient.SetKeys(
-            new GradientColorKey[] { 
-                new GradientColorKey(bloodColor, 0f), // Bright red
-                new GradientColorKey(new Color(0.4f, 0f, 0.1f), 1f) // Dark blood red
-            },
-            new GradientAlphaKey[] { 
-                new GradientAlphaKey(1f, 0f),
-                new GradientAlphaKey(0.8f, 0.5f),
-                new GradientAlphaKey(0f, 1f) // Fade out
-            }
-        );
-        colorOverLifetime.color = gradient;
-        
-        // Size over lifetime - shrink as blood droplets dissipate
-        var sizeOverLifetime = ps.sizeOverLifetime;
-        sizeOverLifetime.enabled = true;
-        AnimationCurve sizeCurve = new AnimationCurve();
-        sizeCurve.AddKey(0f, 1f);
-        sizeCurve.AddKey(1f, 0.2f);
-        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
-        
-        // Velocity over lifetime - slow down as particles lose momentum
-        var velocityOverLifetime = ps.velocityOverLifetime;
-        velocityOverLifetime.enabled = true;
-        velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0.2f));
-        
-        // Renderer
-        var renderer = ps.GetComponent<ParticleSystemRenderer>();
-        renderer.renderMode = ParticleSystemRenderMode.Billboard;
-        renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-        renderer.material.SetColor("_Color", bloodColor);
-        renderer.material.EnableKeyword("_EMISSION");
-        
-        // Play particles
-        ps.Play();
-        
-        // Destroy after particles finish
-        Destroy(effectObj, 1.5f);
+        // Get particle system and play it
+        ParticleSystem ps = effectObj.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            ps.Play();
+            
+            // Destroy after particles finish (use the particle system's duration)
+            float duration = ps.main.duration + ps.main.startLifetime.constantMax;
+            Destroy(effectObj, duration);
+        }
+        else
+        {
+            // If no particle system, just destroy after a default time
+            Destroy(effectObj, 2f);
+        }
     }
 
     private void OnDestroy()

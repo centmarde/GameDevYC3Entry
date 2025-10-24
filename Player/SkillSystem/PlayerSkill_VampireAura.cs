@@ -13,6 +13,8 @@ public class PlayerSkill_VampireAura : MonoBehaviour
     [SerializeField] private float lifestealPercentagePerLevel = 1f; // Additional % per level (1% per level)
     
     [Header("Visual Effects")]
+    [SerializeField] private GameObject energyDrainEffectPrefab; // Prefab for energy drain effect (optional)
+    [SerializeField] private bool useAutoSetup = true; // Use auto setup if prefab is null
     [SerializeField] private Color auraColor = new Color(0.8f, 0f, 0.2f, 0.8f); // Dark red aura
     [SerializeField] private int particleCount = 20;
     [SerializeField] private float particleDuration = 1f;
@@ -202,13 +204,28 @@ public class PlayerSkill_VampireAura : MonoBehaviour
     }
     
     /// <summary>
-    /// Create blood splatter visual effect on damage hit
+    /// Create energy drain visual effect on damage hit
     /// </summary>
     private void CreateBloodSplatterEffect(Vector3 hitPosition)
     {
         if (player == null) return;
         
-        // Create particle system object
+        // Try to use prefab first
+        if (energyDrainEffectPrefab != null)
+        {
+            GameObject prefabInstance = Instantiate(energyDrainEffectPrefab, hitPosition, Quaternion.identity);
+            Destroy(prefabInstance, 1.5f);
+            return;
+        }
+        
+        // Fallback to auto setup if no prefab
+        if (!useAutoSetup)
+        {
+            Debug.LogWarning("[VampireAura] No effect prefab assigned and auto setup is disabled!");
+            return;
+        }
+        
+        // Create particle system object (auto setup fallback)
         GameObject effectObj = new GameObject("BloodSplatter_Effect");
         effectObj.transform.position = hitPosition;
         
