@@ -11,7 +11,7 @@ namespace PlayerUpgrades
     {
         [Header("Base Upgrade Values")]
         public float damageUpgradeAmount = 5f;
-        public float maxHealthUpgradeAmount = 20f;
+        public float maxHealthUpgradeAmount = 50f;
         public float healAmount = 30f;
         public float criticalChanceUpgradeAmount = 5f;
         public float criticalDamageUpgradeAmount = 0.25f;
