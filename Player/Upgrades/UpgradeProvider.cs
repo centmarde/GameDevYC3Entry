@@ -131,6 +131,19 @@ namespace PlayerUpgrades
                     }
                 }
             }
+            
+            // Check Piccolo FireCracker
+            if (refs.PiccoloFireCrackerSkills != null)
+            {
+                foreach (var skill in refs.PiccoloFireCrackerSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradePiccoloFireCracker);
+                        break;
+                    }
+                }
+            }
         }
         
         private UpgradeType[] PickRandomUpgrades(List<UpgradeType> allUpgrades)

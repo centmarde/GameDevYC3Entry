@@ -54,6 +54,7 @@ namespace PlayerUpgrades
             List<PlayerSkill_ExtraHand> extraHandSkillsList = new List<PlayerSkill_ExtraHand>();
             List<PlayerSkill_Defense> defenseSkillsList = new List<PlayerSkill_Defense>();
             List<PlayerSkill_VampireAura> vampireAuraSkillsList = new List<PlayerSkill_VampireAura>();
+            List<PlayerSkill_PiccoloFireCracker> piccoloFireCrackerSkillsList = new List<PlayerSkill_PiccoloFireCracker>();
             
             foreach (Player p in allPlayers)
             {
@@ -78,6 +79,10 @@ namespace PlayerUpgrades
                     var vampireAuraSkill = p.GetComponent<PlayerSkill_VampireAura>();
                     if (vampireAuraSkill != null)
                         vampireAuraSkillsList.Add(vampireAuraSkill);
+                    
+                    var piccoloFireCrackerSkill = p.GetComponent<PlayerSkill_PiccoloFireCracker>();
+                    if (piccoloFireCrackerSkill != null)
+                        piccoloFireCrackerSkillsList.Add(piccoloFireCrackerSkill);
                 }
             }
             
@@ -86,10 +91,12 @@ namespace PlayerUpgrades
             references.ExtraHandSkills = extraHandSkillsList.ToArray();
             references.DefenseSkills = defenseSkillsList.ToArray();
             references.VampireAuraSkills = vampireAuraSkillsList.ToArray();
+            references.PiccoloFireCrackerSkills = piccoloFireCrackerSkillsList.ToArray();
             
             Debug.Log($"[PlayerReferenceManager] Found {references.CirclingProjectilesSkills.Length} CirclingProjectiles skills, " +
                      $"{references.PushWaveSkills.Length} PushWave skills, {references.ExtraHandSkills.Length} ExtraHand skills, " +
-                     $"{references.DefenseSkills.Length} Defense skills, and {references.VampireAuraSkills.Length} VampireAura skills");
+                     $"{references.DefenseSkills.Length} Defense skills, {references.VampireAuraSkills.Length} VampireAura skills, " +
+                     $"and {references.PiccoloFireCrackerSkills.Length} PiccoloFireCracker skills");
         }
         
         private void ValidatePlayer2Skills()

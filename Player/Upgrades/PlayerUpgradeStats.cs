@@ -393,5 +393,90 @@ namespace PlayerUpgrades
             }
             return 0f;
         }
+        
+        // Piccolo FireCracker getters
+        public int GetPiccoloFireCrackerLevel()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null)
+                        return skill.CurrentLevel;
+                }
+            }
+            return 0;
+        }
+        
+        public int GetPiccoloFireCrackerMaxLevel()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null)
+                        return skill.MaxLevel;
+                }
+            }
+            return 10;
+        }
+        
+        public float GetPiccoloFireCrackerDamage()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.CurrentDamage;
+                }
+            }
+            return 0f;
+        }
+        
+        public float GetPiccoloFireCrackerRadius()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.CurrentAreaRadius;
+                }
+            }
+            return 0f;
+        }
+        
+        public float GetPiccoloFireCrackerExplosionTime()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.CurrentExplosionTime;
+                }
+            }
+            return 0f;
+        }
+        
+        public int GetPiccoloFireCrackerBombCount()
+        {
+            var skills = referenceManager.References.PiccoloFireCrackerSkills;
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null && skill.IsObtained)
+                        return skill.CurrentBombCount;
+                }
+            }
+            return 0;
+        }
     }
 }

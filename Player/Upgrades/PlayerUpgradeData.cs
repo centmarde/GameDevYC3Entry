@@ -21,6 +21,7 @@ public static class PlayerUpgradeData
         UpgradeExtraHand,
         UpgradeDefense,
         UpgradeVampireAura,
+        UpgradePiccoloFireCracker,
         // Player2 specific upgrades
         UpgradeBlinkDistance,
         ReduceBlinkCooldown,
@@ -40,6 +41,7 @@ public static class PlayerUpgradeData
         public PlayerSkill_ExtraHand[] ExtraHandSkills;
         public PlayerSkill_Defense[] DefenseSkills;
         public PlayerSkill_VampireAura[] VampireAuraSkills;
+        public PlayerSkill_PiccoloFireCracker[] PiccoloFireCrackerSkills;
         public Player_DataSO PlayerStats;
         public Player2_DataSO Player2Stats;
     }

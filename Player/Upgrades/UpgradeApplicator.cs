@@ -73,6 +73,9 @@ namespace PlayerUpgrades
                 case UpgradeType.UpgradeVampireAura:
                     ApplyVampireAuraUpgrade(refs);
                     break;
+                case UpgradeType.UpgradePiccoloFireCracker:
+                    ApplyPiccoloFireCrackerUpgrade(refs);
+                    break;
                 case UpgradeType.UpgradeBlinkDistance:
                     ApplyBlinkDistanceUpgrade(hasPlayer2, refs);
                     break;
@@ -329,6 +332,29 @@ namespace PlayerUpgrades
                         {
                             skill.UpgradeSkill();
                             Debug.Log($"[UpgradeApplicator] Upgraded Vampire Aura to Level {skill.CurrentLevel}, Lifesteal: {skill.CurrentHealPercentage}%");
+                        }
+                    }
+                }
+            }
+        }
+        
+        private void ApplyPiccoloFireCrackerUpgrade(PlayerReferences refs)
+        {
+            if (refs.PiccoloFireCrackerSkills != null)
+            {
+                foreach (var skill in refs.PiccoloFireCrackerSkills)
+                {
+                    if (skill != null)
+                    {
+                        if (!skill.IsObtained)
+                        {
+                            skill.ObtainSkill();
+                            Debug.Log($"[UpgradeApplicator] Obtained Piccolo FireCracker skill! Level: {skill.CurrentLevel}, Damage: {skill.CurrentDamage:F1}, Bombs: {skill.CurrentBombCount}");
+                        }
+                        else if (skill.CurrentLevel < skill.MaxLevel)
+                        {
+                            skill.UpgradeSkill();
+                            Debug.Log($"[UpgradeApplicator] Upgraded Piccolo FireCracker to Level {skill.CurrentLevel}, Damage: {skill.CurrentDamage:F1}, Bombs: {skill.CurrentBombCount}");
                         }
                     }
                 }

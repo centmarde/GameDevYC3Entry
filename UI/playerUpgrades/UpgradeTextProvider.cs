@@ -146,6 +146,31 @@ public static class UpgradeTextProvider
                     return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>MAX LEVEL ({vampireMaxLevel})</size>";
                 }
                 
+            case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
+                int piccoloLevel = upgradeManager.GetPiccoloFireCrackerLevel();
+                int piccoloMaxLevel = upgradeManager.GetPiccoloFireCrackerMaxLevel();
+                
+                if (piccoloLevel == 0)
+                {
+                    // Not obtained yet - show as unlock
+                    return $"<color=#FF6600>PICCOLO FIRECRACKER</color>\n<size=24>Unlock Skill (Level 1/{piccoloMaxLevel})</size>";
+                }
+                else if (piccoloLevel < piccoloMaxLevel)
+                {
+                    // Show level upgrade with damage and bomb count
+                    float piccoloDamage = upgradeManager.GetPiccoloFireCrackerDamage();
+                    int currentBombs = upgradeManager.GetPiccoloFireCrackerBombCount();
+                    // Calculate next level stats
+                    float nextPiccoloDamage = piccoloDamage * 1.15f; // 15% increase
+                    int nextBombs = Mathf.Min(2 + Mathf.FloorToInt(piccoloLevel * 0.33f), 5);
+                    return $"<color=#FF6600>PICCOLO FIRECRACKER</color>\n<size=24>Level {piccoloLevel} → {piccoloLevel + 1}\nDmg: {piccoloDamage:F0} → {nextPiccoloDamage:F0} | Bombs: {currentBombs} → {nextBombs}</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"<color=#FF6600>PICCOLO FIRECRACKER</color>\n<size=24>MAX LEVEL ({piccoloMaxLevel})</size>";
+                }
+                
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
                 float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
@@ -212,6 +237,9 @@ public static class UpgradeTextProvider
                 
             case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
                 return "<b><color=#CC0033>VAMPIRE AURA</color></b>\n\nUnlock or upgrade this lifesteal skill! Passively restores health whenever you deal damage to enemies. Dark red particles flow from damaged enemies to you. Each level increases:\n• <b>Lifesteal</b> (5% at Lv1 → 14% at Lv10)\n• <b>+1% per level</b>\n\nHeals for 5-14% of all damage you deal. Works with projectiles, dash attacks, and skills. Rewards aggressive playstyle with constant healing!\n\n<i>Max Level: 10 - Sustain yourself through combat!</i>";
+                
+            case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
+                return "<b><color=#FF6600>PICCOLO FIRECRACKER</color></b>\n\nUnlock or upgrade this explosive bombardment skill! Throws explosive bombs to random areas that explode after a delay, damaging all nearby enemies. Each level increases:\n• <b>Damage</b> (+15% per level, 20 → 52 at Lv10)\n• <b>Explosion Radius</b> (+10% per level, 5m → 10m max)\n• <b>Explosion Speed</b> (-0.22s per level, 3s → 1s min)\n• <b>Bomb Count</b> (+1 every 3 levels, 2 → 5 max)\n\nAutomatically throws volleys of bombs every 5 seconds. Bombs arc through the air and create spectacular fiery explosions!\n\n<i>Max Level: 10 - Rain destruction from above!</i>";
                 
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";

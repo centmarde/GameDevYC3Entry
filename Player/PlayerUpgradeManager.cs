@@ -274,5 +274,12 @@ public class PlayerUpgradeManager : MonoBehaviour
     public int GetVampireAuraMaxLevel() => statsProvider.GetVampireAuraMaxLevel();
     public float GetVampireAuraHealPercentage() => statsProvider.GetVampireAuraHealPercentage();
     
+    public int GetPiccoloFireCrackerLevel() => statsProvider.GetPiccoloFireCrackerLevel();
+    public int GetPiccoloFireCrackerMaxLevel() => statsProvider.GetPiccoloFireCrackerMaxLevel();
+    public float GetPiccoloFireCrackerDamage() => statsProvider.GetPiccoloFireCrackerDamage();
+    public float GetPiccoloFireCrackerRadius() => statsProvider.GetPiccoloFireCrackerRadius();
+    public float GetPiccoloFireCrackerExplosionTime() => statsProvider.GetPiccoloFireCrackerExplosionTime();
+    public int GetPiccoloFireCrackerBombCount() => statsProvider.GetPiccoloFireCrackerBombCount();
+    
     #endregion
 }
