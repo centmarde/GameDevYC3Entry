@@ -30,6 +30,7 @@ public class DamageNumberUI : MonoBehaviour
     private Vector3 velocity;
     
     private static Canvas worldCanvas;
+    private static AudioSource audioSource;
     
     private void Awake()
     {
@@ -118,6 +119,16 @@ public class DamageNumberUI : MonoBehaviour
         
         // Setup velocity for floating animation (in screen space)
         velocity = Vector3.up * floatSpeed * 30f; // Multiply for screen space
+        
+        // Play sound effect from settings (randomly selected from array)
+        var settings = DamageNumberSettings.Instance;
+        if (settings != null)
+        {
+            AudioClip soundToPlay = isCritical 
+                ? settings.GetRandomCriticalDamageSound() 
+                : settings.GetRandomNormalDamageSound();
+            PlaySound(soundToPlay);
+        }
     }
     
     /// <summary>
@@ -153,6 +164,33 @@ public class DamageNumberUI : MonoBehaviour
         
         // Setup velocity for floating animation (in screen space)
         velocity = Vector3.up * floatSpeed * 30f; // Multiply for screen space
+        
+        // Play heal sound effect from settings (randomly selected from array)
+        var settings = DamageNumberSettings.Instance;
+        if (settings != null)
+        {
+            PlaySound(settings.GetRandomHealSound());
+        }
+    }
+    
+    /// <summary>
+    /// Play a sound effect for the damage/heal number
+    /// </summary>
+    private static void PlaySound(AudioClip clip)
+    {
+        if (clip == null) return;
+        
+        // Ensure we have a static audio source
+        if (audioSource == null)
+        {
+            CreateAudioSource();
+        }
+        
+        var settings = DamageNumberSettings.Instance;
+        if (audioSource != null && settings != null)
+        {
+            audioSource.PlayOneShot(clip, settings.soundVolume);
+        }
     }
     
     /// <summary>
@@ -201,6 +239,39 @@ public class DamageNumberUI : MonoBehaviour
         // Add and initialize component with custom color
         DamageNumberUI healNumber = healObj.AddComponent<DamageNumberUI>();
         healNumber.InitializeHeal(healAmount, worldPosition);
+    }
+    
+    /// <summary>
+    /// Create an AudioSource for playing damage number sounds
+    /// </summary>
+    private static void CreateAudioSource()
+    {
+        // Look for existing audio source on canvas
+        if (worldCanvas != null)
+        {
+            audioSource = worldCanvas.GetComponent<AudioSource>();
+        }
+        
+        if (audioSource == null)
+        {
+            // Create a new GameObject for the audio source if no canvas exists yet
+            GameObject audioObj = worldCanvas != null ? worldCanvas.gameObject : new GameObject("DamageNumberAudio");
+            audioSource = audioObj.GetComponent<AudioSource>();
+            
+            if (audioSource == null)
+            {
+                audioSource = audioObj.AddComponent<AudioSource>();
+            }
+            
+            // Configure audio source
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f; // 2D sound
+            
+            if (worldCanvas == null)
+            {
+                Object.DontDestroyOnLoad(audioObj);
+            }
+        }
     }
     
     /// <summary>
