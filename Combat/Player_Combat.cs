@@ -28,6 +28,11 @@ public class Player_Combat : MonoBehaviour
         : defaultAttack;
 
     [SerializeField] private float attackCooldown = 0.25f;
+
+    [Header("Attack Sound Settings")]
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField] [Range(0f, 1f)] private float attackSoundVolume = 0.7f;
+    private AudioSource audioSource;
     [SerializeField] private float faceTurnSpeed = 8f;
     private float aimSmoothSpeed = 8f;
 
@@ -57,6 +62,15 @@ public class Player_Combat : MonoBehaviour
                 Debug.LogWarning("[Player_Combat] No default PlayerAttack found! Please attach a Player_NormalShotAttack component.");
             }
         }
+
+        // Setup AudioSource for attack sounds
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f; // 2D sound for player attacks
     }
 
     private void Update()
@@ -112,6 +126,9 @@ public class Player_Combat : MonoBehaviour
     private IEnumerator AttackRoutine()
     {
         canAttack = false;
+
+        // Play attack sound at the start of the attack
+        PlayAttackSound();
 
         // Get attack direction from mouse
         cachedAimDirection = GetAimDirection();
@@ -269,6 +286,17 @@ public class Player_Combat : MonoBehaviour
         Quaternion look = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, look, faceTurnSpeed * 360f * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Plays the attack sound effect at the start of the attack
+    /// </summary>
+    private void PlayAttackSound()
+    {
+        if (audioSource != null && attackSound != null)
+        {
+            audioSource.PlayOneShot(attackSound, attackSoundVolume);
+        }
     }
 
 }

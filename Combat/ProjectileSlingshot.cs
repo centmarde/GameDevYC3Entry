@@ -5,6 +5,11 @@ public class ProjectileSlingshot : MonoBehaviour
     [SerializeField] private float lifeTime = 1f;
     [SerializeField] private LayerMask hitMask;
 
+    [Header("Sound Settings")]
+    [SerializeField] private AudioClip launchSound;
+    [SerializeField] [Range(0f, 1f)] private float launchSoundVolume = 0.7f;
+    private static AudioSource audioSource;
+
     private Rigidbody rb;
     private float damage;
     private bool isCriticalHit;
@@ -49,6 +54,9 @@ public class ProjectileSlingshot : MonoBehaviour
         damage = dmg;
         source = src;
         isCriticalHit = isCritical;
+        
+        // Play launch sound effect
+        PlayLaunchSound();
         
         if (rb != null)
         {
@@ -115,4 +123,24 @@ public class ProjectileSlingshot : MonoBehaviour
     /// Set the damage value of the projectile (used for distance-based falloff)
     /// </summary>
     public void SetDamage(float newDamage) => damage = newDamage;
+
+    /// <summary>
+    /// Plays the launch sound effect once when projectile is released
+    /// </summary>
+    private void PlayLaunchSound()
+    {
+        if (launchSound == null) return;
+
+        // Create shared AudioSource if it doesn't exist
+        if (audioSource == null)
+        {
+            GameObject audioObj = new GameObject("ProjectileAudioSource");
+            audioSource = audioObj.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f; // 2D sound
+            DontDestroyOnLoad(audioObj);
+        }
+
+        audioSource.PlayOneShot(launchSound, launchSoundVolume);
+    }
 }

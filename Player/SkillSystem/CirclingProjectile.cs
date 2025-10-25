@@ -23,7 +23,13 @@ public class CirclingProjectile : MonoBehaviour
     [SerializeField] private bool enableBloodSplatter = true;
     [SerializeField] private GameObject bloodSplatterPrefab; // Prefab for the blood splatter particle effect
     
+    [Header("Audio Settings")]
+    [SerializeField] private bool enableImpactSound = true;
+    [SerializeField] private AudioClip[] impactSounds; // Array of impact sound effects for variety
+    [SerializeField] [Range(0f, 1f)] private float impactVolume = 0.7f; // Volume for impact sound
+    
     private Transform playerTransform; // Player to follow
+    private AudioSource audioSource; // Audio source for playing sounds
     private float orbitRadius;
     private float maxOrbitRadius; // Store the maximum radius
     private float orbitSpeed;
@@ -69,6 +75,9 @@ public class CirclingProjectile : MonoBehaviour
         {
             actualSpinSpeed = -actualSpinSpeed;
         }
+        
+        // Setup audio source for impact sounds
+        SetupAudioSource();
     }
 
     private void Update()
@@ -130,6 +139,12 @@ public class CirclingProjectile : MonoBehaviour
             // Apply damage to the enemy
             target.TakeDamage(damage, hitPoint, hitNormal, source);
             
+            // Play impact sound
+            if (enableImpactSound)
+            {
+                PlayImpactSound();
+            }
+            
             // Create blood splatter effect on hit
             if (enableBloodSplatter)
             {
@@ -161,6 +176,42 @@ public class CirclingProjectile : MonoBehaviour
     public void SetDamage(float newDamage)
     {
         damage = newDamage;
+    }
+    
+    /// <summary>
+    /// Setup audio source component for playing sounds
+    /// </summary>
+    private void SetupAudioSource()
+    {
+        // Get or add AudioSource component
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        
+        // Configure audio source
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f; // 3D sound
+        audioSource.minDistance = 5f;
+        audioSource.maxDistance = 20f;
+        audioSource.volume = impactVolume;
+    }
+    
+    /// <summary>
+    /// Play impact sound effect (randomly selects from array)
+    /// </summary>
+    private void PlayImpactSound()
+    {
+        if (audioSource != null && impactSounds != null && impactSounds.Length > 0)
+        {
+            // Pick a random sound from the array
+            AudioClip randomSound = impactSounds[Random.Range(0, impactSounds.Length)];
+            if (randomSound != null)
+            {
+                audioSource.PlayOneShot(randomSound, impactVolume);
+            }
+        }
     }
     
     /// <summary>
