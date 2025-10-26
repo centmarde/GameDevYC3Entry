@@ -36,7 +36,12 @@ public class PlayerUpgradeUI : MonoBehaviour
     [SerializeField] private Color tooltipBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.98f);
     [SerializeField] private Color tooltipTextColor = new Color(0.9f, 0.9f, 0.9f, 1f);
     
+    [Header("Audio Settings")]
+    [SerializeField] private AudioClip upgradeUISound;
+    [SerializeField] [Range(0f, 1f)] private float soundVolume = 0.7f;
+    
     private Canvas canvas;
+    private AudioSource audioSource;
     private GameObject upgradePanel;
     private TextMeshProUGUI titleText;
     private UpgradeButton[] upgradeButtons = new UpgradeButton[3];
@@ -53,6 +58,9 @@ public class PlayerUpgradeUI : MonoBehaviour
         {
             SetupManualReferences();
         }
+        
+        // Setup audio source
+        SetupAudioSource();
     }
     
     /// <summary>
@@ -61,6 +69,31 @@ public class PlayerUpgradeUI : MonoBehaviour
     public void SetupWithManager(PlayerUpgradeManager manager)
     {
         upgradeManager = manager;
+    }
+    
+    /// <summary>
+    /// Setup audio source for sound effects
+    /// </summary>
+    private void SetupAudioSource()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f; // 2D UI sound
+        }
+    }
+    
+    /// <summary>
+    /// Play the upgrade UI sound effect
+    /// </summary>
+    private void PlayUpgradeUISound()
+    {
+        if (upgradeUISound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(upgradeUISound, soundVolume);
+        }
     }
     
     /// <summary>
@@ -247,6 +280,7 @@ public class PlayerUpgradeUI : MonoBehaviour
         {
             UpdateButtonTexts();
             upgradePanel.SetActive(true);
+            PlayUpgradeUISound(); // Play sound when UI appears
         }
     }
     

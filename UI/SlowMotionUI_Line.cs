@@ -27,6 +27,7 @@ public class SlowMotionUI_Line : MonoBehaviour
     
     private Color targetColor;
     private RectTransform rectTransform;
+    private bool shouldHide = false;
     
     private void Awake()
     {
@@ -41,6 +42,15 @@ public class SlowMotionUI_Line : MonoBehaviour
     
     private void Start()
     {
+        // Check if Player2 is present in the scene
+        Player2 player2 = FindObjectOfType<Player2>();
+        if (player2 != null)
+        {
+            shouldHide = true;
+            HideUI();
+            return;
+        }
+        
         // Auto-find skill manager
         if (skillManager == null)
         {
@@ -60,6 +70,9 @@ public class SlowMotionUI_Line : MonoBehaviour
     
     private void Update()
     {
+        // Don't update if UI should be hidden
+        if (shouldHide) return;
+        
         if (skillManager == null || lineIndicator == null) return;
         
         UpdateLineIndicator();
@@ -97,5 +110,18 @@ public class SlowMotionUI_Line : MonoBehaviour
                 targetColor = new Color(activeColor.r, activeColor.g, activeColor.b, 0.3f);
             }
         }
+    }
+    
+    /// <summary>
+    /// Hides the line indicator when Player2 is present
+    /// </summary>
+    private void HideUI()
+    {
+        if (lineIndicator != null)
+        {
+            lineIndicator.gameObject.SetActive(false);
+        }
+        
+        Debug.Log("[SlowMotionUI_Line] Line indicator hidden because Player2 is present");
     }
 }

@@ -24,9 +24,19 @@ public class SlowMotionUI_Minimal : MonoBehaviour
     [SerializeField] private float fadeSpeed = 2f;
     
     private Color targetColor;
+    private bool shouldHide = false;
     
     private void Start()
     {
+        // Check if Player2 is present in the scene
+        Player2 player2 = FindObjectOfType<Player2>();
+        if (player2 != null)
+        {
+            shouldHide = true;
+            HideUI();
+            return;
+        }
+        
         // Auto-find skill manager
         if (skillManager == null)
         {
@@ -44,6 +54,9 @@ public class SlowMotionUI_Minimal : MonoBehaviour
     
     private void Update()
     {
+        // Don't update if UI should be hidden
+        if (shouldHide) return;
+        
         if (skillManager == null || statusText == null) return;
         
         UpdateStatus();
@@ -82,5 +95,23 @@ public class SlowMotionUI_Minimal : MonoBehaviour
             statusText.text = "Press X to Activate";
             targetColor = readyColor;
         }
+    }
+    
+    /// <summary>
+    /// Hides the UI elements when Player2 is present
+    /// </summary>
+    private void HideUI()
+    {
+        if (statusText != null)
+        {
+            statusText.gameObject.SetActive(false);
+        }
+        
+        if (keyHintText != null)
+        {
+            keyHintText.gameObject.SetActive(false);
+        }
+        
+        Debug.Log("[SlowMotionUI_Minimal] UI hidden because Player2 is present");
     }
 }
