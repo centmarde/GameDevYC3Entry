@@ -28,6 +28,7 @@ public class Player2_BlinkSkill : MonoBehaviour
     
     [Header("Audio")]
     [SerializeField] private AudioClip blinkSound;
+    [SerializeField] private float blinkSoundVolume = 0.7f;
     private AudioSource audioSource;
     
     public bool IsOnCooldown => cooldownTimer > 0f;
@@ -149,7 +150,7 @@ public class Player2_BlinkSkill : MonoBehaviour
         // Play sound
         if (blinkSound != null && audioSource != null)
         {
-            audioSource.PlayOneShot(blinkSound);
+            audioSource.PlayOneShot(blinkSound, blinkSoundVolume);
         }
         
         // Create particle effect between start and end positions BEFORE teleporting
