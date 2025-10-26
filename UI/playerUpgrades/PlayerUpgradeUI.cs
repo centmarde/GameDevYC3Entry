@@ -40,6 +40,14 @@ public class PlayerUpgradeUI : MonoBehaviour
     [SerializeField] private AudioClip upgradeUISound;
     [SerializeField] [Range(0f, 1f)] private float soundVolume = 0.7f;
     
+    [Header("Confirmation Dialog")]
+    [SerializeField] private Sprite confirmationDialogBackground;
+    [Tooltip("Optional background image for the confirmation dialog. If not set, uses solid color.")]
+    [SerializeField] private Sprite confirmationConfirmButtonSprite;
+    [Tooltip("Optional sprite for the Confirm button. If not set, uses solid color.")]
+    [SerializeField] private Sprite confirmationCancelButtonSprite;
+    [Tooltip("Optional sprite for the Cancel button. If not set, uses solid color.")]
+    
     private Canvas canvas;
     private AudioSource audioSource;
     private GameObject upgradePanel;
@@ -235,6 +243,21 @@ public class PlayerUpgradeUI : MonoBehaviour
         GameObject dialogObj = new GameObject("ConfirmationDialog");
         dialogObj.transform.SetParent(transform, false);
         confirmationDialog = dialogObj.AddComponent<UpgradeConfirmationDialog>();
+        
+        // Set sprites before creating if available
+        if (confirmationDialogBackground != null)
+        {
+            confirmationDialog.SetBackgroundSprite(confirmationDialogBackground);
+        }
+        if (confirmationConfirmButtonSprite != null)
+        {
+            confirmationDialog.SetConfirmButtonSprite(confirmationConfirmButtonSprite);
+        }
+        if (confirmationCancelButtonSprite != null)
+        {
+            confirmationDialog.SetCancelButtonSprite(confirmationCancelButtonSprite);
+        }
+        
         confirmationDialog.Create(canvas.transform, panelColor, buttonColor, buttonHighlight, textColor);
         confirmationDialog.OnConfirm += OnUpgradeConfirmed;
         confirmationDialog.OnCancel += OnUpgradeCancelled;

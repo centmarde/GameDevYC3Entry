@@ -9,12 +9,23 @@ using System;
 /// </summary>
 public class UpgradeConfirmationDialog : MonoBehaviour
 {
+    [Header("Background Configuration")]
+    [SerializeField] private Sprite backgroundSprite;
+    [Tooltip("Optional background image for the dialog. If not set, uses solid color.")]
+    
+    [Header("Button Sprites")]
+    [SerializeField] private Sprite confirmButtonSprite;
+    [Tooltip("Optional sprite for the Confirm button. If not set, uses solid color.")]
+    [SerializeField] private Sprite cancelButtonSprite;
+    [Tooltip("Optional sprite for the Cancel button. If not set, uses solid color.")]
+    
     private GameObject dialogPanel;
     private GameObject darkenBackground;
     private TextMeshProUGUI messageText;
     private Button confirmButton;
     private Button cancelButton;
     private CanvasGroup canvasGroup;
+    private Image dialogPanelImage;
     
     public event Action OnConfirm;
     public event Action OnCancel;
@@ -41,8 +52,19 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         panelRect.anchoredPosition = Vector2.zero;
         panelRect.sizeDelta = new Vector2(500, 250);
         
-        Image panelImage = dialogPanel.AddComponent<Image>();
-        panelImage.color = new Color(panelColor.r, panelColor.g, panelColor.b, 0.98f);
+        dialogPanelImage = dialogPanel.AddComponent<Image>();
+        
+        // Apply background sprite if available, otherwise use solid color
+        if (backgroundSprite != null)
+        {
+            dialogPanelImage.sprite = backgroundSprite;
+            dialogPanelImage.type = Image.Type.Sliced; // Use sliced for better scaling
+            dialogPanelImage.color = Color.white; // Keep full color for sprite
+        }
+        else
+        {
+            dialogPanelImage.color = new Color(panelColor.r, panelColor.g, panelColor.b, 0.98f);
+        }
         
         // Add outline for better visibility
         Outline outline = dialogPanel.AddComponent<Outline>();
@@ -65,6 +87,59 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         
         dialogPanel.SetActive(false);
         darkenBackground.SetActive(false);
+    }
+    
+    /// <summary>
+    /// Set the background sprite at runtime
+    /// </summary>
+    public void SetBackgroundSprite(Sprite sprite)
+    {
+        backgroundSprite = sprite;
+        
+        if (dialogPanelImage != null && sprite != null)
+        {
+            dialogPanelImage.sprite = sprite;
+            dialogPanelImage.type = Image.Type.Sliced;
+            dialogPanelImage.color = Color.white;
+        }
+    }
+    
+    /// <summary>
+    /// Set the confirm button sprite at runtime
+    /// </summary>
+    public void SetConfirmButtonSprite(Sprite sprite)
+    {
+        confirmButtonSprite = sprite;
+        
+        if (confirmButton != null && sprite != null)
+        {
+            Image buttonImage = confirmButton.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.sprite = sprite;
+                buttonImage.type = Image.Type.Sliced;
+                buttonImage.color = Color.white;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Set the cancel button sprite at runtime
+    /// </summary>
+    public void SetCancelButtonSprite(Sprite sprite)
+    {
+        cancelButtonSprite = sprite;
+        
+        if (cancelButton != null && sprite != null)
+        {
+            Image buttonImage = cancelButton.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.sprite = sprite;
+                buttonImage.type = Image.Type.Sliced;
+                buttonImage.color = Color.white;
+            }
+        }
     }
     
     /// <summary>
@@ -129,7 +204,18 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         buttonRect.sizeDelta = new Vector2(200, 60);
         
         Image buttonImage = buttonObj.AddComponent<Image>();
-        buttonImage.color = new Color(0.2f, 0.7f, 0.3f, 1f); // Green tint
+        
+        // Apply sprite if available, otherwise use solid color
+        if (confirmButtonSprite != null)
+        {
+            buttonImage.sprite = confirmButtonSprite;
+            buttonImage.type = Image.Type.Sliced;
+            buttonImage.color = Color.white;
+        }
+        else
+        {
+            buttonImage.color = new Color(0.2f, 0.7f, 0.3f, 1f); // Green tint
+        }
         
         confirmButton = buttonObj.AddComponent<Button>();
         confirmButton.targetGraphic = buttonImage;
@@ -176,7 +262,18 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         buttonRect.sizeDelta = new Vector2(200, 60);
         
         Image buttonImage = buttonObj.AddComponent<Image>();
-        buttonImage.color = new Color(0.7f, 0.2f, 0.2f, 1f); // Red tint
+        
+        // Apply sprite if available, otherwise use solid color
+        if (cancelButtonSprite != null)
+        {
+            buttonImage.sprite = cancelButtonSprite;
+            buttonImage.type = Image.Type.Sliced;
+            buttonImage.color = Color.white;
+        }
+        else
+        {
+            buttonImage.color = new Color(0.7f, 0.2f, 0.2f, 1f); // Red tint
+        }
         
         cancelButton = buttonObj.AddComponent<Button>();
         cancelButton.targetGraphic = buttonImage;
