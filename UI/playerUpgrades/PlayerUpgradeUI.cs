@@ -47,6 +47,8 @@ public class PlayerUpgradeUI : MonoBehaviour
     private UpgradeButton[] upgradeButtons = new UpgradeButton[3];
     private PlayerUpgradeManager upgradeManager;
     private UpgradeTooltip tooltip;
+    private UpgradeConfirmationDialog confirmationDialog;
+    private PlayerUpgradeData.UpgradeType pendingUpgradeType;
     
     private void Awake()
     {
@@ -102,6 +104,20 @@ public class PlayerUpgradeUI : MonoBehaviour
     private void SetupManualReferences()
     {
         canvas = manualCanvas;
+        
+        // If manual canvas is not assigned, try to find one or create it
+        if (canvas == null)
+        {
+            Debug.LogWarning("PlayerUpgradeUI: Manual Canvas not assigned. Searching for existing Canvas...");
+            canvas = FindObjectOfType<Canvas>();
+            
+            if (canvas == null)
+            {
+                Debug.LogWarning("PlayerUpgradeUI: No Canvas found. Creating one automatically...");
+                canvas = UpgradeUIFactory.CreateCanvas(transform);
+            }
+        }
+        
         upgradePanel = manualUpgradePanel;
         titleText = manualTitleText;
         
@@ -138,6 +154,8 @@ public class PlayerUpgradeUI : MonoBehaviour
                 }
             }
         }
+        
+        SetupConfirmationDialog();
     }
     
     /// <summary>
@@ -154,6 +172,8 @@ public class PlayerUpgradeUI : MonoBehaviour
         {
             SetupTooltip();
         }
+        
+        SetupConfirmationDialog();
         
         upgradePanel.SetActive(false);
     }
@@ -198,6 +218,26 @@ public class PlayerUpgradeUI : MonoBehaviour
         tooltipObj.transform.SetParent(transform, false);
         tooltip = tooltipObj.AddComponent<UpgradeTooltip>();
         tooltip.Create(canvas.transform, tooltipBackgroundColor, tooltipTextColor);
+    }
+    
+    /// <summary>
+    /// Setup confirmation dialog system
+    /// </summary>
+    private void SetupConfirmationDialog()
+    {
+        // Ensure canvas exists
+        if (canvas == null)
+        {
+            Debug.LogError("PlayerUpgradeUI: Canvas is null! Cannot create confirmation dialog. Make sure to assign Manual Canvas in Inspector if using manual setup.");
+            return;
+        }
+        
+        GameObject dialogObj = new GameObject("ConfirmationDialog");
+        dialogObj.transform.SetParent(transform, false);
+        confirmationDialog = dialogObj.AddComponent<UpgradeConfirmationDialog>();
+        confirmationDialog.Create(canvas.transform, panelColor, buttonColor, buttonHighlight, textColor);
+        confirmationDialog.OnConfirm += OnUpgradeConfirmed;
+        confirmationDialog.OnCancel += OnUpgradeCancelled;
     }
     
     /// <summary>
@@ -301,17 +341,62 @@ public class PlayerUpgradeUI : MonoBehaviour
     }
    
     /// <summary>
-    /// Handle upgrade button click
+    /// Handle upgrade button click - shows confirmation dialog
     /// </summary>
     private void OnUpgradeButtonClicked(int buttonIndex)
     {
-        if (upgradeManager != null)
+        if (upgradeManager == null)
         {
-            var upgradeOptions = upgradeManager.GetCurrentUpgradeOptions();
-            if (buttonIndex >= 0 && buttonIndex < upgradeOptions.Length)
+            Debug.LogError("PlayerUpgradeUI: UpgradeManager is null!");
+            return;
+        }
+        
+        if (confirmationDialog == null)
+        {
+            Debug.LogError("PlayerUpgradeUI: ConfirmationDialog is null!");
+            return;
+        }
+        
+        var upgradeOptions = upgradeManager.GetCurrentUpgradeOptions();
+        if (buttonIndex >= 0 && buttonIndex < upgradeOptions.Length)
+        {
+            pendingUpgradeType = upgradeOptions[buttonIndex];
+            string confirmationText = GetConfirmationText(pendingUpgradeType);
+            confirmationDialog.Show(confirmationText);
+            
+            // Hide tooltip when confirmation shows
+            if (tooltip != null)
             {
-                upgradeManager.ApplyUpgrade(upgradeOptions[buttonIndex]);
+                tooltip.Hide();
             }
         }
+    }
+    
+    /// <summary>
+    /// Get confirmation message for upgrade type
+    /// </summary>
+    private string GetConfirmationText(PlayerUpgradeData.UpgradeType upgradeType)
+    {
+        string upgradeName = UpgradeTextProvider.GetButtonText(upgradeType, upgradeManager).Split('\n')[0];
+        return $"Confirm {upgradeName} upgrade?";
+    }
+    
+    /// <summary>
+    /// Handle upgrade confirmation
+    /// </summary>
+    private void OnUpgradeConfirmed()
+    {
+        if (upgradeManager != null)
+        {
+            upgradeManager.ApplyUpgrade(pendingUpgradeType);
+        }
+    }
+    
+    /// <summary>
+    /// Handle upgrade cancellation
+    /// </summary>
+    private void OnUpgradeCancelled()
+    {
+        // Just close the dialog, player can choose again
     }
 }
