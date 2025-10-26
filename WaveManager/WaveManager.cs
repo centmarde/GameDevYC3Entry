@@ -33,6 +33,12 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private WaveSpawner[] waveSpawners;
     [SerializeField] private WaveUI waveUI;
     
+    [Header("Audio Settings")]
+    [Tooltip("Array of sounds to play randomly when a wave starts")]
+    [SerializeField] private AudioClip[] waveStartSounds;
+    [Tooltip("Volume for the wave start sound")]
+    [SerializeField] [Range(0f, 1f)] private float waveStartSoundVolume = 0.7f;
+    
     [Header("Player Detection")]
     [Tooltip("If enabled, automatically finds the active player (Player1 or Player2)")]
     [SerializeField] private bool autoDetectPlayer = true;
@@ -56,6 +62,9 @@ public class WaveManager : MonoBehaviour
     // Stat scaling tracking
     private float currentHealthBonus = 0f;
     private float currentDamageBonus = 0f;
+    
+    // Audio
+    private AudioSource audioSource;
     
     private void Awake()
     {
@@ -104,6 +113,15 @@ public class WaveManager : MonoBehaviour
         {
             wavesActivated = true;
         }
+        
+        // Setup AudioSource for wave sounds
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f; // 2D sound for wave announcements
         
         // Detect active player
         DetectActivePlayer();
@@ -302,6 +320,9 @@ public class WaveManager : MonoBehaviour
         {
             waveUI.ShowWaveAnnouncement(currentWave);
         }
+        
+        // Play wave start sound
+        PlayWaveStartSound();
         
         // Trigger event
         OnWaveStart?.Invoke(currentWave);
@@ -753,5 +774,21 @@ public class WaveManager : MonoBehaviour
         }
         
         Debug.Log($"[WaveManager] Player reference updated to: {newPlayer.name}");
+    }
+    
+    /// <summary>
+    /// Plays a random wave start sound effect from the array
+    /// </summary>
+    private void PlayWaveStartSound()
+    {
+        if (audioSource != null && waveStartSounds != null && waveStartSounds.Length > 0)
+        {
+            // Pick a random sound from the array
+            AudioClip randomSound = waveStartSounds[Random.Range(0, waveStartSounds.Length)];
+            if (randomSound != null)
+            {
+                audioSource.PlayOneShot(randomSound, waveStartSoundVolume);
+            }
+        }
     }
 }
