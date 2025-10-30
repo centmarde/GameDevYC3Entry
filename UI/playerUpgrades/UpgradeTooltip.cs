@@ -71,14 +71,25 @@ public class UpgradeTooltip : MonoBehaviour
     /// </summary>
     public void Show(string text, RectTransform buttonRect)
     {
-        if (tooltipPanel == null || tooltipText == null) return;
+        if (tooltipPanel == null || tooltipText == null) 
+        {
+            Debug.LogWarning("UpgradeTooltip: Tooltip panel or text is null!");
+            return;
+        }
         
         tooltipText.text = text;
         
         // Keep fixed position at bottom center (no dynamic positioning)
         
         tooltipPanel.SetActive(true);
+        tooltipPanel.transform.SetAsLastSibling(); // Ensure it renders on top
         isVisible = true;
+        
+        // Reset alpha to start fade
+        if (tooltipCanvasGroup != null)
+        {
+            tooltipCanvasGroup.alpha = 0f;
+        }
     }
     
     /// <summary>

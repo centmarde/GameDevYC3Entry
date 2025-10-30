@@ -12,9 +12,11 @@ using UnityEngine.UI;
 /// 3. Create UI elements:
 ///    - Image for background (UI > Image) - stretch to full screen
 ///    - Button for Start (UI > Button - TextMeshPro)
+///    - Button for Leaderboards (UI > Button - TextMeshPro)
 ///    - Button for Quit (UI > Button - TextMeshPro)
 /// 4. Assign references in the Inspector:
 ///    - Drag the Start button to the "Start Button" field
+///    - Drag the Leaderboards button to the "Leaderboards Button" field
 ///    - Drag the Quit button to the "Quit Button" field
 ///    - (Optional) Drag background image to "Background Image" field
 /// 5. Set your background image:
@@ -38,6 +40,9 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Reference to the Start Game button")]
     [SerializeField] private Button startButton;
     
+    [Tooltip("Reference to the Leaderboards button")]
+    [SerializeField] private Button leaderboardsButton;
+    
     [Tooltip("Reference to the Quit Game button")]
     [SerializeField] private Button quitButton;
     
@@ -46,7 +51,10 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Scene Settings")]
     [Tooltip("Name of the scene to load when Start is clicked")]
-    [SerializeField] private string gameSceneName = "IntroScene"; // Changed to IntroScene for tutorial flow
+    [SerializeField] private string gameSceneName = "Lobby";
+    
+    [Tooltip("Name of the leaderboards scene to load")]
+    [SerializeField] private string leaderboardsSceneName = "LeaderBoards";
 
     private void Start()
     {
@@ -60,6 +68,15 @@ public class MainMenuController : MonoBehaviour
             startButton.onClick.AddListener(OnStartButtonClicked);
         }
 
+        if (leaderboardsButton == null)
+        {
+            Debug.LogError("MainMenuController: Leaderboards Button is not assigned in the Inspector!");
+        }
+        else
+        {
+            leaderboardsButton.onClick.AddListener(OnLeaderboardsButtonClicked);
+        }
+        
         if (quitButton == null)
         {
             Debug.LogError("MainMenuController: Quit Button is not assigned in the Inspector!");
@@ -90,6 +107,25 @@ public class MainMenuController : MonoBehaviour
         else
         {
             SceneManager.LoadScene(gameSceneName);
+        }
+    }
+
+    /// <summary>
+    /// Called when the Leaderboards button is clicked
+    /// Loads the leaderboards scene
+    /// </summary>
+    private void OnLeaderboardsButtonClicked()
+    {
+        Debug.Log($"Loading scene: {leaderboardsSceneName}");
+        
+        // Use LoadingScreen if available, otherwise load normally
+        if (LoadingScreen.Instance != null)
+        {
+            LoadingScreen.LoadScene(leaderboardsSceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(leaderboardsSceneName);
         }
     }
 
@@ -128,6 +164,11 @@ public class MainMenuController : MonoBehaviour
         if (startButton != null)
         {
             startButton.onClick.RemoveListener(OnStartButtonClicked);
+        }
+        
+        if (leaderboardsButton != null)
+        {
+            leaderboardsButton.onClick.RemoveListener(OnLeaderboardsButtonClicked);
         }
 
         if (quitButton != null)

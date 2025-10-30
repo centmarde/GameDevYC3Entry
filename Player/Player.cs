@@ -311,15 +311,26 @@ public class Player : Entity
 
     public override void EntityDeath()
     {
-        float delay = Mathf.Max(0.1f, Stats.deathDelay);
-        Invoke(nameof(ShowGameOverAfterDelay), delay);
+        // Show game over panel immediately
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowGameOverPanel();
+            Debug.Log("[Player] Game Over panel displayed.");
+        }
+        else
+        {
+            Debug.LogError("[Player] UIManager.Instance is null! Cannot show Game Over panel.");
+        }
+        
+        // Delay destruction to allow UI to fully appear
+        float delay = Mathf.Max(0.5f, Stats.deathDelay);
+        Invoke(nameof(DestroyPlayerAfterDelay), delay);
     }
 
-    private void ShowGameOverAfterDelay()
+    private void DestroyPlayerAfterDelay()
     {
-        UIManager.Instance?.ShowGameOverPanel();
-        Destroy(gameObject);  // Clean up player after showing panel
-        Debug.Log("You died — Game Over panel displayed.");
+        Debug.Log("[Player] Destroying player GameObject after death.");
+        Destroy(gameObject);
     }
 
 

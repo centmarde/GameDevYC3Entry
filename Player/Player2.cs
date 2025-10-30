@@ -224,18 +224,8 @@ public class Player2 : Player
         stateMachine.ChangeState(blinkState);
     }
 
-    public override void EntityDeath()
-    {
-        float delay = Mathf.Max(0.1f, Stats.deathDelay);
-        Invoke(nameof(ShowGameOverAfterDelay), delay);
-    }
-
-    private void ShowGameOverAfterDelay()
-    {
-        UIManager.Instance?.ShowGameOverPanel();
-        Destroy(gameObject);  // Clean up player after showing panel
-        Debug.Log("You died — Game Over panel displayed.");
-    }
+    // EntityDeath is now properly handled by base Player class
+    // No need to override unless Player2 needs special death behavior
 
     /// <summary>
     /// Ensures that Player2 has all required skill components for the upgrade system

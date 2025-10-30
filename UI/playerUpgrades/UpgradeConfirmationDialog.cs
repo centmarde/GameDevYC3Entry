@@ -315,11 +315,17 @@ public class UpgradeConfirmationDialog : MonoBehaviour
             return;
         }
         
+        if (darkenBackground == null)
+        {
+            Debug.LogError("UpgradeConfirmationDialog: Darken background is null!");
+            return;
+        }
+        
         messageText.text = message;
         darkenBackground.SetActive(true);
         dialogPanel.SetActive(true);
         
-        // Ensure proper ordering when shown
+        // Ensure proper ordering when shown - render on top of everything
         darkenBackground.transform.SetAsLastSibling();
         dialogPanel.transform.SetAsLastSibling();
         

@@ -51,12 +51,9 @@ public class IntroSceneController : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] private Image slideImage;
-    [SerializeField] private TextMeshProUGUI slideText;
     [SerializeField] private Button nextButton;
-    [SerializeField] private Button previousButton;
     [SerializeField] private Button skipButton;
     [SerializeField] private Button skipAllButton;
-    [SerializeField] private TextMeshProUGUI progressText; // e.g., "1/12"
     [SerializeField] private Slider progressSlider; // Optional progress bar
 
     [Header("Fade Settings")]
@@ -108,9 +105,6 @@ public class IntroSceneController : MonoBehaviour
         if (nextButton != null)
             nextButton.onClick.AddListener(OnNextButtonClicked);
         
-        if (previousButton != null)
-            previousButton.onClick.AddListener(OnPreviousButtonClicked);
-        
         if (skipButton != null)
             skipButton.onClick.AddListener(OnSkipButtonClicked);
         
@@ -134,10 +128,6 @@ public class IntroSceneController : MonoBehaviour
             if (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
             {
                 OnNextButtonClicked();
-            }
-            else if (keyboard.leftArrowKey.wasPressedThisFrame)
-            {
-                OnPreviousButtonClicked();
             }
             else if (keyboard.escapeKey.wasPressedThisFrame)
             {
@@ -255,12 +245,6 @@ public class IntroSceneController : MonoBehaviour
         else if (slideImage != null)
         {
             slideImage.enabled = false;
-        }
-
-        // Update text
-        if (slideText != null)
-        {
-            slideText.text = slide.slideText;
         }
 
         // Play audio
@@ -389,11 +373,6 @@ public class IntroSceneController : MonoBehaviour
     /// </summary>
     private void UpdateProgress()
     {
-        if (progressText != null)
-        {
-            progressText.text = $"{currentSlideIndex + 1}/{slides.Count}";
-        }
-
         if (progressSlider != null)
         {
             progressSlider.maxValue = slides.Count - 1;
@@ -406,11 +385,6 @@ public class IntroSceneController : MonoBehaviour
     /// </summary>
     private void UpdateButtonStates()
     {
-        if (previousButton != null)
-        {
-            previousButton.interactable = currentSlideIndex > 0;
-        }
-
         if (nextButton != null)
         {
             nextButton.interactable = currentSlideIndex < slides.Count - 1;
@@ -433,20 +407,6 @@ public class IntroSceneController : MonoBehaviour
         {
             // Last slide - go to target scene
             OnSkipAllButtonClicked();
-        }
-    }
-
-    /// <summary>
-    /// Go to previous slide
-    /// </summary>
-    private void OnPreviousButtonClicked()
-    {
-        if (currentSlideIndex > 0)
-        {
-            if (autoAdvanceCoroutine != null)
-                StopCoroutine(autoAdvanceCoroutine);
-            
-            ShowSlide(currentSlideIndex - 1);
         }
     }
 
@@ -490,9 +450,6 @@ public class IntroSceneController : MonoBehaviour
 
         if (slideImage == null)
             Debug.LogError("IntroSceneController: Slide Image is not assigned!");
-        
-        if (slideText == null)
-            Debug.LogError("IntroSceneController: Slide Text is not assigned!");
         
         if (audioSource == null)
             Debug.LogWarning("IntroSceneController: Audio Source is not assigned. Narration audio will not play.");
@@ -539,9 +496,6 @@ public class IntroSceneController : MonoBehaviour
         // Clean up listeners
         if (nextButton != null)
             nextButton.onClick.RemoveListener(OnNextButtonClicked);
-        
-        if (previousButton != null)
-            previousButton.onClick.RemoveListener(OnPreviousButtonClicked);
         
         if (skipButton != null)
             skipButton.onClick.RemoveListener(OnSkipButtonClicked);

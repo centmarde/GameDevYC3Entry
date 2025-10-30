@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
@@ -71,6 +72,23 @@ public class PlayerUpgradeUI : MonoBehaviour
         
         // Setup audio source
         SetupAudioSource();
+        
+        // Ensure EventSystem exists for hover detection
+        EnsureEventSystem();
+    }
+    
+    /// <summary>
+    /// Ensure EventSystem exists in the scene for UI interaction
+    /// </summary>
+    private void EnsureEventSystem()
+    {
+        if (FindObjectOfType<EventSystem>() == null)
+        {
+            GameObject eventSystemObj = new GameObject("EventSystem");
+            eventSystemObj.AddComponent<EventSystem>();
+            eventSystemObj.AddComponent<StandaloneInputModule>();
+            Debug.Log("PlayerUpgradeUI: Created EventSystem for UI interaction");
+        }
     }
     
     /// <summary>
@@ -113,16 +131,27 @@ public class PlayerUpgradeUI : MonoBehaviour
     {
         canvas = manualCanvas;
         
-        // If manual canvas is not assigned, try to find one or create it
+        // If manual canvas is not assigned, try to find UIManager's canvas first
         if (canvas == null)
         {
             Debug.LogWarning("PlayerUpgradeUI: Manual Canvas not assigned. Searching for existing Canvas...");
-            canvas = FindObjectOfType<Canvas>();
             
-            if (canvas == null)
+            // Try to get UIManager's canvas first
+            if (UIManager.Instance != null && UIManager.Instance.mainCanvas != null)
             {
-                Debug.LogWarning("PlayerUpgradeUI: No Canvas found. Creating one automatically...");
-                canvas = UpgradeUIFactory.CreateCanvas(transform);
+                canvas = UIManager.Instance.mainCanvas;
+                Debug.Log("PlayerUpgradeUI: Using UIManager's mainCanvas");
+            }
+            else
+            {
+                // Fallback to finding any canvas
+                canvas = FindObjectOfType<Canvas>();
+                
+                if (canvas == null)
+                {
+                    Debug.LogWarning("PlayerUpgradeUI: No Canvas found. Creating one automatically...");
+                    canvas = UpgradeUIFactory.CreateCanvas(transform);
+                }
             }
         }
         
@@ -151,6 +180,7 @@ public class PlayerUpgradeUI : MonoBehaviour
             upgradePanel.SetActive(false);
         }
         
+        // Setup tooltip and confirmation dialog AFTER canvas is ensured to exist
         if (enableTooltips)
         {
             SetupTooltip();
@@ -171,7 +201,17 @@ public class PlayerUpgradeUI : MonoBehaviour
     /// </summary>
     private void CreateUI()
     {
-        canvas = UpgradeUIFactory.CreateCanvas(transform);
+        // Try to use UIManager's canvas first
+        if (UIManager.Instance != null && UIManager.Instance.mainCanvas != null)
+        {
+            canvas = UIManager.Instance.mainCanvas;
+            Debug.Log("PlayerUpgradeUI: Using UIManager's mainCanvas for auto-create");
+        }
+        else
+        {
+            canvas = UpgradeUIFactory.CreateCanvas(transform);
+        }
+        
         upgradePanel = UpgradeUIFactory.CreateUpgradePanel(canvas.transform, panelColor);
         titleText = UpgradeUIFactory.CreateTitle(upgradePanel.transform, textColor);
         CreateUpgradeButtons();
@@ -222,8 +262,14 @@ public class PlayerUpgradeUI : MonoBehaviour
     /// </summary>
     private void SetupTooltip()
     {
+        if (canvas == null)
+        {
+            Debug.LogError("PlayerUpgradeUI: Cannot setup tooltip - Canvas is null!");
+            return;
+        }
+        
         GameObject tooltipObj = new GameObject("TooltipManager");
-        tooltipObj.transform.SetParent(transform, false);
+        tooltipObj.transform.SetParent(canvas.transform, false);
         tooltip = tooltipObj.AddComponent<UpgradeTooltip>();
         tooltip.Create(canvas.transform, tooltipBackgroundColor, tooltipTextColor);
     }
@@ -241,10 +287,13 @@ public class PlayerUpgradeUI : MonoBehaviour
         }
         
         GameObject dialogObj = new GameObject("ConfirmationDialog");
-        dialogObj.transform.SetParent(transform, false);
+        dialogObj.transform.SetParent(canvas.transform, false);
         confirmationDialog = dialogObj.AddComponent<UpgradeConfirmationDialog>();
         
-        // Set sprites before creating if available
+        // Create the dialog first
+        confirmationDialog.Create(canvas.transform, panelColor, buttonColor, buttonHighlight, textColor);
+        
+        // Then set sprites if available
         if (confirmationDialogBackground != null)
         {
             confirmationDialog.SetBackgroundSprite(confirmationDialogBackground);
@@ -258,7 +307,6 @@ public class PlayerUpgradeUI : MonoBehaviour
             confirmationDialog.SetCancelButtonSprite(confirmationCancelButtonSprite);
         }
         
-        confirmationDialog.Create(canvas.transform, panelColor, buttonColor, buttonHighlight, textColor);
         confirmationDialog.OnConfirm += OnUpgradeConfirmed;
         confirmationDialog.OnCancel += OnUpgradeCancelled;
     }
@@ -296,6 +344,23 @@ public class PlayerUpgradeUI : MonoBehaviour
         if (tooltip != null)
         {
             tooltip.UpdateFade();
+        }
+    }
+    
+    /// <summary>
+    /// Ensure the canvas is on the front-most rendering layer
+    /// </summary>
+    private void BringCanvasToFront()
+    {
+        if (canvas != null)
+        {
+            // Set to maximum sorting order
+            canvas.sortingOrder = 32767;
+            
+            // Set as last sibling to render on top
+            canvas.transform.SetAsLastSibling();
+            
+            Debug.Log($"PlayerUpgradeUI: Canvas brought to front with sorting order {canvas.sortingOrder}");
         }
     }
     
@@ -341,9 +406,19 @@ public class PlayerUpgradeUI : MonoBehaviour
     {
         if (upgradePanel != null)
         {
+            // Ensure canvas is on the front-most layer
+            BringCanvasToFront();
+            
             UpdateButtonTexts();
             upgradePanel.SetActive(true);
             PlayUpgradeUISound(); // Play sound when UI appears
+            
+            // Debug info
+            Debug.Log($"PlayerUpgradeUI: Upgrade panel shown. Canvas: {canvas?.name}, Tooltip: {tooltip != null}, Dialog: {confirmationDialog != null}");
+        }
+        else
+        {
+            Debug.LogError("PlayerUpgradeUI: Cannot show upgrade panel - upgradePanel is null!");
         }
     }
     
