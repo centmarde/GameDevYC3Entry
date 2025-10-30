@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class Player : Entity
@@ -162,7 +162,7 @@ public class Player : Entity
         {
             return;
         }
-        
+
         // CRITICAL: Re-validate animator at OnEnable (can become null between Awake and OnEnable)
         if (anim == null)
         {
@@ -175,7 +175,7 @@ public class Player : Entity
             {
                 anim = GetComponentInChildren<Animator>(true);
             }
-            
+
             if (anim == null)
             {
                 Debug.LogError($"[Player] FAILED to recover animator in OnEnable for {gameObject.name}!", gameObject);
@@ -185,14 +185,14 @@ public class Player : Entity
                 Debug.Log($"[Player] Successfully recovered animator in OnEnable: {anim.gameObject.name}");
             }
         }
-        
+
         if (input == null)
         {
             input = new PlayerInputSet();
         }
-        
+
         input.Enable();
-        
+
         if (playerCombat != null)
         {
             input.Player.Attack.performed += playerCombat.OnFirePerformed;
@@ -203,7 +203,7 @@ public class Player : Entity
         {
             input.Player.SwitchAttackType.performed += rangeAttackController.OnScroll;
         }
-        
+
         input.Player.Roll.performed += ctx => TryStartRoll();
 
         // Movement Input
@@ -212,15 +212,18 @@ public class Player : Entity
             input.Player.Movement.performed += ctx => playerMovement.SetMoveInput(ctx.ReadValue<Vector2>());
             input.Player.Movement.canceled += ctx => playerMovement.SetMoveInput(Vector2.zero);
         }
+
+        input.Player.MonsterDex.performed += ctx => ToggleMonsterBook();
+
     }
 
     private void OnDisable()
     {
         if (input == null)
             return;
-            
+
         input.Disable();
-        
+
         if (playerCombat != null)
         {
             input.Player.Attack.performed -= playerCombat.OnFirePerformed;
@@ -231,8 +234,11 @@ public class Player : Entity
         {
             input.Player.SwitchAttackType.performed -= rangeAttackController.OnScroll;
         }
-        
+
         input.Player.Roll.performed -= ctx => TryStartRoll();
+
+        input.Player.MonsterDex.performed -= ctx => ToggleMonsterBook();
+
     }
 
     public void RequestStateChange(PlayerState newState)
@@ -303,13 +309,19 @@ public class Player : Entity
 
     }
 
-     public override void EntityDeath()
+    public override void EntityDeath()
     {
-        Destroy(gameObject, Stats.deathDelay);
-
-
-        Debug.Log("You died.");
+        float delay = Mathf.Max(0.1f, Stats.deathDelay);
+        Invoke(nameof(ShowGameOverAfterDelay), delay);
     }
+
+    private void ShowGameOverAfterDelay()
+    {
+        UIManager.Instance?.ShowGameOverPanel();
+        Destroy(gameObject);  // Clean up player after showing panel
+        Debug.Log("You died — Game Over panel displayed.");
+    }
+
 
     private void SetupFadeUI()
     {
@@ -439,5 +451,27 @@ public class Player : Entity
         }
     }
 
+    private void ToggleMonsterBook()
+    {
+        if (MonsterDexUI.Instance == null)
+            return;
 
+        // Prevent opening the Dex if a discovery popup is showing
+        if (MonsterBookUI.Instance != null && MonsterBookUI.Instance.rootPanel.activeSelf)
+            return;
+
+        bool isActive = MonsterDexUI.Instance.rootPanel.activeSelf;
+
+        if (isActive)
+        {
+            MonsterDexUI.Instance.Close();
+            Time.timeScale = 1f;
+            input.Enable();
+        }
+        else
+        {
+            MonsterDexUI.Instance.Open();
+            Time.timeScale = 0f;
+        }
+    }
 }

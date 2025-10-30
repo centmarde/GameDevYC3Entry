@@ -344,17 +344,20 @@ public class WaveSpawner : MonoBehaviour
                 spawnRotation = Quaternion.identity;
             }
         }
-        
+
         // Spawn the enemy (enemyPrefab null check already done above)
         GameObject spawnedEnemy = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
+
         
+
         if (spawnedEnemy == null)
         {
             Debug.LogError($"[WaveSpawner] Instantiate returned null for prefab: {enemyPrefab.name}");
             enemiesSpawned++;
             return;
         }
-        
+
+
         // Ensure enemy has the "Enemy" tag
         if (!spawnedEnemy.CompareTag("Enemy"))
         {

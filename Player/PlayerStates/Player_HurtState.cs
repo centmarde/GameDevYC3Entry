@@ -10,7 +10,6 @@ public class Player_HurtState : PlayerState
     public override void Enter()
     {
         base.Enter();
-        player.playerMovement.ClearMovementIntent();
 
 
     }
@@ -36,7 +35,6 @@ public class Player_HurtState : PlayerState
     public override void Exit()
     {
         base.Exit();
-        player.playerMovement.ClearMovementIntent();
 
 
 

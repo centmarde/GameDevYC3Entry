@@ -4,7 +4,7 @@ public class Player_Feedback : Entity_Feedback
 {
     private Player player;
 
-    [SerializeField] private float knockbackForce = 10f;
+    [SerializeField] private float knockbackForce = 30f;
     [SerializeField] private float knockbackDuration = 0.1f;
     private bool isKnockedBack = false;
 

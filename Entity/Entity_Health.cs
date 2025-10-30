@@ -19,6 +19,8 @@ public class Entity_Health : MonoBehaviour, IDamageable
     public event System.Action<float, Vector3, Vector3, object> OnDamaged;
     public event System.Action<float, Vector3, Vector3, object> OnEvaded;
     public event System.Action OnDeath;
+    public event System.Action<float> OnHealed;
+
 
     private void Awake()
     {
@@ -103,30 +105,47 @@ public class Entity_Health : MonoBehaviour, IDamageable
         maxHealth = Mathf.Max(1f, value);   // make sure it's at least 1
         currentHealth = maxHealth;          // reset current to full
     }
-    
+
     /// <summary>
     /// Heal the entity by a specific amount (won't exceed max health)
     /// </summary>
     public void Heal(float amount)
     {
         if (!IsAlive) return;
-        
+
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+        OnHealed?.Invoke(amount); // ✅ Notify listeners (like HUD)
     }
-    
     /// <summary>
     /// Increase max health and optionally heal
     /// </summary>
-    public void IncreaseMaxHealth(float amount, bool healToFull = false)
+    public void IncreaseMaxHealth(float amount, bool healToFull = false, bool preserveRatio = true)
     {
+        //  Store previous ratio before changing max
+        float healthPercent = currentHealth / Mathf.Max(1f, maxHealth);
+
         maxHealth += amount;
-        
+
         if (healToFull)
+        {
+            // Option 1: heal completely
             currentHealth = maxHealth;
+        }
+        else if (preserveRatio)
+        {
+            // Option 2: keep same percentage (e.g., 100/100 → 150/150)
+            currentHealth = maxHealth * healthPercent;
+        }
         else
-            currentHealth = Mathf.Min(currentHealth, maxHealth); // Ensure current doesn't exceed new max
+        {
+            // Default behavior: keep raw current HP (can look visually “smaller”)
+            currentHealth = Mathf.Min(currentHealth, maxHealth);
+        }
+
+        //  Notify HUD or listeners to refresh (like your HP bar)
+        OnHealed?.Invoke(0);
     }
-    
+
     /// <summary>
     /// Set the evasion check function (usually from Player stats)
     /// </summary>

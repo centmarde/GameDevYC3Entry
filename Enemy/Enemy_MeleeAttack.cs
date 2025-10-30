@@ -5,8 +5,8 @@ public class Enemy_MeleeAttack : EnemyAttack
 {
 
     [SerializeField] LayerMask damageableMask;
-    [SerializeField] private float playerSlowDuration = 3.0f;
-    [SerializeField] private float playerSlowAmount = 0.5f; // 50% of the original speed
+    [SerializeField] private float playerSlowDuration = 1.0f;
+    [SerializeField] private float playerSlowAmount = 0.2f; // 20% of the original speed
 
     readonly Collider[] hits = new Collider[6];
 
@@ -62,7 +62,7 @@ public class Enemy_MeleeAttack : EnemyAttack
                 // Apply the slowdown to the player
                 if (playerMovement != null)
                 {
-                    playerMovement.ApplySlowdown(playerSlowDuration, playerSlowAmount);
+                    //playerMovement.ApplySlowdown(playerSlowDuration, playerSlowAmount); removed players dont want slow
                 }
                 break;
             }

@@ -166,10 +166,15 @@ public class Player_RangeAttackController : MonoBehaviour
         {
             string attackName = GetReadableAttackName(CurrentAttack);
             attackLabelText.text = $"{attackName}";
-            
+
             // Debug: Log current attack selection
             // Debug.Log($"[RangeAttackController] Switched to: {CurrentAttack.GetType().Name} at index {currentIndex}");
         }
+
+        // indicatorUI update new by lloyd
+        var indicatorUI = FindAnyObjectByType<AttackIndicatorUIController>();
+        if (indicatorUI != null)
+            indicatorUI.UpdateAttackIndicator(CurrentAttack);
     }
 
     private string GetReadableAttackName(Player_RangeAttack attack)

@@ -6,13 +6,13 @@ public class MonsterBookManager : MonoBehaviour
     public static MonsterBookManager Instance;
 
     [Header("Codex Settings")]
-    [Tooltip("Dagitab = true (persistent). Pactborn = false (reset each run).")]
+    [Tooltip("If true, discoveries are saved between sessions (Dagitab). If false, reset every run (Pactborn).")]
     public bool persistentUnlocks = false;
 
-    [Header("References")]
-    public MonsterBookUI monsterBookUI;               // popup for new discoveries
-    //public FullCodexArchiveUI fullCodexArchiveUI; // full codex menu
-    public List<MonsterEntry> allEntries;           // all entries
+    [Header("UI References")]
+    public MonsterBookUI discoveryPopup;   // 👈 shows up when a monster is discovered
+    public MonsterDexUI monsterDexUI;      // 👈 full browsable codex
+    public List<MonsterEntry> allEntries;  // 👈 all monsters in your world
 
     private void Awake()
     {
@@ -24,22 +24,29 @@ public class MonsterBookManager : MonoBehaviour
 
     private void Start()
     {
-        if (persistentUnlocks)
-        {
-            // Load saved entries (Dagitab)
-            foreach (var entry in allEntries)
-                entry.discovered = PlayerPrefs.GetInt(entry.entryName, 0) == 1;
-        }
-        else
-        {
-            // Reset each run (Pactborn)
-            foreach (var entry in allEntries)
-                entry.discovered = false;
-        }
-
-        //fullCodexArchiveUI?.RefreshList(); // make sure archive starts synced
+        InitializeCodex();
     }
 
+    private void InitializeCodex()
+    {
+        foreach (var entry in allEntries)
+        {
+            if (persistentUnlocks)
+            {
+                // Load previously discovered entries
+                entry.discovered = PlayerPrefs.GetInt(entry.entryName, 0) == 1;
+            }
+            else
+            {
+                // Reset discoveries for new runs
+                entry.discovered = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unlocks a new monster entry when discovered.
+    /// </summary>
     public void UnlockEntry(MonsterEntry entry)
     {
         if (entry == null)
@@ -48,26 +55,39 @@ public class MonsterBookManager : MonoBehaviour
             return;
         }
 
+        // Already discovered — skip
         if (entry.discovered)
-            return; // already discovered
+        {
+            Debug.Log($"[MonsterBookManager] {entry.entryName} already discovered.");
+            return;
+        }
 
+        // Mark as discovered
         entry.discovered = true;
-        Debug.Log($"[MonsterBookManager] New Codex entry unlocked: {entry.entryName}");
 
-        // Save if persistent
+        // Save persistent discoveries
         if (persistentUnlocks)
         {
             PlayerPrefs.SetInt(entry.entryName, 1);
             PlayerPrefs.Save();
         }
 
-        // Show popup UI
-        monsterBookUI?.Show(entry);
+        Debug.Log($"[MonsterBookManager] New entry unlocked: {entry.entryName}");
 
-        // Update full archive list
-        //fullCodexArchiveUI?.RefreshList();
+        // Show discovery popup
+        if (discoveryPopup != null)
+            discoveryPopup.Show(entry);
+        else
+            Debug.LogWarning("[MonsterBookManager] No discoveryPopup assigned!");
+
+        // Optionally refresh the full codex view if open
+        if (monsterDexUI != null && monsterDexUI.gameObject.activeSelf)
+            monsterDexUI.Open(); // reinitialize to refresh data
     }
 
+    /// <summary>
+    /// Resets all discoveries.
+    /// </summary>
     public void ResetCodex()
     {
         foreach (var entry in allEntries)
@@ -77,8 +97,28 @@ public class MonsterBookManager : MonoBehaviour
         }
 
         PlayerPrefs.Save();
-        //fullCodexArchiveUI?.RefreshList();
+        Debug.Log("[MonsterBookManager] Codex reset complete.");
 
-        Debug.Log("[CodexManager] Codex reset complete.");
+        // Refresh dex UI if open
+        if (monsterDexUI != null && monsterDexUI.gameObject.activeSelf)
+            monsterDexUI.Open();
+    }
+
+    /// <summary>
+    /// Manually open the Monster Dex UI.
+    /// </summary>
+    public void OpenDex()
+    {
+        if (monsterDexUI != null)
+            monsterDexUI.Open();
+    }
+
+    /// <summary>
+    /// Closes the Monster Dex UI.
+    /// </summary>
+    public void CloseDex()
+    {
+        if (monsterDexUI != null)
+            monsterDexUI.Close();
     }
 }

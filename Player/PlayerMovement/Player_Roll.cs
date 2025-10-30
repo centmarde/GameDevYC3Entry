@@ -4,13 +4,13 @@ using System.Collections;
 public class Player_Roll : MonoBehaviour
 {
     [Header("Roll Settings")]
-    public float rollSpeed = 5f;
-    public float rollDuration = 1f;
+    public float rollDistance = 6f;   // ✅ Total distance to cover
+    public float rollDuration = 0.8f; // ✅ Matches animation length
+    private float rollSpeed;          // Computed automatically
 
     private Rigidbody rb;
     private Player player;
-    private Player_Invulnerability invuln; // ✅ cached reference
-
+    private Player_Invulnerability invuln;
 
     [Header("Invulnerability Settings")]
     public bool grantInvulnerability = true;
@@ -30,15 +30,15 @@ public class Player_Roll : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         player = GetComponent<Player>();
-        invuln = GetComponent<Player_Invulnerability>(); // get once, cached
-
+        invuln = GetComponent<Player_Invulnerability>();
     }
 
     public void BeginRoll(Vector3 direction)
     {
-        rollDir = direction;
-        rollDir.y = 0f;
-        rollDir.Normalize();
+        rollDir = direction.normalized;
+
+        // 🔹 Compute speed based on distance and duration
+        rollSpeed = rollDistance / rollDuration;
 
         rollTimer = rollDuration;
         rollingActive = true;
@@ -46,7 +46,6 @@ public class Player_Roll : MonoBehaviour
         if (grantInvulnerability && invuln != null)
             StartCoroutine(HandleInvulnerability());
 
-        // start cooldown timer
         StartCoroutine(RollCooldownRoutine());
     }
 
@@ -65,6 +64,7 @@ public class Player_Roll : MonoBehaviour
 
         rollTimer -= Time.deltaTime;
 
+        // 🔹 Move the player smoothly over time
         Vector3 newPos = rb.position + rollDir * rollSpeed * Time.deltaTime;
         rb.MovePosition(newPos);
 
@@ -74,11 +74,10 @@ public class Player_Roll : MonoBehaviour
 
     private IEnumerator HandleInvulnerability()
     {
-        // Wait before granting invulnerability
         yield return new WaitForSeconds(invulnStartTime);
 
         if (invuln != null)
-            invuln.SetTemporaryInvulnerability(invulnDuration); //  triggers proper logic
+            invuln.SetTemporaryInvulnerability(invulnDuration);
     }
 
     private IEnumerator RollCooldownRoutine()
