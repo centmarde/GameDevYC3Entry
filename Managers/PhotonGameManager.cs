@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 using TMPro;
@@ -35,6 +36,16 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
     [Tooltip("Text to show current room player count")]
     [SerializeField] private TextMeshProUGUI playerCountText;
 
+    [Header("Loading Screen")]
+    [Tooltip("Name of the splash loading scene to display during connection")]
+    [SerializeField] private string loadingSceneName = "SplashLoading";
+    
+    [Tooltip("Show loading screen during initial connection")]
+    [SerializeField] private bool showLoadingOnConnect = true;
+    
+    [Tooltip("Show loading screen during reconnection attempts")]
+    [SerializeField] private bool showLoadingOnReconnect = true;
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
 
@@ -43,6 +54,8 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
     private bool isInLobby = false;
     private int currentWaveReached = 0;
     private int highestWaveReached = 0;
+    private bool isLoadingSceneActive = false;
+    private Scene? loadingScene = null;
 
     // Player stats keys (for saving to Photon) - Name-based system
     private const string PLAYER_NAME_KEY = "PlayerName";
@@ -132,6 +145,13 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
         }
 
         isConnecting = true;
+        
+        // Show loading screen during connection
+        if (showLoadingOnConnect)
+        {
+            ShowLoadingScreen();
+        }
+        
         LogDebug("Connecting to Photon...");
         PhotonNetwork.ConnectUsingSettings();
     }
@@ -158,6 +178,8 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
         
         // Join or create the static lobby (cloud data will be loaded after joining room)
         JoinOrCreateLobby();
+        
+        // Loading screen will be hidden after joining room successfully
     }
 
     public override void OnDisconnected(DisconnectCause cause)
@@ -169,7 +191,18 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
         // Attempt to reconnect after a delay
         if (cause != DisconnectCause.DisconnectByClientLogic)
         {
+            // Show loading screen for reconnection
+            if (showLoadingOnReconnect)
+            {
+                ShowLoadingScreen();
+            }
+            
             Invoke(nameof(ConnectToPhoton), 5f);
+        }
+        else
+        {
+            // User intentionally disconnected, hide loading screen
+            HideLoadingScreen();
         }
     }
 
@@ -200,6 +233,9 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
 
         // Set initial player custom properties
         UpdatePlayerProperties();
+        
+        // Hide loading screen once successfully connected and in room
+        HideLoadingScreen();
     }
 
     public override void OnLeftRoom()
@@ -215,6 +251,9 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
         LogDebug($"Failed to join room: {message}");
+        
+        // Hide loading screen on failure (will retry via disconnection logic)
+        HideLoadingScreen();
     }
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
@@ -279,7 +318,131 @@ public partial class PhotonGameManager : MonoBehaviourPunCallbacks
             waveManager.OnWaveStart.RemoveListener(OnWaveStarted);
             waveManager.OnWaveComplete.RemoveListener(OnWaveCompleted);
         }
+        
+        // Ensure loading scene is unloaded
+        HideLoadingScreen();
     }
 
+    #endregion
+    
+    #region Loading Screen Management
+    
+    /// <summary>
+    /// Shows the splash loading scene additively over the current scene
+    /// </summary>
+    private void ShowLoadingScreen()
+    {
+        if (isLoadingSceneActive)
+        {
+            LogDebug("Loading screen already active");
+            return;
+        }
+        
+        if (string.IsNullOrEmpty(loadingSceneName))
+        {
+            LogDebug("Loading scene name not set, skipping loading screen");
+            return;
+        }
+        
+        LogDebug($"Showing loading screen: {loadingSceneName}");
+        
+        // Load the loading scene additively so it overlays the current scene
+        StartCoroutine(LoadSceneAsync(loadingSceneName));
+    }
+    
+    /// <summary>
+    /// Hides/unloads the splash loading scene
+    /// </summary>
+    private void HideLoadingScreen()
+    {
+        if (!isLoadingSceneActive)
+        {
+            return;
+        }
+        
+        LogDebug($"Hiding loading screen: {loadingSceneName}");
+        
+        // Unload the loading scene
+        StartCoroutine(UnloadSceneAsync());
+    }
+    
+    /// <summary>
+    /// Coroutine to load the loading scene additively
+    /// </summary>
+    private IEnumerator LoadSceneAsync(string sceneName)
+    {
+        // Check if scene is already loaded
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+            if (scene.name == sceneName)
+            {
+                LogDebug($"Loading scene {sceneName} already loaded");
+                isLoadingSceneActive = true;
+                loadingScene = scene;
+                yield break;
+            }
+        }
+        
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+        
+        if (asyncLoad == null)
+        {
+            Debug.LogError($"[PhotonGameManager] Failed to load scene: {sceneName}");
+            yield break;
+        }
+        
+        // Wait until the scene is fully loaded
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
+        
+        isLoadingSceneActive = true;
+        loadingScene = SceneManager.GetSceneByName(sceneName);
+        LogDebug($"Loading screen scene loaded: {sceneName}");
+    }
+    
+    /// <summary>
+    /// Coroutine to unload the loading scene
+    /// </summary>
+    private IEnumerator UnloadSceneAsync()
+    {
+        if (!loadingScene.HasValue)
+        {
+            isLoadingSceneActive = false;
+            yield break;
+        }
+        
+        Scene sceneToUnload = loadingScene.Value;
+        
+        if (!sceneToUnload.isLoaded)
+        {
+            isLoadingSceneActive = false;
+            loadingScene = null;
+            yield break;
+        }
+        
+        AsyncOperation asyncUnload = SceneManager.UnloadSceneAsync(sceneToUnload);
+        
+        if (asyncUnload == null)
+        {
+            Debug.LogError($"[PhotonGameManager] Failed to unload loading scene");
+            isLoadingSceneActive = false;
+            loadingScene = null;
+            yield break;
+        }
+        
+        // Wait until the scene is fully unloaded
+        while (!asyncUnload.isDone)
+        {
+            yield return null;
+        }
+        
+        isLoadingSceneActive = false;
+        loadingScene = null;
+        LogDebug("Loading screen scene unloaded");
+    }
+    
     #endregion
 }

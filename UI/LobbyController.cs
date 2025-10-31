@@ -62,6 +62,10 @@ public class LobbyController : MonoBehaviour
     [Tooltip("Maximum character length for player name")]
     [SerializeField] private int maxNameLength = 20;
 
+    [Header("Audio Settings")]
+    [Tooltip("Delay in seconds before executing button action (allows audio to play)")]
+    [SerializeField] private float buttonClickDelay = 0.5f;
+
     [Header("Animation Settings")]
     [Tooltip("Duration of shake animation in seconds")]
     [SerializeField] private float shakeDuration = 0.5f;
@@ -81,6 +85,9 @@ public class LobbyController : MonoBehaviour
     private Vector3 originalButtonPosition;
     private bool isEvading = false;
     private Coroutine evadeCoroutine;
+    
+    // Track if a button action is already in progress to prevent multiple clicks
+    private bool isProcessingButtonClick = false;
 
     private void Start()
     {
@@ -331,10 +338,19 @@ public class LobbyController : MonoBehaviour
     /// </summary>
     private void OnPlayGameButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(PlayGameButtonClickCoroutine());
+    }
+    
+    private IEnumerator PlayGameButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        
         if (playerNameInput == null)
         {
             Debug.LogError("Cannot start game: Player Name Input is null!");
-            return;
+            isProcessingButtonClick = false;
+            yield break;
         }
 
         string playerName = playerNameInput.text.Trim();
@@ -344,16 +360,22 @@ public class LobbyController : MonoBehaviour
         {
             Debug.LogWarning($"Player name must be at least {minNameLength} characters long!");
             TriggerValidationShake();
-            return;
+            isProcessingButtonClick = false;
+            yield break;
         }
         
         if (playerName.Length > maxNameLength)
         {
             Debug.LogWarning($"Player name must be at most {maxNameLength} characters long!");
             TriggerValidationShake();
-            return;
+            isProcessingButtonClick = false;
+            yield break;
         }
 
+        Debug.Log($"Play Game button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
         // Save player name to PlayerPrefs
         SavePlayerName(playerName);
         
@@ -375,6 +397,8 @@ public class LobbyController : MonoBehaviour
         {
             SceneManager.LoadScene(gameSceneName);
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
@@ -383,6 +407,17 @@ public class LobbyController : MonoBehaviour
     /// </summary>
     private void OnBackButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(BackButtonClickCoroutine());
+    }
+    
+    private IEnumerator BackButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        Debug.Log($"Back button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
         Debug.Log($"Returning to main menu: {mainMenuSceneName}");
         
         // Use LoadingScreen if available, otherwise load normally
@@ -394,6 +429,8 @@ public class LobbyController : MonoBehaviour
         {
             SceneManager.LoadScene(mainMenuSceneName);
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>

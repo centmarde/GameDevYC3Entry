@@ -33,6 +33,10 @@ public class WaveLeaderboardUI : MonoBehaviour
     [Tooltip("Title text (optional)")]
     [SerializeField] private TextMeshProUGUI titleText;
 
+    [Header("Audio Settings")]
+    [Tooltip("Delay in seconds before executing button action (allows audio to play)")]
+    [SerializeField] private float buttonClickDelay = 0.5f;
+
     [Header("Update Settings")]
     [Tooltip("How often to refresh the leaderboard (seconds)")]
     [SerializeField] private float updateInterval = 2f;
@@ -63,6 +67,9 @@ public class WaveLeaderboardUI : MonoBehaviour
     private float updateTimer = 0f;
     private List<GameObject> activeEntries = new List<GameObject>();
     private bool hasValidConfiguration = false;
+    
+    // Track if a button action is already in progress to prevent multiple clicks
+    private bool isProcessingButtonClick = false;
 
     private void Awake()
     {
@@ -400,10 +407,21 @@ public class WaveLeaderboardUI : MonoBehaviour
     /// </summary>
     private void OnBackButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(BackButtonClickCoroutine());
+    }
+    
+    private System.Collections.IEnumerator BackButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        
         Debug.Log("=== BACK BUTTON CLICKED ===", this);
         Debug.Log($"WaveLeaderboardUI: Back button clicked at {System.DateTime.Now:HH:mm:ss}");
+        Debug.Log($"WaveLeaderboardUI: Waiting {buttonClickDelay}s for audio...");
         Debug.Log($"WaveLeaderboardUI: Current scene = '{SceneManager.GetActiveScene().name}'");
         Debug.Log($"WaveLeaderboardUI: Target scene = '{backSceneName}'");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
         
         if (!string.IsNullOrEmpty(backSceneName))
         {
@@ -439,6 +457,8 @@ public class WaveLeaderboardUI : MonoBehaviour
                 Debug.LogWarning("Assign a 'Back Scene Name' in the inspector or add scenes to Build Settings!");
             }
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
@@ -457,13 +477,25 @@ public class WaveLeaderboardUI : MonoBehaviour
     /// <param name="sceneName">Name of the scene to load</param>
     public void NavigateToScene(string sceneName)
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(NavigateToSceneCoroutine(sceneName));
+    }
+    
+    private System.Collections.IEnumerator NavigateToSceneCoroutine(string sceneName)
+    {
+        isProcessingButtonClick = true;
+        
         Debug.Log($"WaveLeaderboardUI: NavigateToScene('{sceneName}') called via OnClick() event", this);
         
         if (string.IsNullOrEmpty(sceneName))
         {
             Debug.LogError("WaveLeaderboardUI: Scene name is empty!");
-            return;
+            isProcessingButtonClick = false;
+            yield break;
         }
+
+        Debug.Log($"WaveLeaderboardUI: Waiting {buttonClickDelay}s for audio...");
+        yield return new WaitForSeconds(buttonClickDelay);
 
         try
         {
@@ -475,6 +507,8 @@ public class WaveLeaderboardUI : MonoBehaviour
             Debug.LogError($"WaveLeaderboardUI: Failed to load scene '{sceneName}': {e.Message}");
             Debug.LogError($"Make sure '{sceneName}' is added to Build Settings!", this);
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
@@ -482,6 +516,7 @@ public class WaveLeaderboardUI : MonoBehaviour
     /// </summary>
     public void NavigateToMainMenu()
     {
+        if (isProcessingButtonClick) return;
         Debug.Log("WaveLeaderboardUI: NavigateToMainMenu() called via OnClick() event", this);
         NavigateToScene("MainMenu");
     }
@@ -491,7 +526,18 @@ public class WaveLeaderboardUI : MonoBehaviour
     /// </summary>
     public void NavigateToPreviousScene()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(NavigateToPreviousSceneCoroutine());
+    }
+    
+    private System.Collections.IEnumerator NavigateToPreviousSceneCoroutine()
+    {
+        isProcessingButtonClick = true;
+        
         Debug.Log("WaveLeaderboardUI: NavigateToPreviousScene() called via OnClick() event", this);
+        Debug.Log($"WaveLeaderboardUI: Waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
         
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
         
@@ -504,6 +550,8 @@ public class WaveLeaderboardUI : MonoBehaviour
         {
             Debug.LogWarning("WaveLeaderboardUI: Already at first scene (index 0)!");
         }
+        
+        isProcessingButtonClick = false;
     }
 
     private void OnDisable()
