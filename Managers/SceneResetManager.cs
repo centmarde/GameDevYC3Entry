@@ -270,14 +270,58 @@ public class SceneResetManager : MonoBehaviour
         Debug.Log("[SceneResetManager] Final static flag reset before retry scene reload...");
         PlayerSpawnManager.ResetGlobalSpawnFlags();
 
-        Debug.Log("[SceneResetManager] Scene reset complete. Loading MainBase...");
+        Debug.Log("[SceneResetManager] Scene reset complete. Loading MainBase with splash screen...");
 
         // Set flag to skip fake loading on retry
         PlayerPrefs.SetInt("SkipFakeLoading", 1);
         PlayerPrefs.Save();
 
+        // Load splash screen first to cover the scene transition
+        Debug.Log("[SceneResetManager] Loading SplashLoading screen...");
+        AsyncOperation loadSplash = SceneManager.LoadSceneAsync("SplashLoading", LoadSceneMode.Additive);
+        
+        if (loadSplash != null)
+        {
+            while (!loadSplash.isDone)
+            {
+                yield return null;
+            }
+            Debug.Log("[SceneResetManager] SplashLoading screen loaded");
+        }
+        
+        // Small delay to ensure splash screen is visible
+        yield return new WaitForSeconds(0.2f);
+        
         // Always load MainBase scene for retry (not current scene)
-        SceneManager.LoadScene("MainBase");
+        Debug.Log("[SceneResetManager] Now loading MainBase scene...");
+        AsyncOperation loadMainBase = SceneManager.LoadSceneAsync("MainBase");
+        
+        if (loadMainBase != null)
+        {
+            loadMainBase.allowSceneActivation = false;
+            
+            // Show loading progress
+            while (loadMainBase.progress < 0.9f)
+            {
+                float progress = Mathf.Clamp01(loadMainBase.progress / 0.9f);
+                Debug.Log($"[SceneResetManager] Loading MainBase: {progress * 100:F1}%");
+                yield return null;
+            }
+            
+            // Minimum loading time to show splash screen
+            yield return new WaitForSeconds(0.3f);
+            
+            // Activate the scene
+            Debug.Log("[SceneResetManager] MainBase loaded, activating scene...");
+            loadMainBase.allowSceneActivation = true;
+            
+            while (!loadMainBase.isDone)
+            {
+                yield return null;
+            }
+            
+            Debug.Log("[SceneResetManager] MainBase scene fully loaded!");
+        }
         
         // Wait a moment after scene load to ensure player spawning
         yield return new WaitForSeconds(0.5f);

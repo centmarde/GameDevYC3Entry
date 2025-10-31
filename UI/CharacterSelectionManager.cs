@@ -74,7 +74,64 @@ public class CharacterSelectionManager : MonoBehaviour
         PlayerPrefs.SetInt("SkipFakeLoading", 0);
         PlayerPrefs.Save();
         
-        SceneManager.LoadScene("MainBase");
+        // Load with splash loading screen to cover heavy scene load
+        StartCoroutine(LoadMainBaseWithSplashScreen());
+    }
+    
+    /// <summary>
+    /// Loads MainBase scene with SplashLoading screen overlay
+    /// </summary>
+    private System.Collections.IEnumerator LoadMainBaseWithSplashScreen()
+    {
+        Debug.Log("[CharacterSelectionManager] Loading SplashLoading screen...");
+        
+        // First, load the splash loading scene additively
+        AsyncOperation loadSplash = SceneManager.LoadSceneAsync("SplashLoading", LoadSceneMode.Additive);
+        
+        if (loadSplash != null)
+        {
+            // Wait for splash screen to load
+            while (!loadSplash.isDone)
+            {
+                yield return null;
+            }
+            
+            Debug.Log("[CharacterSelectionManager] SplashLoading screen loaded, now loading MainBase...");
+        }
+        
+        // Small delay to ensure splash screen is visible
+        yield return new WaitForSeconds(0.2f);
+        
+        // Now load MainBase scene (this will unload the current scene)
+        AsyncOperation loadMainBase = SceneManager.LoadSceneAsync("MainBase");
+        
+        if (loadMainBase != null)
+        {
+            loadMainBase.allowSceneActivation = false;
+            
+            // Show loading progress
+            while (loadMainBase.progress < 0.9f)
+            {
+                float progress = Mathf.Clamp01(loadMainBase.progress / 0.9f);
+                Debug.Log($"[CharacterSelectionManager] Loading MainBase: {progress * 100:F1}%");
+                yield return null;
+            }
+            
+            // Minimum loading time to show splash screen (optional)
+            yield return new WaitForSeconds(0.5f);
+            
+            // Activate the scene
+            Debug.Log("[CharacterSelectionManager] MainBase loaded, activating scene...");
+            loadMainBase.allowSceneActivation = true;
+            
+            // Wait for scene to fully activate
+            while (!loadMainBase.isDone)
+            {
+                yield return null;
+            }
+            
+            Debug.Log("[CharacterSelectionManager] MainBase scene fully loaded!");
+        }
     }
 
     /// <summary>

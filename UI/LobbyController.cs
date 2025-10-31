@@ -388,8 +388,14 @@ public class LobbyController : MonoBehaviour
         Debug.Log($"Starting game with player name: {playerName}");
         Debug.Log($"Loading scene: {gameSceneName}");
         
-        // Use LoadingScreen if available, otherwise load normally
-        if (LoadingScreen.Instance != null)
+        // For MainBase scene, use SplashLoading screen due to heavy content
+        if (gameSceneName == "MainBase")
+        {
+            Debug.Log($"Loading MainBase with SplashLoading screen...");
+            yield return StartCoroutine(LoadSceneWithSplashScreen(gameSceneName));
+        }
+        // Use LoadingScreen if available for other scenes
+        else if (LoadingScreen.Instance != null)
         {
             LoadingScreen.LoadScene(gameSceneName);
         }
@@ -485,6 +491,62 @@ public class LobbyController : MonoBehaviour
     public void TriggerShake()
     {
         TriggerValidationShake();
+    }
+    
+    /// <summary>
+    /// Loads a scene with SplashLoading screen overlay for heavy scenes like MainBase
+    /// </summary>
+    private IEnumerator LoadSceneWithSplashScreen(string sceneName)
+    {
+        Debug.Log($"[LobbyController] Loading SplashLoading screen...");
+        
+        // First, load the splash loading scene additively
+        AsyncOperation loadSplash = SceneManager.LoadSceneAsync("SplashLoading", LoadSceneMode.Additive);
+        
+        if (loadSplash != null)
+        {
+            // Wait for splash screen to load
+            while (!loadSplash.isDone)
+            {
+                yield return null;
+            }
+            
+            Debug.Log($"[LobbyController] SplashLoading screen loaded, now loading {sceneName}...");
+        }
+        
+        // Small delay to ensure splash screen is visible
+        yield return new WaitForSeconds(0.2f);
+        
+        // Now load target scene
+        AsyncOperation loadScene = SceneManager.LoadSceneAsync(sceneName);
+        
+        if (loadScene != null)
+        {
+            loadScene.allowSceneActivation = false;
+            
+            // Show loading progress
+            while (loadScene.progress < 0.9f)
+            {
+                float progress = Mathf.Clamp01(loadScene.progress / 0.9f);
+                Debug.Log($"[LobbyController] Loading {sceneName}: {progress * 100:F1}%");
+                yield return null;
+            }
+            
+            // Minimum loading time to show splash screen (optional)
+            yield return new WaitForSeconds(0.5f);
+            
+            // Activate the scene
+            Debug.Log($"[LobbyController] {sceneName} loaded, activating scene...");
+            loadScene.allowSceneActivation = true;
+            
+            // Wait for scene to fully activate
+            while (!loadScene.isDone)
+            {
+                yield return null;
+            }
+            
+            Debug.Log($"[LobbyController] {sceneName} scene fully loaded!");
+        }
     }
 
     private void OnDestroy()
