@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
@@ -9,6 +10,16 @@ using TMPro;
 /// </summary>
 public class WaveLeaderboardUI : MonoBehaviour
 {
+    [Header("Navigation")]
+    [Tooltip("Back button to return to previous scene")]
+    [SerializeField] private Button backButton;
+    
+    [Tooltip("Scene to load when back button is clicked (leave empty to use previous scene)")]
+    [SerializeField] private string backSceneName = "MainMenu";
+    
+    [Tooltip("Sort order for the back button canvas (higher = front)")]
+    [SerializeField] private int backButtonSortOrder = 100;
+    
     [Header("UI References")]
     [Tooltip("Parent container for leaderboard entries")]
     [SerializeField] private Transform leaderboardContainer;
@@ -51,6 +62,147 @@ public class WaveLeaderboardUI : MonoBehaviour
 
     private float updateTimer = 0f;
     private List<GameObject> activeEntries = new List<GameObject>();
+    private bool hasValidConfiguration = false;
+
+    private void Awake()
+    {
+        // Validate configuration on startup
+        ValidateConfiguration();
+    }
+
+    private void Start()
+    {
+        // Setup back button
+        if (backButton != null)
+        {
+            backButton.onClick.AddListener(OnBackButtonClicked);
+            EnsureButtonIsClickable();
+        }
+        else
+        {
+            Debug.LogWarning("WaveLeaderboardUI: Back button not assigned in inspector!");
+        }
+    }
+
+    /// <summary>
+    /// Validate that all required references are assigned
+    /// </summary>
+    private void ValidateConfiguration()
+    {
+        bool isValid = true;
+        System.Text.StringBuilder errors = new System.Text.StringBuilder();
+        errors.AppendLine("WaveLeaderboardUI Configuration Errors:");
+
+        if (leaderboardContainer == null)
+        {
+            errors.AppendLine("❌ Leaderboard Container is not assigned!");
+            errors.AppendLine("   → Assign the 'Content' GameObject from your ScrollView");
+            isValid = false;
+        }
+
+        if (leaderboardEntryPrefab == null)
+        {
+            errors.AppendLine("❌ Leaderboard Entry Prefab is not assigned!");
+            errors.AppendLine("   → Assign the prefab at: Assets/Prefabs/UI/LeaderboardEntryPrefab.prefab");
+            errors.AppendLine("   → Or run: Tools → Photon Game Manager → Setup Wizard");
+            isValid = false;
+        }
+
+        if (noPlayersText == null)
+        {
+            errors.AppendLine("⚠️ No Players Text is not assigned (optional but recommended)");
+        }
+
+        if (backButton == null)
+        {
+            errors.AppendLine("⚠️ Back Button is not assigned (optional)");
+        }
+
+        hasValidConfiguration = isValid;
+
+        if (!isValid)
+        {
+            Debug.LogError(errors.ToString(), this);
+            Debug.LogError("WaveLeaderboardUI: Please assign missing references in the Inspector!", this);
+        }
+        else
+        {
+            Debug.Log("WaveLeaderboardUI: Configuration validated successfully! ✓");
+        }
+    }
+
+    /// <summary>
+    /// Ensure the back button is rendered on top and clickable
+    /// </summary>
+    private void EnsureButtonIsClickable()
+    {
+        if (backButton == null) return;
+
+        // Make sure the button itself is interactable
+        backButton.interactable = true;
+
+        // Ensure the button has a CanvasGroup configured properly
+        CanvasGroup buttonCanvasGroup = backButton.GetComponent<CanvasGroup>();
+        if (buttonCanvasGroup != null)
+        {
+            buttonCanvasGroup.interactable = true;
+            buttonCanvasGroup.blocksRaycasts = true;
+            buttonCanvasGroup.ignoreParentGroups = true; // Ignore parent blocking
+        }
+
+        // Get or add Canvas component for override sorting
+        Canvas buttonCanvas = backButton.GetComponent<Canvas>();
+        if (buttonCanvas == null)
+        {
+            buttonCanvas = backButton.gameObject.AddComponent<Canvas>();
+        }
+        
+        // Enable override sorting and set very high sort order
+        buttonCanvas.overrideSorting = true;
+        buttonCanvas.sortingOrder = backButtonSortOrder;
+        
+        // Ensure GraphicRaycaster exists for click detection
+        GraphicRaycaster raycaster = backButton.GetComponent<GraphicRaycaster>();
+        if (raycaster == null)
+        {
+            raycaster = backButton.gameObject.AddComponent<GraphicRaycaster>();
+        }
+        raycaster.ignoreReversedGraphics = true;
+        raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
+
+        // Disable raycast blocking on parent panels/images
+        DisableParentRaycastBlocking(backButton.transform);
+
+        // Move button to front in hierarchy
+        backButton.transform.SetAsLastSibling();
+
+        Debug.Log($"WaveLeaderboardUI: Back button configured - Sort Order: {backButtonSortOrder}, Interactable: {backButton.interactable}");
+    }
+
+    /// <summary>
+    /// Disable raycast blocking on parent Image components
+    /// </summary>
+    private void DisableParentRaycastBlocking(Transform child)
+    {
+        Transform parent = child.parent;
+        while (parent != null)
+        {
+            Image parentImage = parent.GetComponent<Image>();
+            if (parentImage != null)
+            {
+                // Store original raycast target state
+                bool wasTarget = parentImage.raycastTarget;
+                parentImage.raycastTarget = false;
+                
+                if (wasTarget)
+                {
+                    Debug.Log($"WaveLeaderboardUI: Disabled raycast blocking on parent: {parent.name}");
+                }
+            }
+            
+            parent = parent.parent;
+        }
+    }
 
     private void OnEnable()
     {
@@ -76,6 +228,12 @@ public class WaveLeaderboardUI : MonoBehaviour
     /// </summary>
     public void RefreshLeaderboard()
     {
+        // Check if configuration is valid before attempting to refresh
+        if (!hasValidConfiguration)
+        {
+            return; // Silently skip if configuration is invalid (error already logged in Awake)
+        }
+
         if (PhotonGameManager.Instance == null)
         {
             ShowNoPlayers("Game Manager not found");
@@ -129,7 +287,7 @@ public class WaveLeaderboardUI : MonoBehaviour
     {
         if (leaderboardEntryPrefab == null || leaderboardContainer == null)
         {
-            Debug.LogError("WaveLeaderboardUI: Leaderboard entry prefab or container not assigned!");
+            Debug.LogError("WaveLeaderboardUI: Cannot create entry - missing references! Check Awake() errors.", this);
             return;
         }
 
@@ -237,8 +395,125 @@ public class WaveLeaderboardUI : MonoBehaviour
         RefreshLeaderboard();
     }
 
+    /// <summary>
+    /// Handle back button click
+    /// </summary>
+    private void OnBackButtonClicked()
+    {
+        Debug.Log("=== BACK BUTTON CLICKED ===", this);
+        Debug.Log($"WaveLeaderboardUI: Back button clicked at {System.DateTime.Now:HH:mm:ss}");
+        Debug.Log($"WaveLeaderboardUI: Current scene = '{SceneManager.GetActiveScene().name}'");
+        Debug.Log($"WaveLeaderboardUI: Target scene = '{backSceneName}'");
+        
+        if (!string.IsNullOrEmpty(backSceneName))
+        {
+            // Load specified scene
+            Debug.Log($"WaveLeaderboardUI: ✓ Loading scene '{backSceneName}'...");
+            
+            try
+            {
+                SceneManager.LoadScene(backSceneName);
+                Debug.Log($"WaveLeaderboardUI: Scene load initiated successfully!");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"WaveLeaderboardUI: Failed to load scene '{backSceneName}': {e.Message}");
+                Debug.LogError($"Make sure '{backSceneName}' is added to Build Settings!", this);
+            }
+        }
+        else
+        {
+            // Try to go back to previous scene (if build index > 0)
+            int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+            Debug.Log($"WaveLeaderboardUI: No target scene specified, using build index navigation");
+            Debug.Log($"WaveLeaderboardUI: Current build index = {currentSceneIndex}");
+            
+            if (currentSceneIndex > 0)
+            {
+                Debug.Log($"WaveLeaderboardUI: ✓ Loading previous scene at build index {currentSceneIndex - 1}");
+                SceneManager.LoadScene(currentSceneIndex - 1);
+            }
+            else
+            {
+                Debug.LogWarning("WaveLeaderboardUI: ⚠️ No back scene specified and already at first scene!");
+                Debug.LogWarning("Assign a 'Back Scene Name' in the inspector or add scenes to Build Settings!");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Public method to navigate back (can be called from UI button OnClick() event)
+    /// Use this in the Inspector: Button → OnClick() → Add WaveLeaderboardUI.NavigateBack
+    /// </summary>
+    public void NavigateBack()
+    {
+        Debug.Log("WaveLeaderboardUI: NavigateBack() called via OnClick() event", this);
+        OnBackButtonClicked();
+    }
+
+    /// <summary>
+    /// Navigate to a specific scene by name (can be called from UI button OnClick() event)
+    /// </summary>
+    /// <param name="sceneName">Name of the scene to load</param>
+    public void NavigateToScene(string sceneName)
+    {
+        Debug.Log($"WaveLeaderboardUI: NavigateToScene('{sceneName}') called via OnClick() event", this);
+        
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            Debug.LogError("WaveLeaderboardUI: Scene name is empty!");
+            return;
+        }
+
+        try
+        {
+            Debug.Log($"WaveLeaderboardUI: Loading scene '{sceneName}'...");
+            SceneManager.LoadScene(sceneName);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"WaveLeaderboardUI: Failed to load scene '{sceneName}': {e.Message}");
+            Debug.LogError($"Make sure '{sceneName}' is added to Build Settings!", this);
+        }
+    }
+
+    /// <summary>
+    /// Navigate to MainMenu scene (convenience method for OnClick() events)
+    /// </summary>
+    public void NavigateToMainMenu()
+    {
+        Debug.Log("WaveLeaderboardUI: NavigateToMainMenu() called via OnClick() event", this);
+        NavigateToScene("MainMenu");
+    }
+
+    /// <summary>
+    /// Navigate to previous scene by build index (can be called from UI button OnClick() event)
+    /// </summary>
+    public void NavigateToPreviousScene()
+    {
+        Debug.Log("WaveLeaderboardUI: NavigateToPreviousScene() called via OnClick() event", this);
+        
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        
+        if (currentSceneIndex > 0)
+        {
+            Debug.Log($"WaveLeaderboardUI: Loading previous scene at build index {currentSceneIndex - 1}");
+            SceneManager.LoadScene(currentSceneIndex - 1);
+        }
+        else
+        {
+            Debug.LogWarning("WaveLeaderboardUI: Already at first scene (index 0)!");
+        }
+    }
+
     private void OnDisable()
     {
         ClearEntries();
+        
+        // Cleanup button listener
+        if (backButton != null)
+        {
+            backButton.onClick.RemoveListener(OnBackButtonClicked);
+        }
     }
 }

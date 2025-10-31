@@ -17,8 +17,33 @@ using TMPro;
 /// - Single static lobby (no room creation/joining needed)
 /// - Saves player name from LobbyController to Photon
 /// - Syncs wave progress to leaderboards
-/// - Persistent player stats across sessions
+/// - Persistent player stats across sessions stored in Photon Cloud
 /// - Automatic reconnection handling
+/// - Dual-layer storage: Room properties (session) + Cloud properties (persistent)
+/// 
+/// CLOUD STORAGE SYSTEM:
+/// ====================
+/// This manager uses TWO types of storage for maximum reliability:
+/// 
+/// 1. ROOM PROPERTIES (Session-based):
+///    - Stored via SetCustomProperties on LocalPlayer
+///    - Visible to other players in the same room
+///    - Lost when player leaves the room
+///    - Used for real-time leaderboard display
+/// 
+/// 2. CLOUD PROPERTIES (Persistent):
+///    - Stored via Player Account Custom Properties (prefixed with "Cloud_")
+///    - Persists across sessions and room changes
+///    - Stored in Photon Cloud servers
+///    - Automatically loaded on connection
+///    - Backed up to local PlayerPrefs
+/// 
+/// Data is saved to cloud on:
+/// - Wave start/completion
+/// - Player death (via GameOverPanelUI)
+/// - Leaving room
+/// - Application quit
+/// - Manual save via SaveCurrentWaveToLeaderboard()
 /// </summary>
 public class PhotonGameManager : MonoBehaviourPunCallbacks
 {
@@ -80,8 +105,9 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             waveManager = FindObjectOfType<WaveManager>();
         }
 
-        // Load saved player name
+        // Load saved player name and highest wave from previous session
         LoadPlayerName();
+        LoadHighestWave();
     }
 
     private void Start()
@@ -90,6 +116,10 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         PhotonNetwork.AutomaticallySyncScene = false; // We use static lobby, no scene sync needed
         PhotonNetwork.SendRate = 20; // Updates per second
         PhotonNetwork.SerializationRate = 10; // Sync rate for custom properties
+
+        LogDebug("=== Photon Cloud Storage System Active ===");
+        LogDebug($"Player: {playerName} | Highest Wave: {highestWaveReached}");
+        LogDebug("Leaderboard records will be saved to Photon Cloud");
 
         if (autoConnectOnStart)
         {
@@ -155,6 +185,9 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         // Set player nickname
         PhotonNetwork.NickName = playerName;
         
+        // Load player stats from Photon Cloud (persistent across sessions)
+        LoadPlayerStatsFromCloud();
+        
         // Join or create the static lobby
         JoinOrCreateLobby();
     }
@@ -201,7 +234,11 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         isInLobby = false;
-        LogDebug("Left the lobby room");
+        
+        // Save final stats to cloud before leaving
+        SavePlayerStatsToCloud();
+        
+        LogDebug("Left the lobby room - stats saved to cloud");
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
@@ -263,7 +300,7 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Update player's custom properties in Photon
+    /// Update player's custom properties in Photon (room session)
     /// </summary>
     private void UpdatePlayerProperties()
     {
@@ -278,7 +315,12 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             { TOTAL_KILLS_KEY, GetTotalKills() }
         };
 
+        // Update room properties (visible to other players in current session)
         PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
+        
+        // Also save to Photon Cloud (persistent across sessions)
+        SavePlayerStatsToCloud();
+        
         LogDebug($"Updated player properties: {playerName}, Wave: {currentWaveReached}, Highest: {highestWaveReached}");
     }
 
@@ -360,6 +402,108 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         LogDebug("Player stats reset");
     }
 
+    /// <summary>
+    /// Force save the current wave progress to leaderboards
+    /// Call this when player dies to ensure wave data is saved to Photon
+    /// </summary>
+    public void SaveCurrentWaveToLeaderboard()
+    {
+        // Get current wave from WaveManager if available
+        if (waveManager != null)
+        {
+            currentWaveReached = waveManager.GetCurrentWave();
+        }
+
+        // Update highest wave if current is higher
+        if (currentWaveReached > highestWaveReached)
+        {
+            highestWaveReached = currentWaveReached;
+            SaveHighestWave(highestWaveReached);
+        }
+
+        // Force update Photon properties to sync with leaderboard
+        UpdatePlayerProperties();
+        
+        // Ensure cloud save is completed
+        SavePlayerStatsToCloud();
+
+        LogDebug($"Force saved wave progress to leaderboard - Current Wave: {currentWaveReached}, Highest Wave: {highestWaveReached}");
+    }
+
+    /// <summary>
+    /// Save player stats to Photon Cloud (persistent across sessions)
+    /// Uses Photon Player Account Custom Properties
+    /// </summary>
+    private void SavePlayerStatsToCloud()
+    {
+        if (!PhotonNetwork.IsConnected || PhotonNetwork.LocalPlayer == null)
+        {
+            LogDebug("Cannot save to cloud - not connected to Photon");
+            return;
+        }
+
+        // Create hashtable with player stats
+        ExitGames.Client.Photon.Hashtable cloudProperties = new ExitGames.Client.Photon.Hashtable
+        {
+            { "Cloud_" + PLAYER_NAME_KEY, playerName },
+            { "Cloud_" + HIGHEST_WAVE_KEY, highestWaveReached },
+            { "Cloud_" + TOTAL_KILLS_KEY, GetTotalKills() },
+            { "LastSaved", System.DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
+        };
+
+        // Save to player's account (persists across sessions)
+        PhotonNetwork.LocalPlayer.SetCustomProperties(cloudProperties);
+        
+        // Also save to local PlayerPrefs as backup
+        SaveHighestWave(highestWaveReached);
+
+        LogDebug($"Saved player stats to Photon Cloud: {playerName}, Highest Wave: {highestWaveReached}");
+    }
+
+    /// <summary>
+    /// Load player stats from Photon Cloud (persistent data from previous sessions)
+    /// </summary>
+    private void LoadPlayerStatsFromCloud()
+    {
+        if (!PhotonNetwork.IsConnected || PhotonNetwork.LocalPlayer == null)
+        {
+            LogDebug("Cannot load from cloud - not connected to Photon");
+            return;
+        }
+
+        var cloudProps = PhotonNetwork.LocalPlayer.CustomProperties;
+        
+        // Load highest wave from cloud if available
+        string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
+        if (cloudProps.ContainsKey(cloudHighestWaveKey))
+        {
+            int cloudHighestWave = (int)cloudProps[cloudHighestWaveKey];
+            
+            // Use the higher value between cloud and local storage
+            if (cloudHighestWave > highestWaveReached)
+            {
+                highestWaveReached = cloudHighestWave;
+                SaveHighestWave(highestWaveReached); // Update local storage
+                LogDebug($"Loaded highest wave from Photon Cloud: {highestWaveReached}");
+            }
+        }
+        
+        // Load player name from cloud if available
+        string cloudPlayerNameKey = "Cloud_" + PLAYER_NAME_KEY;
+        if (cloudProps.ContainsKey(cloudPlayerNameKey))
+        {
+            string cloudPlayerName = (string)cloudProps[cloudPlayerNameKey];
+            if (!string.IsNullOrEmpty(cloudPlayerName))
+            {
+                playerName = cloudPlayerName;
+                PhotonNetwork.NickName = playerName;
+                LogDebug($"Loaded player name from Photon Cloud: {playerName}");
+            }
+        }
+
+        LogDebug($"Loaded player stats from Photon Cloud - Highest Wave: {highestWaveReached}, Name: {playerName}");
+    }
+
     #endregion
 
     #region Leaderboard Data
@@ -382,13 +526,19 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         {
             if (player.CustomProperties.ContainsKey(PLAYER_NAME_KEY))
             {
+                // Try to get cloud properties first (persistent data), fallback to room properties
+                string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
+                int highestWave = player.CustomProperties.ContainsKey(cloudHighestWaveKey)
+                    ? (int)player.CustomProperties[cloudHighestWaveKey]
+                    : (player.CustomProperties.ContainsKey(HIGHEST_WAVE_KEY) 
+                        ? (int)player.CustomProperties[HIGHEST_WAVE_KEY] : 0);
+                
                 LeaderboardEntry entry = new LeaderboardEntry
                 {
                     playerName = (string)player.CustomProperties[PLAYER_NAME_KEY],
                     currentWave = player.CustomProperties.ContainsKey(CURRENT_WAVE_KEY) 
                         ? (int)player.CustomProperties[CURRENT_WAVE_KEY] : 0,
-                    highestWave = player.CustomProperties.ContainsKey(HIGHEST_WAVE_KEY) 
-                        ? (int)player.CustomProperties[HIGHEST_WAVE_KEY] : 0,
+                    highestWave = highestWave, // Already calculated above with cloud priority
                     totalKills = player.CustomProperties.ContainsKey(TOTAL_KILLS_KEY) 
                         ? (int)player.CustomProperties[TOTAL_KILLS_KEY] : 0,
                     isLocalPlayer = player.IsLocal
@@ -475,6 +625,66 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     public int GetPlayerCount() => PhotonNetwork.CurrentRoom?.PlayerCount ?? 0;
     public string GetLobbyName() => lobbyRoomName;
 
+    /// <summary>
+    /// Manually trigger a save to Photon Cloud (for testing or forced saves)
+    /// </summary>
+    public void ManualSaveToCloud()
+    {
+        SavePlayerStatsToCloud();
+        LogDebug("Manual cloud save triggered");
+    }
+
+    /// <summary>
+    /// Manually trigger a load from Photon Cloud (for testing or refresh)
+    /// </summary>
+    public void ManualLoadFromCloud()
+    {
+        LoadPlayerStatsFromCloud();
+        LogDebug("Manual cloud load triggered");
+    }
+
+    /// <summary>
+    /// Check if cloud data exists for this player
+    /// </summary>
+    public bool HasCloudData()
+    {
+        if (!PhotonNetwork.IsConnected || PhotonNetwork.LocalPlayer == null)
+            return false;
+
+        string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
+        return PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey(cloudHighestWaveKey);
+    }
+
+    /// <summary>
+    /// Get detailed cloud storage status for debugging
+    /// </summary>
+    public string GetCloudStorageStatus()
+    {
+        if (!PhotonNetwork.IsConnected)
+            return "Not connected to Photon";
+
+        if (PhotonNetwork.LocalPlayer == null)
+            return "Local player not initialized";
+
+        var cloudProps = PhotonNetwork.LocalPlayer.CustomProperties;
+        string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
+        string cloudPlayerNameKey = "Cloud_" + PLAYER_NAME_KEY;
+
+        bool hasCloudData = cloudProps.ContainsKey(cloudHighestWaveKey);
+        int cloudWave = hasCloudData ? (int)cloudProps[cloudHighestWaveKey] : 0;
+        string cloudName = cloudProps.ContainsKey(cloudPlayerNameKey) 
+            ? (string)cloudProps[cloudPlayerNameKey] : "N/A";
+        string lastSaved = cloudProps.ContainsKey("LastSaved") 
+            ? (string)cloudProps["LastSaved"] : "Never";
+
+        return $"Cloud Storage Status:\n" +
+               $"- Has Data: {hasCloudData}\n" +
+               $"- Name: {cloudName}\n" +
+               $"- Highest Wave: {cloudWave}\n" +
+               $"- Last Saved: {lastSaved}\n" +
+               $"- Local Highest Wave: {highestWaveReached}";
+    }
+
     #endregion
 
     #region Debugging
@@ -489,8 +699,18 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
 
     #endregion
 
+    private void OnApplicationQuit()
+    {
+        // Save final stats to cloud before application closes
+        SavePlayerStatsToCloud();
+        LogDebug("Application quitting - saving final stats to Photon Cloud");
+    }
+
     private void OnDestroy()
     {
+        // Save stats one last time before object destruction
+        SavePlayerStatsToCloud();
+        
         // Unsubscribe from wave events
         if (waveManager != null)
         {

@@ -770,6 +770,58 @@ public class PhotonGameManagerSetupWizard : EditorWindow
         noPlayersRect.offsetMin = Vector2.zero;
         noPlayersRect.offsetMax = Vector2.zero;
 
+        // Create Back Button
+        GameObject backButtonObj = new GameObject("BackButton");
+        backButtonObj.transform.SetParent(panelObj.transform, false);
+        Undo.RegisterCreatedObjectUndo(backButtonObj, "Create Back Button");
+
+        RectTransform backButtonRect = backButtonObj.AddComponent<RectTransform>();
+        backButtonRect.anchorMin = new Vector2(0, 0);
+        backButtonRect.anchorMax = new Vector2(0, 0);
+        backButtonRect.pivot = new Vector2(0, 0);
+        backButtonRect.anchoredPosition = new Vector2(50, 50);
+        backButtonRect.sizeDelta = new Vector2(200, 60);
+
+        Image backButtonImage = backButtonObj.AddComponent<Image>();
+        backButtonImage.color = new Color(0.8f, 0.2f, 0.2f, 0.9f); // Red button
+
+        Button backButton = backButtonObj.AddComponent<Button>();
+        
+        // Set button colors
+        ColorBlock colors = backButton.colors;
+        colors.normalColor = new Color(0.8f, 0.2f, 0.2f, 0.9f);
+        colors.highlightedColor = new Color(1f, 0.3f, 0.3f, 1f);
+        colors.pressedColor = new Color(0.6f, 0.15f, 0.15f, 1f);
+        colors.selectedColor = new Color(0.8f, 0.2f, 0.2f, 0.9f);
+        colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+        backButton.colors = colors;
+
+        // Add Canvas to button for proper sorting
+        Canvas backButtonCanvas = backButtonObj.AddComponent<Canvas>();
+        backButtonCanvas.overrideSorting = true;
+        backButtonCanvas.sortingOrder = 100;
+
+        // Add GraphicRaycaster for click detection
+        backButtonObj.AddComponent<GraphicRaycaster>();
+
+        // Create Button Text
+        GameObject backButtonTextObj = new GameObject("Text");
+        backButtonTextObj.transform.SetParent(backButtonObj.transform, false);
+        Undo.RegisterCreatedObjectUndo(backButtonTextObj, "Create Back Button Text");
+
+        TextMeshProUGUI backButtonText = backButtonTextObj.AddComponent<TextMeshProUGUI>();
+        backButtonText.text = "← Back to Menu";
+        backButtonText.fontSize = 24;
+        backButtonText.fontStyle = FontStyles.Bold;
+        backButtonText.alignment = TextAlignmentOptions.Center;
+        backButtonText.color = Color.white;
+
+        RectTransform backButtonTextRect = backButtonTextObj.GetComponent<RectTransform>();
+        backButtonTextRect.anchorMin = Vector2.zero;
+        backButtonTextRect.anchorMax = Vector2.one;
+        backButtonTextRect.offsetMin = Vector2.zero;
+        backButtonTextRect.offsetMax = Vector2.zero;
+
         // Create LeaderboardEntry Prefab
         GameObject entryPrefab = CreateLeaderboardEntryPrefab();
 
@@ -782,6 +834,9 @@ public class PhotonGameManagerSetupWizard : EditorWindow
         SetPrivateField(leaderboardUI, "leaderboardEntryPrefab", entryPrefab);
         SetPrivateField(leaderboardUI, "noPlayersText", noPlayersText);
         SetPrivateField(leaderboardUI, "titleText", titleText);
+        SetPrivateField(leaderboardUI, "backButton", backButton);
+        SetPrivateField(leaderboardUI, "backSceneName", "MainMenu");
+        SetPrivateField(leaderboardUI, "backButtonSortOrder", 100);
 
         EditorUtility.SetDirty(leaderboardUI);
 
@@ -793,7 +848,8 @@ public class PhotonGameManagerSetupWizard : EditorWindow
             "Components created:\n" +
             "✅ ScrollView with Content\n" +
             "✅ Leaderboard Entry Prefab\n" +
-            "✅ WaveLeaderboardUI Manager\n\n" +
+            "✅ WaveLeaderboardUI Manager\n" +
+            "✅ Back Button (→ MainMenu)\n\n" +
             "The leaderboard is ready to use!", 
             "OK");
     }
