@@ -407,8 +407,8 @@ public class WaveManager : MonoBehaviour
                     // Give extra enemy to first spawners if there's a remainder
                     int enemiesToGive = enemiesPerSpawner + (spawnerIndex < remainderEnemies ? 1 : 0);
                     
-                    Debug.Log($"[WaveManager] Starting spawner {spawnerIndex} ({spawner.gameObject.name}) with {enemiesToGive} enemies (HP+{currentHealthBonus}, DMG+{currentDamageBonus})");
-                    spawner.StartWave(enemiesToGive, currentHealthBonus, currentDamageBonus);
+                    Debug.Log($"[WaveManager] Starting spawner {spawnerIndex} ({spawner.gameObject.name}) with {enemiesToGive} enemies (HP+{currentHealthBonus}, DMG+{currentDamageBonus}) on wave {currentWave}");
+                    spawner.StartWave(enemiesToGive, currentHealthBonus, currentDamageBonus, currentWave);
                     spawnerIndex++;
                 }
             }

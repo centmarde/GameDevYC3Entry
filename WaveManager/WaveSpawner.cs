@@ -6,6 +6,10 @@ public class WaveSpawner : MonoBehaviour
     [Tooltip("Define groups of enemies to spawn. Each group can have multiple enemy types with spawn weights.")]
     [SerializeField] private EnemyGroup[] enemyGroups;
     
+    [Header("Special Enemy Settings")]
+    [Tooltip("Boss enemies to spawn every 5th wave (5, 10, 15, etc.)")]
+    [SerializeField] private GameObject[] bossPrefabs;
+    
     [Header("Spawn Mode")]
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
     [Tooltip("Player transform reference (automatically set by WaveManager)")]
@@ -37,6 +41,9 @@ public class WaveSpawner : MonoBehaviour
     private float currentDamageBonus = 0f;
     private EnemyGroup currentWaveGroup = null; // The group selected for this wave
     private float lastPlayerRefreshTime = 0f; // Track when we last refreshed player reference
+    private int currentWaveNumber = 0; // Track current wave for special spawning logic
+    private bool hasSpawnedElite = false; // Track if elite has spawned this wave
+    private bool hasSpawnedBoss = false; // Track if boss has spawned this wave
     
     public enum SpawnMode
     {
@@ -213,8 +220,30 @@ public class WaveSpawner : MonoBehaviour
     /// <param name="enemyCount">Number of enemies to spawn in this wave</param>
     /// <param name="healthBonus">Health bonus to apply to spawned enemies</param>
     /// <param name="damageBonus">Damage bonus to apply to spawned enemies</param>
-    public void StartWave(int enemyCount, float healthBonus = 0f, float damageBonus = 0f)
+    /// <param name="waveNumber">The current wave number (optional, will try to get from WaveManager if not provided)</param>
+    public void StartWave(int enemyCount, float healthBonus = 0f, float damageBonus = 0f, int waveNumber = 0)
     {
+        // Get current wave number - use parameter if provided, otherwise get from WaveManager
+        if (waveNumber > 0)
+        {
+            currentWaveNumber = waveNumber;
+            Debug.Log($"[WaveSpawner] StartWave called with wave number parameter: {currentWaveNumber}, Enemy Count: {enemyCount}");
+        }
+        else if (waveManager != null)
+        {
+            currentWaveNumber = waveManager.GetCurrentWave();
+            Debug.Log($"[WaveSpawner] StartWave called - Got wave number from WaveManager: {currentWaveNumber}, Enemy Count: {enemyCount}");
+        }
+        else
+        {
+            Debug.LogWarning("[WaveSpawner] WaveManager is null and no wave number provided! Elite/Boss spawning will not work correctly.");
+            currentWaveNumber = 0;
+        }
+        
+        // Reset special spawn flags
+        hasSpawnedElite = false;
+        hasSpawnedBoss = false;
+        Debug.Log($"[WaveSpawner] Reset spawn flags - Elite: {hasSpawnedElite}, Boss: {hasSpawnedBoss}");
         if (isSpawning) return;
         
         currentHealthBonus = healthBonus;
@@ -266,6 +295,13 @@ public class WaveSpawner : MonoBehaviour
         enemiesToSpawn = enemyCount;
         enemiesSpawned = 0;
         isSpawning = true;
+        
+        // Spawn boss first if this is a boss wave (every 5th wave)
+        if (currentWaveNumber > 0 && currentWaveNumber % 5 == 0 && bossPrefabs != null && bossPrefabs.Length > 0)
+        {
+            SpawnBoss();
+        }
+        
         InvokeRepeating(nameof(SpawnEnemy), 0f, spawnDelay);
     }
     
@@ -280,6 +316,19 @@ public class WaveSpawner : MonoBehaviour
             CancelInvoke(nameof(SpawnEnemy));
             isSpawning = false;
             Debug.Log($"[WaveSpawner] Wave complete - spawned {enemiesSpawned}/{enemiesToSpawn} enemies");
+            return;
+        }
+        
+        // Check if we should spawn an elite enemy on even waves (2, 4, 6, etc.)
+        bool isEvenWave = currentWaveNumber > 0 && currentWaveNumber % 2 == 0;
+        Debug.Log($"[WaveSpawner] SpawnEnemy check - Wave: {currentWaveNumber}, IsEven: {isEvenWave}, HasSpawnedElite: {hasSpawnedElite}, EnemiesSpawned: {enemiesSpawned}/{enemiesToSpawn}");
+        
+        if (!hasSpawnedElite && isEvenWave && enemyGroups != null && enemyGroups.Length > 0)
+        {
+            Debug.Log($"[WaveSpawner] Attempting to spawn ELITE enemy on wave {currentWaveNumber}");
+            SpawnEliteEnemy();
+            hasSpawnedElite = true;
+            enemiesSpawned++;
             return;
         }
         
@@ -476,6 +525,262 @@ public class WaveSpawner : MonoBehaviour
     }
     
     /// <summary>
+    /// Spawn an elite enemy with 3x health and 3x damage
+    /// Picks a random enemy from the enemyGroups array
+    /// </summary>
+    private void SpawnEliteEnemy()
+    {
+        Debug.Log($"[WaveSpawner] ===== SPAWNING ELITE ENEMY - Wave {currentWaveNumber} =====");
+        
+        // Validate enemy groups
+        if (enemyGroups == null || enemyGroups.Length == 0)
+        {
+            Debug.LogError("[WaveSpawner] ELITE SPAWN FAILED: No enemy groups available!");
+            return;
+        }
+        
+        Debug.Log($"[WaveSpawner] Enemy groups count: {enemyGroups.Length}");
+        
+        // Pick a random group
+        int randomGroupIndex = Random.Range(0, enemyGroups.Length);
+        EnemyGroup selectedGroup = enemyGroups[randomGroupIndex];
+        
+        if (selectedGroup == null || selectedGroup.enemies == null || selectedGroup.enemies.Length == 0)
+        {
+            Debug.LogError($"[WaveSpawner] ELITE SPAWN FAILED: Selected enemy group {randomGroupIndex} is invalid!");
+            return;
+        }
+        
+        Debug.Log($"[WaveSpawner] Selected group: {selectedGroup.groupName}, Enemies in group: {selectedGroup.enemies.Length}");
+        
+        // Get a random enemy from the selected group
+        GameObject eliteEnemyPrefab = selectedGroup.GetRandomEnemy();
+        
+        if (eliteEnemyPrefab == null)
+        {
+            Debug.LogError("[WaveSpawner] ELITE SPAWN FAILED: Failed to get random enemy from group!");
+            return;
+        }
+        
+        Debug.Log($"[WaveSpawner] Selected elite prefab: {eliteEnemyPrefab.name}");
+        
+        // Get spawn position and rotation
+        Vector3 spawnPosition;
+        Quaternion spawnRotation;
+        
+        if (spawnMode == SpawnMode.Manual)
+        {
+            int randomSpawnIndex = Random.Range(0, spawnPoints.Length);
+            Transform spawnPoint = spawnPoints[randomSpawnIndex];
+            spawnPosition = spawnPoint.position;
+            spawnRotation = spawnPoint.rotation;
+        }
+        else // CircularAroundPlayer
+        {
+            spawnPosition = GetCircularSpawnPosition();
+            if (playerTransform != null)
+            {
+                Vector3 directionToPlayer = playerTransform.position - spawnPosition;
+                if (directionToPlayer != Vector3.zero)
+                {
+                    spawnRotation = Quaternion.LookRotation(directionToPlayer);
+                }
+                else
+                {
+                    spawnRotation = Quaternion.identity;
+                }
+            }
+            else
+            {
+                spawnRotation = Quaternion.identity;
+            }
+        }
+        
+        // Spawn the elite enemy
+        GameObject eliteEnemy = Instantiate(eliteEnemyPrefab, spawnPosition, spawnRotation);
+        
+        if (eliteEnemy == null)
+        {
+            Debug.LogError("[WaveSpawner] Failed to spawn elite enemy!");
+            return;
+        }
+        
+        // Ensure enemy has the "Enemy" tag
+        if (!eliteEnemy.CompareTag("Enemy"))
+        {
+            eliteEnemy.tag = "Enemy";
+        }
+        
+        // Make elite enemy much bigger (2x scale)
+        eliteEnemy.transform.localScale *= 1.3f;
+        
+        // Apply red visual indicator to all renderers (create new material instances to avoid affecting prefab)
+        Renderer[] renderers = eliteEnemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer != null)
+            {
+                // Create new material instances to avoid modifying the shared materials
+                Material[] newMaterials = new Material[renderer.materials.Length];
+                for (int i = 0; i < renderer.materials.Length; i++)
+                {
+                    // Create a new instance of the material
+                    newMaterials[i] = new Material(renderer.materials[i]);
+                    
+                    // Apply red tint by modifying the base color
+                    if (newMaterials[i].HasProperty("_Color"))
+                    {
+                        Color originalColor = newMaterials[i].GetColor("_Color");
+                        newMaterials[i].SetColor("_Color", new Color(originalColor.r * 1f, originalColor.g * 0.2f, originalColor.b * 0.2f, originalColor.a));
+                    }
+                    
+                    // Try different color properties that Unity shaders might use
+                    if (newMaterials[i].HasProperty("_BaseColor"))
+                    {
+                        Color originalColor = newMaterials[i].GetColor("_BaseColor");
+                        newMaterials[i].SetColor("_BaseColor", new Color(originalColor.r * 1f, originalColor.g * 0.2f, originalColor.b * 0.2f, originalColor.a));
+                    }
+                    
+                    // Add emission glow for visibility
+                    if (newMaterials[i].HasProperty("_EmissionColor"))
+                    {
+                        newMaterials[i].EnableKeyword("_EMISSION");
+                        newMaterials[i].SetColor("_EmissionColor", new Color(1f, 0f, 0f) * 0.5f);
+                    }
+                }
+                renderer.materials = newMaterials;
+            }
+        }
+        
+        // Apply 3x health and 3x damage
+        Entity_Health health = eliteEnemy.GetComponent<Entity_Health>();
+        if (health != null)
+        {
+            float baseMaxHealth = health.MaxHealth;
+            float eliteHealth = baseMaxHealth * 3f + currentHealthBonus;
+            health.SetMaxHealth(eliteHealth);
+            Debug.Log($"[WaveSpawner] Elite enemy health set to {eliteHealth} (base: {baseMaxHealth}, 3x multiplier + bonus: {currentHealthBonus})");
+        }
+        
+        // Apply damage bonus
+        Enemy_Combat combat = eliteEnemy.GetComponent<Enemy_Combat>();
+        if (combat != null)
+        {
+            EnemyStatModifier modifier = eliteEnemy.GetComponent<EnemyStatModifier>();
+            if (modifier == null)
+            {
+                modifier = eliteEnemy.AddComponent<EnemyStatModifier>();
+            }
+            // Get base damage and multiply by 3, then add wave bonus
+            float baseDamage = 10f; // You may want to read this from the enemy prefab
+            modifier.damageBonus = (baseDamage * 3f) + currentDamageBonus;
+            Debug.Log($"[WaveSpawner] Elite enemy damage bonus set to {modifier.damageBonus}");
+        }
+        
+        // Add enemy death tracker
+        EnemyDeathTracker deathTracker = eliteEnemy.GetComponent<EnemyDeathTracker>();
+        if (deathTracker == null)
+        {
+            deathTracker = eliteEnemy.AddComponent<EnemyDeathTracker>();
+        }
+        
+        // Register with wave manager
+        if (waveManager != null)
+        {
+            waveManager.RegisterEnemySpawned();
+        }
+        
+        Debug.Log($"[WaveSpawner] Spawned ELITE enemy on wave {currentWaveNumber} at {spawnPosition}");
+    }
+    
+    /// <summary>
+    /// Spawn a boss enemy (called on waves 5, 10, 15, etc.)
+    /// </summary>
+    private void SpawnBoss()
+    {
+        if (bossPrefabs == null || bossPrefabs.Length == 0)
+        {
+            Debug.LogWarning("[WaveSpawner] Boss prefabs array is empty!");
+            return;
+        }
+        
+        // Select a random boss from the array
+        GameObject bossPrefab = bossPrefabs[Random.Range(0, bossPrefabs.Length)];
+        
+        if (bossPrefab == null)
+        {
+            Debug.LogError("[WaveSpawner] Selected boss prefab is null!");
+            return;
+        }
+        
+        // Get spawn position and rotation
+        Vector3 spawnPosition;
+        Quaternion spawnRotation;
+        
+        if (spawnMode == SpawnMode.Manual)
+        {
+            int randomSpawnIndex = Random.Range(0, spawnPoints.Length);
+            Transform spawnPoint = spawnPoints[randomSpawnIndex];
+            spawnPosition = spawnPoint.position;
+            spawnRotation = spawnPoint.rotation;
+        }
+        else // CircularAroundPlayer
+        {
+            spawnPosition = GetCircularSpawnPosition();
+            if (playerTransform != null)
+            {
+                Vector3 directionToPlayer = playerTransform.position - spawnPosition;
+                if (directionToPlayer != Vector3.zero)
+                {
+                    spawnRotation = Quaternion.LookRotation(directionToPlayer);
+                }
+                else
+                {
+                    spawnRotation = Quaternion.identity;
+                }
+            }
+            else
+            {
+                spawnRotation = Quaternion.identity;
+            }
+        }
+        
+        // Spawn the boss
+        GameObject boss = Instantiate(bossPrefab, spawnPosition, spawnRotation);
+        
+        if (boss == null)
+        {
+            Debug.LogError("[WaveSpawner] Failed to spawn boss!");
+            return;
+        }
+        
+        // Ensure boss has the "Enemy" tag
+        if (!boss.CompareTag("Enemy"))
+        {
+            boss.tag = "Enemy";
+        }
+        
+        // Apply stat bonuses if any
+        ApplyStatBonuses(boss);
+        
+        // Add enemy death tracker
+        EnemyDeathTracker deathTracker = boss.GetComponent<EnemyDeathTracker>();
+        if (deathTracker == null)
+        {
+            deathTracker = boss.AddComponent<EnemyDeathTracker>();
+        }
+        
+        // Register with wave manager
+        if (waveManager != null)
+        {
+            waveManager.RegisterEnemySpawned();
+        }
+        
+        hasSpawnedBoss = true;
+        Debug.Log($"[WaveSpawner] Spawned BOSS '{boss.name}' on wave {currentWaveNumber} at {spawnPosition}");
+    }
+    
+    /// <summary>
     /// Check if the spawner is currently spawning enemies
     /// </summary>
     public bool IsSpawning()
@@ -600,6 +905,11 @@ public class WaveSpawner : MonoBehaviour
         // Reset player reference tracking
         lastPlayerRefreshTime = 0f;
         playerTransform = null; // Will be reassigned when new player spawns
+        
+        // Reset wave tracking and special spawn flags
+        currentWaveNumber = 0;
+        hasSpawnedElite = false;
+        hasSpawnedBoss = false;
         
         Debug.Log($"[WaveSpawner] Spawner '{gameObject.name}' reset complete");
     }

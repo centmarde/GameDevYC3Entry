@@ -52,6 +52,12 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         panelRect.anchoredPosition = Vector2.zero;
         panelRect.sizeDelta = new Vector2(500, 250);
         
+        // Add layout group for padding
+        HorizontalOrVerticalLayoutGroup layoutGroup = dialogPanel.AddComponent<VerticalLayoutGroup>();
+        layoutGroup.padding = new RectOffset(30, 30, 30, 30); // Add 30px padding on all sides
+        layoutGroup.childControlWidth = false;
+        layoutGroup.childControlHeight = false;
+        
         dialogPanelImage = dialogPanel.AddComponent<Image>();
         
         // Apply background sprite if available, otherwise use solid color
@@ -81,9 +87,12 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         // Create message text
         CreateMessageText(dialogPanel.transform, textColor);
         
-        // Create buttons
-        CreateConfirmButton(dialogPanel.transform, buttonColor, buttonHighlight, textColor);
-        CreateCancelButton(dialogPanel.transform, buttonColor, buttonHighlight, textColor);
+        // Create button container for horizontal layout
+        GameObject buttonContainer = CreateButtonContainer(dialogPanel.transform);
+        
+        // Create buttons in the container
+        CreateConfirmButton(buttonContainer.transform, buttonColor, buttonHighlight, textColor);
+        CreateCancelButton(buttonContainer.transform, buttonColor, buttonHighlight, textColor);
         
         dialogPanel.SetActive(false);
         darkenBackground.SetActive(false);
@@ -165,6 +174,33 @@ public class UpgradeConfirmationDialog : MonoBehaviour
     }
     
     /// <summary>
+    /// Create button container with horizontal layout
+    /// </summary>
+    private GameObject CreateButtonContainer(Transform parent)
+    {
+        GameObject container = new GameObject("ButtonContainer");
+        container.transform.SetParent(parent, false);
+        
+        RectTransform containerRect = container.AddComponent<RectTransform>();
+        containerRect.anchorMin = new Vector2(0.5f, 0f);
+        containerRect.anchorMax = new Vector2(0.5f, 0f);
+        containerRect.pivot = new Vector2(0.5f, 0f);
+        containerRect.anchoredPosition = new Vector2(0, 25);
+        containerRect.sizeDelta = new Vector2(440, 60);
+        
+        // Add horizontal layout group for row alignment
+        HorizontalLayoutGroup horizontalLayout = container.AddComponent<HorizontalLayoutGroup>();
+        horizontalLayout.childAlignment = TextAnchor.MiddleCenter;
+        horizontalLayout.spacing = 20f; // Space between buttons
+        horizontalLayout.childControlWidth = false;
+        horizontalLayout.childControlHeight = false;
+        horizontalLayout.childForceExpandWidth = false;
+        horizontalLayout.childForceExpandHeight = false;
+        
+        return container;
+    }
+    
+    /// <summary>
     /// Create message text
     /// </summary>
     private void CreateMessageText(Transform parent, Color textColor)
@@ -197,10 +233,10 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         buttonObj.transform.SetParent(parent, false);
         
         RectTransform buttonRect = buttonObj.AddComponent<RectTransform>();
-        buttonRect.anchorMin = new Vector2(0.5f, 0f);
-        buttonRect.anchorMax = new Vector2(0.5f, 0f);
-        buttonRect.pivot = new Vector2(0.5f, 0f);
-        buttonRect.anchoredPosition = new Vector2(-130, 25);
+        buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
+        buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
+        buttonRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonRect.anchoredPosition = Vector2.zero;
         buttonRect.sizeDelta = new Vector2(200, 60);
         
         Image buttonImage = buttonObj.AddComponent<Image>();
@@ -210,40 +246,27 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         {
             buttonImage.sprite = confirmButtonSprite;
             buttonImage.type = Image.Type.Sliced;
-            buttonImage.color = Color.white;
+            buttonImage.color = Color.white; // No color tint
         }
         else
         {
-            buttonImage.color = new Color(0.2f, 0.7f, 0.3f, 1f); // Green tint
+            buttonImage.color = Color.white; // No color tint when no sprite
         }
         
         confirmButton = buttonObj.AddComponent<Button>();
         confirmButton.targetGraphic = buttonImage;
         
+        // Remove color tints from button states
         ColorBlock colors = confirmButton.colors;
-        colors.normalColor = new Color(0.2f, 0.7f, 0.3f, 1f);
-        colors.highlightedColor = new Color(0.3f, 0.9f, 0.4f, 1f);
-        colors.pressedColor = new Color(0.1f, 0.5f, 0.2f, 1f);
+        colors.normalColor = Color.white;
+        colors.highlightedColor = Color.white;
+        colors.pressedColor = Color.white;
+        colors.colorMultiplier = 1f;
         confirmButton.colors = colors;
         
         confirmButton.onClick.AddListener(HandleConfirm);
         
-        // Create button text
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(buttonObj.transform, false);
-        
-        RectTransform textRect = textObj.AddComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.sizeDelta = Vector2.zero;
-        textRect.anchoredPosition = Vector2.zero;
-        
-        TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
-        text.text = "CONFIRM";
-        text.fontSize = 24;
-        text.color = textColor;
-        text.alignment = TextAlignmentOptions.Center;
-        text.fontStyle = FontStyles.Bold;
+        // Button text removed - no text on buttons
     }
     
     /// <summary>
@@ -255,10 +278,10 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         buttonObj.transform.SetParent(parent, false);
         
         RectTransform buttonRect = buttonObj.AddComponent<RectTransform>();
-        buttonRect.anchorMin = new Vector2(0.5f, 0f);
-        buttonRect.anchorMax = new Vector2(0.5f, 0f);
-        buttonRect.pivot = new Vector2(0.5f, 0f);
-        buttonRect.anchoredPosition = new Vector2(130, 25);
+        buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
+        buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
+        buttonRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonRect.anchoredPosition = Vector2.zero;
         buttonRect.sizeDelta = new Vector2(200, 60);
         
         Image buttonImage = buttonObj.AddComponent<Image>();
@@ -268,40 +291,27 @@ public class UpgradeConfirmationDialog : MonoBehaviour
         {
             buttonImage.sprite = cancelButtonSprite;
             buttonImage.type = Image.Type.Sliced;
-            buttonImage.color = Color.white;
+            buttonImage.color = Color.white; // No color tint
         }
         else
         {
-            buttonImage.color = new Color(0.7f, 0.2f, 0.2f, 1f); // Red tint
+            buttonImage.color = Color.white; // No color tint when no sprite
         }
         
         cancelButton = buttonObj.AddComponent<Button>();
         cancelButton.targetGraphic = buttonImage;
         
+        // Remove color tints from button states
         ColorBlock colors = cancelButton.colors;
-        colors.normalColor = new Color(0.7f, 0.2f, 0.2f, 1f);
-        colors.highlightedColor = new Color(0.9f, 0.3f, 0.3f, 1f);
-        colors.pressedColor = new Color(0.5f, 0.1f, 0.1f, 1f);
+        colors.normalColor = Color.white;
+        colors.highlightedColor = Color.white;
+        colors.pressedColor = Color.white;
+        colors.colorMultiplier = 1f;
         cancelButton.colors = colors;
         
         cancelButton.onClick.AddListener(HandleCancel);
         
-        // Create button text
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(buttonObj.transform, false);
-        
-        RectTransform textRect = textObj.AddComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.sizeDelta = Vector2.zero;
-        textRect.anchoredPosition = Vector2.zero;
-        
-        TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
-        text.text = "CANCEL";
-        text.fontSize = 24;
-        text.color = textColor;
-        text.alignment = TextAlignmentOptions.Center;
-        text.fontStyle = FontStyles.Bold;
+        // Button text removed - no text on buttons
     }
     
     /// <summary>
