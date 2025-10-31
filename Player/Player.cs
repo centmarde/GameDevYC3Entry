@@ -147,6 +147,13 @@ public class Player : Entity
         Debug.Log($"[Player] Initializing state machine for {gameObject.name} with animator: {(anim != null ? anim.gameObject.name : "NULL")}");
         stateMachine.Initialize(idleState);
 
+        // Force PhotonGameManager to connect to WaveManager on this player
+        if (PhotonGameManager.Instance != null)
+        {
+            PhotonGameManager.Instance.ForceConnectToWaveManager();
+            Debug.Log("[Player] Forced PhotonGameManager to connect to WaveManager on player spawn");
+        }
+
         // Play entrance intro animation on first mount
         if (!hasPlayedIntro)
         {
@@ -311,6 +318,17 @@ public class Player : Entity
 
     public override void EntityDeath()
     {
+        // Push runtime wave data to Photon Cloud (only happens on death)
+        if (PhotonGameManager.Instance != null)
+        {
+            PhotonGameManager.Instance.SaveCurrentWaveToLeaderboard();
+            Debug.Log("[Player] Wave progress pushed to Photon Cloud upon death.");
+        }
+        else
+        {
+            Debug.LogWarning("[Player] PhotonGameManager instance not found. Wave progress not saved upon death.");
+        }
+
         // Show game over panel immediately
         if (UIManager.Instance != null)
         {

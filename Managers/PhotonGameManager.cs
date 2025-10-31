@@ -102,7 +102,21 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         // Find WaveManager if not assigned
         if (waveManager == null)
         {
+            Debug.Log("[PhotonGameManager] WaveManager not assigned in inspector, searching for it...");
             waveManager = FindObjectOfType<WaveManager>();
+            
+            if (waveManager != null)
+            {
+                Debug.Log($"[PhotonGameManager] ✓ WaveManager found: {waveManager.gameObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[PhotonGameManager] ⚠️ WaveManager NOT FOUND yet - will search continuously (may be on player prefab)");
+            }
+        }
+        else
+        {
+            Debug.Log($"[PhotonGameManager] ✓ WaveManager already assigned: {waveManager.gameObject.name}");
         }
 
         // Load saved player name and highest wave from previous session
@@ -129,8 +143,14 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         // Subscribe to wave events if WaveManager exists
         if (waveManager != null)
         {
+            Debug.Log("[PhotonGameManager] Subscribing to WaveManager events...");
             waveManager.OnWaveStart.AddListener(OnWaveStarted);
             waveManager.OnWaveComplete.AddListener(OnWaveCompleted);
+            Debug.Log($"[PhotonGameManager] ✓ Successfully subscribed to wave events on {waveManager.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning("[PhotonGameManager] ⚠️ WaveManager not found yet - will auto-connect when player spawns");
         }
     }
 
@@ -138,6 +158,12 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     {
         // Update UI
         UpdateStatusUI();
+        
+        // Continuously check for WaveManager if not found yet
+        if (waveManager == null)
+        {
+            TryFindWaveManager();
+        }
     }
 
     #region Photon Connection
@@ -349,13 +375,14 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         if (currentWaveReached > highestWaveReached)
         {
             highestWaveReached = currentWaveReached;
-            SaveHighestWave(highestWaveReached);
+            // Only save locally during runtime, don't push to Photon yet
+            SaveHighestWaveLocally(highestWaveReached);
         }
 
-        // Update Photon properties
-        UpdatePlayerProperties();
+        // Don't update Photon properties during gameplay - only on death
+        // UpdatePlayerProperties(); // REMOVED - only update on death
 
-        LogDebug($"Wave {waveNumber} started. Highest wave: {highestWaveReached}");
+        LogDebug($"Wave {waveNumber} started. Highest wave: {highestWaveReached} (stored locally)");
     }
 
     /// <summary>
@@ -375,6 +402,18 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         PlayerPrefs.SetInt(HIGHEST_WAVE_KEY, wave);
         PlayerPrefs.Save();
         LogDebug($"Saved highest wave: {wave}");
+    }
+
+    /// <summary>
+    /// Save highest wave locally only (runtime storage, not synced to Photon)
+    /// </summary>
+    private void SaveHighestWaveLocally(int wave)
+    {
+        // Just update the runtime variable, don't sync to Photon
+        highestWaveReached = wave;
+        // Optionally save to PlayerPrefs as backup
+        PlayerPrefs.SetInt(HIGHEST_WAVE_KEY + "_Runtime", wave);
+        LogDebug($"Saved highest wave locally (runtime): {wave}");
     }
 
     /// <summary>
@@ -403,31 +442,39 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Force save the current wave progress to leaderboards
-    /// Call this when player dies to ensure wave data is saved to Photon
+    /// Push runtime wave data to Photon Cloud - ONLY called on player death
+    /// This is the ONLY method that syncs local data to Photon
     /// </summary>
     public void SaveCurrentWaveToLeaderboard()
     {
         // Get current wave from WaveManager if available
         if (waveManager != null)
         {
-            currentWaveReached = waveManager.GetCurrentWave();
+            int waveFromManager = waveManager.GetCurrentWave();
+            Debug.Log($"[PhotonGameManager] Getting wave from WaveManager: {waveFromManager} (was: {currentWaveReached})");
+            currentWaveReached = waveFromManager;
+        }
+        else
+        {
+            Debug.LogError("[PhotonGameManager] ❌ WaveManager is NULL when trying to get current wave! Using cached value: " + currentWaveReached);
         }
 
         // Update highest wave if current is higher
         if (currentWaveReached > highestWaveReached)
         {
             highestWaveReached = currentWaveReached;
-            SaveHighestWave(highestWaveReached);
         }
+        
+        // Save to local PlayerPrefs first
+        SaveHighestWave(highestWaveReached);
 
-        // Force update Photon properties to sync with leaderboard
+        // NOW push to Photon Cloud (only happens on death)
         UpdatePlayerProperties();
         
         // Ensure cloud save is completed
         SavePlayerStatsToCloud();
 
-        LogDebug($"Force saved wave progress to leaderboard - Current Wave: {currentWaveReached}, Highest Wave: {highestWaveReached}");
+        LogDebug($"DEATH: Pushed wave progress to Photon Cloud - Current Wave: {currentWaveReached}, Highest Wave: {highestWaveReached}");
     }
 
     /// <summary>
@@ -644,6 +691,24 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
+    /// Force reconnection to WaveManager (call this when player spawns)
+    /// </summary>
+    public void ForceConnectToWaveManager()
+    {
+        Debug.Log("[PhotonGameManager] Force connecting to WaveManager...");
+        TryFindWaveManager();
+        
+        if (waveManager != null)
+        {
+            Debug.Log("[PhotonGameManager] ✓ Force connection successful!");
+        }
+        else
+        {
+            Debug.LogWarning("[PhotonGameManager] ⚠️ Force connection failed - WaveManager still not found");
+        }
+    }
+
+    /// <summary>
     /// Check if cloud data exists for this player
     /// </summary>
     public bool HasCloudData()
@@ -694,6 +759,96 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         if (showDebugLogs)
         {
             Debug.Log($"[PhotonGameManager] {message}");
+        }
+    }
+
+    #endregion
+
+    #region Debug Methods
+
+    /// <summary>
+    /// DEBUG: Check WaveManager connection status
+    /// </summary>
+    [ContextMenu("Debug WaveManager Connection")]
+    public void DebugWaveManagerConnection()
+    {
+        Debug.Log("[PhotonGameManager] === WAVEMANAGER DEBUG ====");
+        Debug.Log($"WaveManager assigned: {(waveManager != null ? "✓ YES" : "❌ NO")}");
+        
+        if (waveManager != null)
+        {
+            Debug.Log($"WaveManager GameObject: {waveManager.gameObject.name}");
+            Debug.Log($"WaveManager enabled: {waveManager.enabled}");
+            Debug.Log($"WaveManager active: {waveManager.gameObject.activeInHierarchy}");
+            Debug.Log($"Current Wave from WaveManager: {waveManager.GetCurrentWave()}");
+            Debug.Log($"WaveManager OnWaveStart listeners: {(waveManager.OnWaveStart != null ? waveManager.OnWaveStart.GetPersistentEventCount().ToString() : "NULL")}");
+        }
+        else
+        {
+            Debug.LogError("WaveManager is NULL! Searching in scene...");
+            
+            WaveManager[] allWaveManagers = FindObjectsOfType<WaveManager>();
+            Debug.Log($"Found {allWaveManagers.Length} WaveManager(s) in scene:");
+            
+            for (int i = 0; i < allWaveManagers.Length; i++)
+            {
+                var wm = allWaveManagers[i];
+                Debug.Log($"  [{i}] {wm.gameObject.name} - Active: {wm.gameObject.activeInHierarchy} - Enabled: {wm.enabled}");
+            }
+            
+            if (allWaveManagers.Length > 0)
+            {
+                Debug.LogWarning("WaveManagers exist but not connected to PhotonGameManager! Please assign in inspector.");
+            }
+        }
+        
+        Debug.Log($"PhotonGameManager currentWaveReached: {currentWaveReached}");
+        Debug.Log($"PhotonGameManager highestWaveReached: {highestWaveReached}");
+        Debug.Log("[PhotonGameManager] === END DEBUG ====");
+    }
+
+    /// <summary>
+    /// Dynamically find and connect to WaveManager (for when it's on player prefab)
+    /// </summary>
+    private void TryFindWaveManager()
+    {
+        // Search for WaveManager in the scene
+        WaveManager foundWaveManager = FindObjectOfType<WaveManager>();
+        
+        if (foundWaveManager != null && foundWaveManager != waveManager)
+        {
+            Debug.Log($"[PhotonGameManager] ✓ WaveManager found dynamically: {foundWaveManager.gameObject.name}");
+            
+            // Unsubscribe from old manager if it exists
+            if (waveManager != null)
+            {
+                waveManager.OnWaveStart.RemoveListener(OnWaveStarted);
+                waveManager.OnWaveComplete.RemoveListener(OnWaveCompleted);
+                Debug.Log("[PhotonGameManager] Unsubscribed from old WaveManager");
+            }
+            
+            // Connect to new WaveManager
+            waveManager = foundWaveManager;
+            
+            // Subscribe to wave events
+            waveManager.OnWaveStart.AddListener(OnWaveStarted);
+            waveManager.OnWaveComplete.AddListener(OnWaveCompleted);
+            
+            Debug.Log($"[PhotonGameManager] ✓ Successfully connected to WaveManager on {waveManager.gameObject.name}");
+            
+            // Get current wave if available
+            int currentWaveFromManager = waveManager.GetCurrentWave();
+            if (currentWaveFromManager > 0)
+            {
+                Debug.Log($"[PhotonGameManager] Syncing with current wave: {currentWaveFromManager}");
+                currentWaveReached = currentWaveFromManager;
+                
+                if (currentWaveReached > highestWaveReached)
+                {
+                    highestWaveReached = currentWaveReached;
+                    SaveHighestWaveLocally(highestWaveReached);
+                }
+            }
         }
     }
 
