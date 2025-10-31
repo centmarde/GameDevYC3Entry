@@ -791,4 +791,59 @@ public class WaveManager : MonoBehaviour
             }
         }
     }
+    
+    /// <summary>
+    /// Reset WaveManager to initial state for fresh game start
+    /// Called when quitting to main menu or retrying
+    /// </summary>
+    public void ResetWaveManager()
+    {
+        Debug.Log("[WaveManager] Resetting WaveManager to initial state...");
+        
+        // Reset wave state
+        currentWave = startingWave;
+        enemiesInCurrentWave = 0;
+        enemiesAlive = 0;
+        waveInProgress = false;
+        spawningComplete = false;
+        allEnemiesCleared = false;
+        timeSinceWaveEnd = 0f;
+        
+        // Reset stat bonuses
+        currentHealthBonus = 0f;
+        currentDamageBonus = 0f;
+        
+        // Reset activation state
+        wavesActivated = false;
+        wavesPaused = false;
+        
+        // Clear player reference
+        activePlayer = null;
+        
+        // Reset spawners
+        if (waveSpawners != null)
+        {
+            foreach (WaveSpawner spawner in waveSpawners)
+            {
+                if (spawner != null)
+                {
+                    spawner.ResetSpawner();
+                }
+            }
+        }
+        
+        // Reset UI
+        if (waveUI != null)
+        {
+            waveUI.ResetWaveUI();
+        }
+        
+        // Stop any audio
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
+        
+        Debug.Log("[WaveManager] WaveManager reset complete");
+    }
 }

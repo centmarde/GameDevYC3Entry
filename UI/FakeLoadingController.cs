@@ -20,7 +20,22 @@ public class FakeLoadingController : MonoBehaviour
 
     private void Start()
     {
+        // Check if this is a retry/reset scenario and skip fake loading
+        if (ShouldSkipFakeLoading())
+        {
+            Debug.Log("[FakeLoadingController] Skipping fake loading - direct scene load detected");
+            SceneManager.LoadScene(nextSceneName);
+            return;
+        }
+        
         StartCoroutine(FakeLoadingRoutine());
+    }
+    
+    private bool ShouldSkipFakeLoading()
+    {
+        // Skip fake loading if we detect this is a retry/reset
+        // This can be detected by checking for specific player prefs or static flags
+        return PlayerPrefs.GetInt("SkipFakeLoading", 0) == 1;
     }
 
     private IEnumerator FakeLoadingRoutine()

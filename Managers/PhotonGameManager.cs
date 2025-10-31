@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
@@ -82,11 +83,14 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     private int currentWaveReached = 0;
     private int highestWaveReached = 0;
 
-    // Player stats keys (for saving to Photon)
+    // Player stats keys (for saving to Photon) - Name-based system
     private const string PLAYER_NAME_KEY = "PlayerName";
     private const string HIGHEST_WAVE_KEY = "HighestWave";
     private const string CURRENT_WAVE_KEY = "CurrentWave";
     private const string TOTAL_KILLS_KEY = "TotalKills";
+    
+    // Name-based cloud storage keys
+    private const string NAME_BASED_PREFIX = "Name_";
 
     private void Awake()
     {
@@ -326,7 +330,7 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Update player's custom properties in Photon (room session)
+    /// Update player's custom properties in Photon (room session) - Name-based identification
     /// </summary>
     private void UpdatePlayerProperties()
     {
@@ -338,7 +342,8 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             { PLAYER_NAME_KEY, playerName },
             { CURRENT_WAVE_KEY, currentWaveReached },
             { HIGHEST_WAVE_KEY, highestWaveReached },
-            { TOTAL_KILLS_KEY, GetTotalKills() }
+            { TOTAL_KILLS_KEY, GetTotalKills() },
+            { NAME_BASED_PREFIX + "ID", playerName.ToLower().Replace(" ", "") }
         };
 
         // Update room properties (visible to other players in current session)
@@ -478,8 +483,8 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Save player stats to Photon Cloud (persistent across sessions)
-    /// Uses Photon Player Account Custom Properties
+    /// Save player stats to Photon Cloud (persistent across sessions) - Name-based storage
+    /// Each name gets its own cloud record
     /// </summary>
     private void SavePlayerStatsToCloud()
     {
@@ -489,13 +494,17 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Create hashtable with player stats
+        // Create name-based cloud properties
+        string nameKey = playerName.ToLower().Replace(" ", ""); // Normalize name for key
+        
         ExitGames.Client.Photon.Hashtable cloudProperties = new ExitGames.Client.Photon.Hashtable
         {
-            { "Cloud_" + PLAYER_NAME_KEY, playerName },
-            { "Cloud_" + HIGHEST_WAVE_KEY, highestWaveReached },
-            { "Cloud_" + TOTAL_KILLS_KEY, GetTotalKills() },
-            { "LastSaved", System.DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
+            { $"Cloud_{nameKey}_Name", playerName }, // Original name with formatting
+            { $"Cloud_{nameKey}_HighestWave", highestWaveReached },
+            { $"Cloud_{nameKey}_CurrentWave", currentWaveReached },
+            { $"Cloud_{nameKey}_TotalKills", GetTotalKills() },
+            { $"Cloud_{nameKey}_LastSaved", System.DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            { "Cloud_ActivePlayerName", playerName } // Current active name for quick lookup
         };
 
         // Save to player's account (persists across sessions)
@@ -504,11 +513,12 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
         // Also save to local PlayerPrefs as backup
         SaveHighestWave(highestWaveReached);
 
-        LogDebug($"Saved player stats to Photon Cloud: {playerName}, Highest Wave: {highestWaveReached}");
+        LogDebug($"Saved to Photon Cloud (Name-based) - Name: {playerName} (Key: {nameKey}), Highest Wave: {highestWaveReached}");
     }
 
     /// <summary>
-    /// Load player stats from Photon Cloud (persistent data from previous sessions)
+    /// Load player stats from Photon Cloud based on current name
+    /// Each name loads its own record
     /// </summary>
     private void LoadPlayerStatsFromCloud()
     {
@@ -520,35 +530,34 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
 
         var cloudProps = PhotonNetwork.LocalPlayer.CustomProperties;
         
-        // Load highest wave from cloud if available
-        string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
+        // Load based on current player name
+        string nameKey = playerName.ToLower().Replace(" ", ""); // Normalize name for key
+
+        // Try to load data for this specific name
+        string cloudHighestWaveKey = $"Cloud_{nameKey}_HighestWave";
         if (cloudProps.ContainsKey(cloudHighestWaveKey))
         {
             int cloudHighestWave = (int)cloudProps[cloudHighestWaveKey];
             
-            // Use the higher value between cloud and local storage
-            if (cloudHighestWave > highestWaveReached)
-            {
-                highestWaveReached = cloudHighestWave;
-                SaveHighestWave(highestWaveReached); // Update local storage
-                LogDebug($"Loaded highest wave from Photon Cloud: {highestWaveReached}");
-            }
+            // Use cloud value for this name
+            highestWaveReached = cloudHighestWave;
+            SaveHighestWave(highestWaveReached); // Update local storage
+            LogDebug($"Loaded name-based cloud data - Name: {playerName} (Key: {nameKey}), Highest Wave: {highestWaveReached}");
         }
-        
-        // Load player name from cloud if available
-        string cloudPlayerNameKey = "Cloud_" + PLAYER_NAME_KEY;
-        if (cloudProps.ContainsKey(cloudPlayerNameKey))
+        else
         {
-            string cloudPlayerName = (string)cloudProps[cloudPlayerNameKey];
-            if (!string.IsNullOrEmpty(cloudPlayerName))
-            {
-                playerName = cloudPlayerName;
-                PhotonNetwork.NickName = playerName;
-                LogDebug($"Loaded player name from Photon Cloud: {playerName}");
-            }
+            LogDebug($"No cloud data found for name '{playerName}' - starting fresh");
+            highestWaveReached = 0; // Start fresh for this name
         }
 
-        LogDebug($"Loaded player stats from Photon Cloud - Highest Wave: {highestWaveReached}, Name: {playerName}");
+        // Try to load current wave for this name
+        string cloudCurrentWaveKey = $"Cloud_{nameKey}_CurrentWave";
+        if (cloudProps.ContainsKey(cloudCurrentWaveKey))
+        {
+            currentWaveReached = (int)cloudProps[cloudCurrentWaveKey];
+        }
+
+        LogDebug($"Loaded stats for '{playerName}': Highest Wave {highestWaveReached}, Current Wave {currentWaveReached}");
     }
 
     #endregion
@@ -556,8 +565,8 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
     #region Leaderboard Data
 
     /// <summary>
-    /// Get all players in the lobby with their wave progress
-    /// Returns sorted list by highest wave (for leaderboards)
+    /// Get all players and their unique name records for the leaderboard
+    /// Returns best record for each unique name (name-based leaderboard)
     /// </summary>
     public List<LeaderboardEntry> GetLeaderboardData()
     {
@@ -569,31 +578,55 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             return leaderboard;
         }
 
+        // Dictionary to track best record per name
+        Dictionary<string, LeaderboardEntry> bestRecordsByName = new Dictionary<string, LeaderboardEntry>();
+
         foreach (var player in PhotonNetwork.PlayerList)
         {
-            if (player.CustomProperties.ContainsKey(PLAYER_NAME_KEY))
+            var props = player.CustomProperties;
+            
+            // Look for all name-based cloud records in player properties
+            foreach (var property in props)
             {
-                // Try to get cloud properties first (persistent data), fallback to room properties
-                string cloudHighestWaveKey = "Cloud_" + HIGHEST_WAVE_KEY;
-                int highestWave = player.CustomProperties.ContainsKey(cloudHighestWaveKey)
-                    ? (int)player.CustomProperties[cloudHighestWaveKey]
-                    : (player.CustomProperties.ContainsKey(HIGHEST_WAVE_KEY) 
-                        ? (int)player.CustomProperties[HIGHEST_WAVE_KEY] : 0);
+                string key = property.Key.ToString();
                 
-                LeaderboardEntry entry = new LeaderboardEntry
+                // Find name-based highest wave properties
+                if (key.StartsWith("Cloud_") && key.EndsWith("_HighestWave"))
                 {
-                    playerName = (string)player.CustomProperties[PLAYER_NAME_KEY],
-                    currentWave = player.CustomProperties.ContainsKey(CURRENT_WAVE_KEY) 
-                        ? (int)player.CustomProperties[CURRENT_WAVE_KEY] : 0,
-                    highestWave = highestWave, // Already calculated above with cloud priority
-                    totalKills = player.CustomProperties.ContainsKey(TOTAL_KILLS_KEY) 
-                        ? (int)player.CustomProperties[TOTAL_KILLS_KEY] : 0,
-                    isLocalPlayer = player.IsLocal
-                };
+                    // Extract name key from property key (Cloud_{nameKey}_HighestWave)
+                    string nameKey = key.Substring(6, key.Length - 18); // Remove "Cloud_" prefix and "_HighestWave" suffix
+                    
+                    // Get the original name
+                    string nameProperty = $"Cloud_{nameKey}_Name";
+                    string playerName = props.ContainsKey(nameProperty) ? props[nameProperty].ToString() : nameKey;
+                    
+                    int highestWave = (int)property.Value;
+                    
+                    // Check if this is the best record for this name
+                    if (!bestRecordsByName.ContainsKey(playerName) || 
+                        bestRecordsByName[playerName].highestWave < highestWave)
+                    {
+                        // Get additional stats for this name
+                        int currentWave = props.ContainsKey($"Cloud_{nameKey}_CurrentWave") ? 
+                            (int)props[$"Cloud_{nameKey}_CurrentWave"] : 0;
+                        int totalKills = props.ContainsKey($"Cloud_{nameKey}_TotalKills") ? 
+                            (int)props[$"Cloud_{nameKey}_TotalKills"] : 0;
 
-                leaderboard.Add(entry);
+                        bestRecordsByName[playerName] = new LeaderboardEntry
+                        {
+                            playerName = playerName,
+                            currentWave = currentWave,
+                            highestWave = highestWave,
+                            totalKills = totalKills,
+                            isLocalPlayer = player.IsLocal && playerName == this.playerName
+                        };
+                    }
+                }
             }
         }
+
+        // Convert dictionary to list
+        leaderboard = bestRecordsByName.Values.ToList();
 
         // Sort by highest wave (descending), then by current wave
         leaderboard.Sort((a, b) =>
@@ -604,6 +637,7 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
             return compare;
         });
 
+        LogDebug($"Generated name-based leaderboard with {leaderboard.Count} unique names");
         return leaderboard;
     }
 
@@ -850,6 +884,35 @@ public class PhotonGameManager : MonoBehaviourPunCallbacks
                 }
             }
         }
+    }
+
+    #endregion
+    
+    #region Scene Reset Methods
+
+    /// <summary>
+    /// Reset current session state while preserving leaderboard data
+    /// Used when quitting to main menu for a fresh start
+    /// </summary>
+    public void ResetCurrentSession()
+    {
+        LogDebug("Resetting PhotonGameManager session state...");
+        
+        // Reset current wave to 0 (but keep highest wave for leaderboards)
+        currentWaveReached = 0;
+        
+        // Update room properties to reflect reset state
+        UpdatePlayerProperties();
+        
+        // Disconnect from current WaveManager (will reconnect when new player spawns)
+        if (waveManager != null)
+        {
+            waveManager.OnWaveStart.RemoveListener(OnWaveStarted);
+            waveManager.OnWaveComplete.RemoveListener(OnWaveCompleted);
+            waveManager = null;
+        }
+        
+        LogDebug($"Session reset complete. Current wave: {currentWaveReached}, Highest wave preserved: {highestWaveReached}");
     }
 
     #endregion

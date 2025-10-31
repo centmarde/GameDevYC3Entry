@@ -69,6 +69,11 @@ public class CharacterSelectionManager : MonoBehaviour
     public void LoadMainBaseScene()
     {
         Debug.Log($"[CharacterSelectionManager] Loading MainBase scene with character index: {selectedCharacterIndex}");
+        
+        // Clear skip fake loading flag for normal game start
+        PlayerPrefs.SetInt("SkipFakeLoading", 0);
+        PlayerPrefs.Save();
+        
         SceneManager.LoadScene("MainBase");
     }
 

@@ -55,27 +55,45 @@ public class GameOverPanelUI : MonoBehaviour
 
     /// <summary>
     /// Called when the Retry button is clicked.
-    /// Simply resumes the game and loads the character selection scene.
+    /// Resets MainBase scene state and reloads for a fresh attempt.
     /// </summary>
     public void OnRetry()
     {
         // Wave progress already saved on player death - no need to save again
 
-        // Resume and go to character selection
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(chooseMenuScene);
+        // Use SceneResetManager for proper state reset before retry
+        if (SceneResetManager.Instance != null)
+        {
+            SceneResetManager.Instance.RetryWithReset();
+        }
+        else
+        {
+            // Fallback: Direct scene reload without reset
+            Debug.LogWarning("[GameOverPanelUI] SceneResetManager not found! Using fallback scene reload.");
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(chooseMenuScene);
+        }
     }
 
     /// <summary>
     /// Called when the Quit button is clicked.
-    /// Simply resumes the game and loads the main menu scene.
+    /// Resets MainBase scene state and returns to main menu for a fresh start.
     /// </summary>
     public void OnQuit()
     {
         // Wave progress already saved on player death - no need to save again
 
-        // Resume and go back to main menu
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(mainMenuScene);
+        // Use SceneResetManager for complete state reset before returning to main menu
+        if (SceneResetManager.Instance != null)
+        {
+            SceneResetManager.Instance.QuitToMainMenuWithReset();
+        }
+        else
+        {
+            // Fallback: Direct scene load without reset
+            Debug.LogWarning("[GameOverPanelUI] SceneResetManager not found! Using fallback scene load.");
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(mainMenuScene);
+        }
     }
 }

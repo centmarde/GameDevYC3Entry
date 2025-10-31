@@ -178,4 +178,36 @@ public class UIManager : MonoBehaviour
     }
 
     public bool AnyUIOpen() => openUIs.Count > 0;
+
+    /// <summary>
+    /// Reset UI state for fresh game start
+    /// </summary>
+    public void ResetUIState()
+    {
+        Debug.Log("[UIManager] Resetting UI state...");
+        
+        // Clear UI stack
+        openUIs.Clear();
+        
+        // Close pause menu
+        if (pauseMenuInstance != null)
+        {
+            pauseMenuInstance.SetActive(false);
+        }
+        
+        // Close and destroy game over panel
+        if (gameOverPanelInstance != null)
+        {
+            Destroy(gameOverPanelInstance);
+            gameOverPanelInstance = null;
+        }
+        
+        // Reset game over flag
+        isGameOverShown = false;
+        
+        // Ensure normal time scale
+        Time.timeScale = 1f;
+        
+        Debug.Log("[UIManager] UI state reset complete");
+    }
 }

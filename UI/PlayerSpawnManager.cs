@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Manages player characters in the MainBase scene.
@@ -23,6 +24,10 @@ public class PlayerSpawnManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log($"[PlayerSpawnManager] ===== AWAKE CALLED =====");
+        Debug.Log($"[PlayerSpawnManager] GameObject: {gameObject.name}");
+        Debug.Log($"[PlayerSpawnManager] playerSpawnedThisSession (static) = {playerSpawnedThisSession}");
+        
         // Check for duplicate PlayerSpawnManager instances
         if (instance != null && instance != this)
         {
@@ -32,12 +37,23 @@ public class PlayerSpawnManager : MonoBehaviour
         }
         
         instance = this;
-        Debug.Log($"[PlayerSpawnManager] Awake called on {gameObject.name}");
+        
+        // Subscribe to scene loaded events to ensure static flags are always reset
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        
+        Debug.Log($"[PlayerSpawnManager] ✅ Awake complete on {gameObject.name}");
     }
 
     private void Start()
     {
-        Debug.Log($"[PlayerSpawnManager] Start called on {gameObject.name}, executeOnStart: {executeOnStart}, hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+        Debug.Log($"[PlayerSpawnManager] ===== START METHOD CALLED =====");
+        Debug.Log($"[PlayerSpawnManager] GameObject: {gameObject.name}");
+        Debug.Log($"[PlayerSpawnManager] executeOnStart: {executeOnStart}");
+        Debug.Log($"[PlayerSpawnManager] hasSpawned: {hasSpawned}");
+        Debug.Log($"[PlayerSpawnManager] playerSpawnedThisSession: {playerSpawnedThisSession}");
+        Debug.Log($"[PlayerSpawnManager] activePlayer: {(activePlayer != null ? activePlayer.name : "NULL")}");
+        Debug.Log($"[PlayerSpawnManager] Player1 Prefab: {(player1Prefab != null ? player1Prefab.name : "NULL")}");
+        Debug.Log($"[PlayerSpawnManager] Player2 Prefab: {(player2Prefab != null ? player2Prefab.name : "NULL")}");
         
         // Try to find portal if auto-find is enabled and no portal assigned
         if (autoFindPortal && spawnPortal == null)
@@ -52,16 +68,41 @@ public class PlayerSpawnManager : MonoBehaviour
                 Debug.LogWarning("[PlayerSpawnManager] No Portal found in scene! Player will spawn at origin.");
             }
         }
+        else if (spawnPortal != null)
+        {
+            Debug.Log($"[PlayerSpawnManager] Portal already assigned: {spawnPortal.GetPortalName()}");
+        }
+        
+        Debug.Log($"[PlayerSpawnManager] Checking spawn conditions...");
+        Debug.Log($"[PlayerSpawnManager] - executeOnStart: {executeOnStart}");
+        Debug.Log($"[PlayerSpawnManager] - hasSpawned: {hasSpawned}");
+        Debug.Log($"[PlayerSpawnManager] - playerSpawnedThisSession: {playerSpawnedThisSession}");
+        Debug.Log($"[PlayerSpawnManager] - CharacterSelectionManager exists: {CharacterSelectionManager.Instance != null}");
+        if (CharacterSelectionManager.Instance != null)
+        {
+            Debug.Log($"[PlayerSpawnManager] - Selected Character Index: {CharacterSelectionManager.Instance.SelectedCharacterIndex}");
+        }
         
         // Only spawn if enabled, not spawned yet, and not spawned this session
         if (executeOnStart && !hasSpawned && !playerSpawnedThisSession)
         {
+            Debug.Log($"[PlayerSpawnManager] ✅ CONDITIONS MET FOR SPAWNING! Attempting to spawn player...");
             SpawnSelectedPlayer();
         }
-        else if (playerSpawnedThisSession)
+        else
         {
-            Debug.LogWarning($"[PlayerSpawnManager] Player already spawned this session! Skipping spawn to prevent duplicates.");
+            Debug.LogError($"[PlayerSpawnManager] ❌ SPAWN CONDITIONS NOT MET!");
+            Debug.LogError($"[PlayerSpawnManager] - executeOnStart: {executeOnStart} (needs: true)");
+            Debug.LogError($"[PlayerSpawnManager] - hasSpawned: {hasSpawned} (needs: false)");
+            Debug.LogError($"[PlayerSpawnManager] - playerSpawnedThisSession: {playerSpawnedThisSession} (needs: false)");
+            
+            if (playerSpawnedThisSession)
+            {
+                Debug.LogError($"[PlayerSpawnManager] ❗ Player marked as already spawned this session! This suggests ResetGlobalSpawnFlags() was not called or failed.");
+            }
         }
+        
+        Debug.Log($"[PlayerSpawnManager] ===== START METHOD COMPLETE =====");
     }
     
     private void OnDestroy()
@@ -71,6 +112,20 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             instance = null;
         }
+        
+        // Unsubscribe from scene events
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    /// <summary>
+    /// Called when any scene loads - ensures static flags are always reset
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"[PlayerSpawnManager] OnSceneLoaded: {scene.name} - Forcing static flag reset");
+        Debug.Log($"[PlayerSpawnManager] BEFORE Scene Load Reset: playerSpawnedThisSession = {playerSpawnedThisSession}");
+        playerSpawnedThisSession = false;
+        Debug.Log($"[PlayerSpawnManager] AFTER Scene Load Reset: playerSpawnedThisSession = {playerSpawnedThisSession}");
     }
 
     /// <summary>
@@ -78,14 +133,20 @@ public class PlayerSpawnManager : MonoBehaviour
     /// </summary>
     public void SpawnSelectedPlayer()
     {
+        Debug.Log($"[PlayerSpawnManager] ===== SPAWN SELECTED PLAYER CALLED =====");
+        
         // Check if already spawned
         if (hasSpawned || playerSpawnedThisSession)
         {
-            Debug.LogWarning($"[PlayerSpawnManager] Already spawned a player! Ignoring duplicate spawn request.");
-            Debug.LogWarning($"[PlayerSpawnManager] hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
-            Debug.LogWarning($"[PlayerSpawnManager] Current active player: {(activePlayer != null ? activePlayer.name : "NULL")}");
+            Debug.LogError($"[PlayerSpawnManager] ❌ SPAWN BLOCKED - Already spawned a player!");
+            Debug.LogError($"[PlayerSpawnManager] - hasSpawned: {hasSpawned}");
+            Debug.LogError($"[PlayerSpawnManager] - playerSpawnedThisSession: {playerSpawnedThisSession}");
+            Debug.LogError($"[PlayerSpawnManager] - Current active player: {(activePlayer != null ? activePlayer.name : "NULL")}");
+            Debug.LogError($"[PlayerSpawnManager] If this is unexpected after reset, check SceneResetManager.ResetPlayerSpawnState()");
             return;
         }
+        
+        Debug.Log($"[PlayerSpawnManager] ✅ Spawn checks passed, proceeding with spawn...");
         
         // Check if a player already exists in the scene
         GameObject existingPlayer = GameObject.FindGameObjectWithTag("Player");
@@ -104,12 +165,22 @@ public class PlayerSpawnManager : MonoBehaviour
         
         // Determine which prefab to spawn
         GameObject prefabToSpawn = selectedIndex == 0 ? player1Prefab : player2Prefab;
+        string prefabName = selectedIndex == 0 ? "Player1" : "Player2";
+
+        Debug.Log($"[PlayerSpawnManager] Selected prefab: {prefabName} (index {selectedIndex})");
+        Debug.Log($"[PlayerSpawnManager] Prefab reference: {(prefabToSpawn != null ? prefabToSpawn.name : "NULL")}");
 
         if (prefabToSpawn == null)
         {
-            Debug.LogError($"[PlayerSpawnManager] Player prefab for index {selectedIndex} is not assigned!");
+            Debug.LogError($"[PlayerSpawnManager] ❌ CRITICAL ERROR: {prefabName} prefab is not assigned in inspector!");
+            Debug.LogError($"[PlayerSpawnManager] Please assign the prefabs in the PlayerSpawnManager component:");
+            Debug.LogError($"[PlayerSpawnManager] - Player1 Prefab: {(player1Prefab != null ? player1Prefab.name : "NOT ASSIGNED")}");
+            Debug.LogError($"[PlayerSpawnManager] - Player2 Prefab: {(player2Prefab != null ? player2Prefab.name : "NOT ASSIGNED")}");
+            Debug.LogError($"[PlayerSpawnManager] Cannot spawn player without prefab reference!");
             return;
         }
+        
+        Debug.Log($"[PlayerSpawnManager] ✅ Prefab validation passed: {prefabToSpawn.name}");
 
         // Get spawn position and rotation from portal (or use origin as fallback)
         Vector3 spawnPosition = Vector3.zero;
@@ -134,7 +205,20 @@ public class PlayerSpawnManager : MonoBehaviour
         }
 
         // Spawn the player at portal location
+        Debug.Log($"[PlayerSpawnManager] Calling Instantiate with prefab: {prefabToSpawn.name} at position: {spawnPosition}");
         activePlayer = Instantiate(prefabToSpawn, spawnPosition, spawnRotation);
+        
+        if (activePlayer == null)
+        {
+            Debug.LogError($"[PlayerSpawnManager] ❌ INSTANTIATE FAILED! activePlayer is NULL after Instantiate call!");
+            Debug.LogError($"[PlayerSpawnManager] - Prefab: {(prefabToSpawn != null ? prefabToSpawn.name : "NULL")}");
+            Debug.LogError($"[PlayerSpawnManager] - Position: {spawnPosition}");
+            Debug.LogError($"[PlayerSpawnManager] - Rotation: {spawnRotation}");
+            return;
+        }
+        
+        Debug.Log($"[PlayerSpawnManager] ✅ Instantiate SUCCESS! Created: {activePlayer.name} (ID: {activePlayer.GetInstanceID()})");
+        
         activePlayer.name = selectedIndex == 0 ? "Player1" : "Player2";
         
         // Tag the player so other systems can find it
@@ -142,6 +226,10 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             activePlayer.tag = "Player";
             Debug.Log($"[PlayerSpawnManager] Set player tag to 'Player'");
+        }
+        else
+        {
+            Debug.Log($"[PlayerSpawnManager] Player already has 'Player' tag");
         }
         
         hasSpawned = true;
@@ -316,6 +404,107 @@ public class PlayerSpawnManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Reset global spawn flags (static method for cross-scene reset)
+    /// </summary>
+    public static void ResetGlobalSpawnFlags()
+    {
+        Debug.Log($"[PlayerSpawnManager] ResetGlobalSpawnFlags() called - BEFORE: playerSpawnedThisSession = {playerSpawnedThisSession}");
+        playerSpawnedThisSession = false;
+        Debug.Log($"[PlayerSpawnManager] ResetGlobalSpawnFlags() called - AFTER: playerSpawnedThisSession = {playerSpawnedThisSession}");
+        Debug.Log("[PlayerSpawnManager] ✅ Global spawn flags reset complete");
+    }
+
+    /// <summary>
+    /// Reset spawn state for fresh game start
+    /// Allows new player selection and spawning
+    /// </summary>
+    public void ResetSpawnState()
+    {
+        Debug.Log("[PlayerSpawnManager] Resetting spawn state...");
+        
+        // Destroy active player if exists
+        if (activePlayer != null)
+        {
+            Destroy(activePlayer);
+            activePlayer = null;
+        }
+        
+        // Reset instance flags to allow fresh spawning
+        hasSpawned = false;
+        
+        // Reset static flag too (redundant but safe)
+        playerSpawnedThisSession = false;
+        
+        Debug.Log("[PlayerSpawnManager] Spawn state reset complete - ready for new character selection");
+    }
+
+    /// <summary>
+    /// Force spawn player (useful after scene resets)
+    /// </summary>
+    public void ForceSpawnPlayer()
+    {
+        Debug.Log("[PlayerSpawnManager] ===== FORCE SPAWNING PLAYER =====");
+        Debug.Log($"[PlayerSpawnManager] BEFORE Force Reset - hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+        
+        // Reset flags first - be extra aggressive
+        hasSpawned = false;
+        playerSpawnedThisSession = false;
+        
+        Debug.Log($"[PlayerSpawnManager] AFTER Force Reset - hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+        
+        // Clear any existing player
+        if (activePlayer != null)
+        {
+            Debug.Log($"[PlayerSpawnManager] Destroying existing player: {activePlayer.name}");
+            Destroy(activePlayer);
+            activePlayer = null;
+        }
+        
+        // Double-check flags are still reset (in case something overrode them)
+        if (hasSpawned || playerSpawnedThisSession)
+        {
+            Debug.LogError($"[PlayerSpawnManager] ❌ FLAGS RESET FAILED! hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+            // Force them again
+            hasSpawned = false;
+            playerSpawnedThisSession = false;
+            Debug.LogError($"[PlayerSpawnManager] Force reset flags again: hasSpawned: {hasSpawned}, playerSpawnedThisSession: {playerSpawnedThisSession}");
+        }
+        
+        Debug.Log("[PlayerSpawnManager] Force spawn - calling SpawnSelectedPlayer()...");
+        // Force spawn
+        SpawnSelectedPlayer();
+    }
+    
+    /// <summary>
+    /// Validates that the PlayerSpawnManager is properly configured
+    /// </summary>
+    public bool IsProperlyConfigured()
+    {
+        bool isConfigured = true;
+        
+        if (player1Prefab == null)
+        {
+            Debug.LogError("[PlayerSpawnManager] Player1 prefab is not assigned!");
+            isConfigured = false;
+        }
+        
+        if (player2Prefab == null)
+        {
+            Debug.LogError("[PlayerSpawnManager] Player2 prefab is not assigned!");
+            isConfigured = false;
+        }
+        
+        if (CharacterSelectionManager.Instance == null)
+        {
+            Debug.LogError("[PlayerSpawnManager] CharacterSelectionManager not found!");
+            isConfigured = false;
+        }
+        
+        Debug.Log($"[PlayerSpawnManager] Configuration check: {(isConfigured ? "✅ VALID" : "❌ INVALID")}");
+        return isConfigured;
+    }
+
+    /// <summary>
     /// Validates the setup in the Inspector
     /// </summary>
     private void OnValidate()
@@ -331,6 +520,4 @@ public class PlayerSpawnManager : MonoBehaviour
             spawnPortal = FindObjectOfType<Portal>();
         }
     }
-
-
 }

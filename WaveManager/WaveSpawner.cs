@@ -574,4 +574,33 @@ public class WaveSpawner : MonoBehaviour
             prevPoint = newPoint;
         }
     }
+    
+    /// <summary>
+    /// Reset spawner to initial state for fresh game start
+    /// </summary>
+    public void ResetSpawner()
+    {
+        Debug.Log($"[WaveSpawner] Resetting spawner '{gameObject.name}' to initial state...");
+        
+        // Stop any spawning coroutines
+        StopAllCoroutines();
+        
+        // Reset spawn state
+        enemiesSpawned = 0;
+        enemiesToSpawn = 0;
+        isSpawning = false;
+        
+        // Reset bonuses
+        currentHealthBonus = 0f;
+        currentDamageBonus = 0f;
+        
+        // Clear current wave group
+        currentWaveGroup = null;
+        
+        // Reset player reference tracking
+        lastPlayerRefreshTime = 0f;
+        playerTransform = null; // Will be reassigned when new player spawns
+        
+        Debug.Log($"[WaveSpawner] Spawner '{gameObject.name}' reset complete");
+    }
 }

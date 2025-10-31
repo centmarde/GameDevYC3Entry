@@ -179,4 +179,36 @@ public class WaveUI : MonoBehaviour
         }
         isAnimating = false;
     }
+    
+    /// <summary>
+    /// Reset WaveUI to initial state for fresh game start
+    /// </summary>
+    public void ResetWaveUI()
+    {
+        Debug.Log("[WaveUI] Resetting WaveUI to initial state...");
+        
+        // Hide announcement panel
+        if (announcementPanel != null)
+        {
+            announcementPanel.SetActive(false);
+        }
+        
+        // Stop any animation
+        isAnimating = false;
+        animationTimer = 0f;
+        
+        // Reset canvas group alpha
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+        }
+        
+        // Clear wave text
+        if (waveText != null)
+        {
+            waveText.text = "";
+        }
+        
+        Debug.Log("[WaveUI] WaveUI reset complete");
+    }
 }
