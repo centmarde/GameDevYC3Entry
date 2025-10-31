@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -56,6 +57,13 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Name of the leaderboards scene to load")]
     [SerializeField] private string leaderboardsSceneName = "LeaderBoards";
 
+    [Header("Audio Settings")]
+    [Tooltip("Delay in seconds before executing button action (allows audio to play)")]
+    [SerializeField] private float buttonClickDelay = 0.5f;
+
+    // Track if a button action is already in progress to prevent multiple clicks
+    private bool isProcessingButtonClick = false;
+
     private void Start()
     {
         // Validate references
@@ -97,6 +105,17 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     private void OnStartButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(StartButtonClickCoroutine());
+    }
+
+    private IEnumerator StartButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        Debug.Log($"Start button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
         Debug.Log($"Loading scene: {gameSceneName}");
         
         // Use LoadingScreen if available, otherwise load normally
@@ -108,6 +127,8 @@ public class MainMenuController : MonoBehaviour
         {
             SceneManager.LoadScene(gameSceneName);
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
@@ -116,6 +137,17 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     private void OnLeaderboardsButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(LeaderboardsButtonClickCoroutine());
+    }
+
+    private IEnumerator LeaderboardsButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        Debug.Log($"Leaderboards button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
         Debug.Log($"Loading scene: {leaderboardsSceneName}");
         
         // Use LoadingScreen if available, otherwise load normally
@@ -127,6 +159,8 @@ public class MainMenuController : MonoBehaviour
         {
             SceneManager.LoadScene(leaderboardsSceneName);
         }
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
@@ -135,6 +169,17 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     private void OnQuitButtonClicked()
     {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(QuitButtonClickCoroutine());
+    }
+
+    private IEnumerator QuitButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        Debug.Log($"Quit button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
         Debug.Log("Quitting game...");
         
         #if UNITY_EDITOR
@@ -144,6 +189,8 @@ public class MainMenuController : MonoBehaviour
         // If running as a build, quit the application
         Application.Quit();
         #endif
+        
+        isProcessingButtonClick = false;
     }
 
     /// <summary>
