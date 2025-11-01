@@ -31,8 +31,12 @@ public class Player2_MeleeCombat : MonoBehaviour
     
     private void Update()
     {
-        // Only rotate with movement if not attacking and not locked
-        if (canAttack && !player2.playerMovement.movementLocked && !isCharging)
+        // Only rotate with movement if not in combat states and not locked
+        bool isInCombatState = player2.CurrentState == player2.dashAttackState ||
+                               player2.CurrentState == player2.blinkState ||
+                               player2.CurrentState == player2.rollState;
+        
+        if (!isInCombatState && !player2.playerMovement.movementLocked)
         {
             FaceLastKeyboardDirection();
         }
@@ -66,6 +70,7 @@ public class Player2_MeleeCombat : MonoBehaviour
                 isCharging = true;
                 
                 // Start charging the dash attack
+                // The state will handle facing direction during charge
                 player2.RequestStateChange(player2.dashAttackState);
                 break;
                 
