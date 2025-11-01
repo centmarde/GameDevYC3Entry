@@ -71,12 +71,24 @@ public class SceneResetManager : MonoBehaviour
 
         Debug.Log("[SceneResetManager] Scene reset complete. Loading main menu...");
 
-        // Clear the skip fake loading flag when going to main menu  
+        // Unload SplashLoading scene if it's currently loaded to prevent redirect
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+            if (scene.name == "SplashLoading")
+            {
+                Debug.Log("[SceneResetManager] Unloading SplashLoading scene...");
+                SceneManager.UnloadSceneAsync(scene);
+            }
+        }
+
+        // Clear any target scene for splash loading to prevent unwanted redirects
+        PlayerPrefs.DeleteKey("TargetSceneAfterLoading");
         PlayerPrefs.SetInt("SkipFakeLoading", 0);
         PlayerPrefs.Save();
 
-        // 7. Load main menu scene
-        SceneManager.LoadScene(mainMenuSceneName);
+        // 7. Load main menu scene directly (always use "MainMenu" to avoid SplashLoading redirect)
+        SceneManager.LoadScene("MainMenu");
     }
     
     /// <summary>

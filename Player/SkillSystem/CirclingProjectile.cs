@@ -126,8 +126,17 @@ public class CirclingProjectile : MonoBehaviour
     {
         if (!isInitialized || other == null) return;
         
+        // Debug: Log collision detection
+        Debug.Log($"[CirclingProjectile] Collided with: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
+        
         // Check if the collided object is on the enemy layer
-        if ((enemyLayer.value & (1 << other.gameObject.layer)) == 0) return;
+        if ((enemyLayer.value & (1 << other.gameObject.layer)) == 0)
+        {
+            Debug.Log($"[CirclingProjectile] Layer mismatch - Expected enemy layer, got: {LayerMask.LayerToName(other.gameObject.layer)}");
+            return;
+        }
+
+        Debug.Log($"[CirclingProjectile] Enemy layer detected! Checking for IDamageable...");
 
         // Try to get IDamageable component from the collided object or its parent
         var target = other.GetComponentInParent<IDamageable>();
@@ -135,6 +144,8 @@ public class CirclingProjectile : MonoBehaviour
         {
             Vector3 hitPoint = other.ClosestPoint(transform.position);
             Vector3 hitNormal = (other.transform.position - transform.position).normalized;
+            
+            Debug.Log($"[CirclingProjectile] Dealing damage to enemy at: {hitPoint}");
             
             // Apply damage to the enemy
             target.TakeDamage(damage, hitPoint, hitNormal, source);
@@ -148,8 +159,17 @@ public class CirclingProjectile : MonoBehaviour
             // Create blood splatter effect on hit
             if (enableBloodSplatter)
             {
+                Debug.Log($"[CirclingProjectile] Attempting to create blood splatter effect (Prefab assigned: {bloodSplatterPrefab != null})");
                 CreateBloodSplatterEffect(hitPoint);
             }
+            else
+            {
+                Debug.Log("[CirclingProjectile] Blood splatter is disabled in settings");
+            }
+        }
+        else
+        {
+            Debug.Log($"[CirclingProjectile] No valid IDamageable found or target is dead");
         }
     }
 
@@ -221,25 +241,38 @@ public class CirclingProjectile : MonoBehaviour
     {
         if (bloodSplatterPrefab == null)
         {
-            Debug.LogWarning("Blood splatter prefab is not assigned!");
+            Debug.LogWarning("[CirclingProjectile] Blood splatter prefab is not assigned! Please assign it in the Inspector on the Circling Projectile Prefab.");
             return;
         }
         
+        Debug.Log($"[CirclingProjectile] Spawning blood splatter at: {hitPosition}");
+        
         // Instantiate the blood splatter prefab at hit position
         GameObject effectObj = Instantiate(bloodSplatterPrefab, hitPosition, Quaternion.identity);
+        
+        if (effectObj == null)
+        {
+            Debug.LogError("[CirclingProjectile] Failed to instantiate blood splatter effect!");
+            return;
+        }
+        
+        Debug.Log($"[CirclingProjectile] Blood splatter instantiated: {effectObj.name}");
         
         // Get particle system and play it
         ParticleSystem ps = effectObj.GetComponent<ParticleSystem>();
         if (ps != null)
         {
+            Debug.Log($"[CirclingProjectile] Playing particle system...");
             ps.Play();
             
             // Destroy after particles finish (use the particle system's duration)
             float duration = ps.main.duration + ps.main.startLifetime.constantMax;
+            Debug.Log($"[CirclingProjectile] Blood splatter will be destroyed after {duration} seconds");
             Destroy(effectObj, duration);
         }
         else
         {
+            Debug.LogWarning("[CirclingProjectile] Blood splatter prefab has no ParticleSystem component!");
             // If no particle system, just destroy after a default time
             Destroy(effectObj, 2f);
         }

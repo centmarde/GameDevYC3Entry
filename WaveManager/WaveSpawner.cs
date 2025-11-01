@@ -9,6 +9,10 @@ public class WaveSpawner : MonoBehaviour
     [Header("Special Enemy Settings")]
     [Tooltip("Boss enemies to spawn every 5th wave (5, 10, 15, etc.)")]
     [SerializeField] private GameObject[] bossPrefabs;
+    [Tooltip("Audio clip to play when a boss spawns")]
+    [SerializeField] private AudioClip bossSpawnSound;
+    [Tooltip("Volume for boss spawn sound")]
+    [SerializeField] [Range(0f, 1f)] private float bossSpawnSoundVolume = 1f;
     
     [Header("Spawn Mode")]
     [SerializeField] private SpawnMode spawnMode = SpawnMode.CircularAroundPlayer;
@@ -44,6 +48,8 @@ public class WaveSpawner : MonoBehaviour
     private int currentWaveNumber = 0; // Track current wave for special spawning logic
     private bool hasSpawnedElite = false; // Track if elite has spawned this wave
     private bool hasSpawnedBoss = false; // Track if boss has spawned this wave
+    private int elitesSpawnedThisWave = 0; // Track how many elites spawned this wave
+    private AudioSource audioSource; // Audio source for boss spawn sounds
     
     public enum SpawnMode
     {
@@ -115,6 +121,15 @@ public class WaveSpawner : MonoBehaviour
         {
             RefreshPlayerReference();
         }
+        
+        // Setup AudioSource for boss spawn sounds
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f; // 2D sound
     }
     
     private void Update()
@@ -243,6 +258,7 @@ public class WaveSpawner : MonoBehaviour
         // Reset special spawn flags
         hasSpawnedElite = false;
         hasSpawnedBoss = false;
+        elitesSpawnedThisWave = 0;
         Debug.Log($"[WaveSpawner] Reset spawn flags - Elite: {hasSpawnedElite}, Boss: {hasSpawnedBoss}");
         if (isSpawning) return;
         
@@ -320,14 +336,16 @@ public class WaveSpawner : MonoBehaviour
         }
         
         // Check if we should spawn an elite enemy on even waves (2, 4, 6, etc.)
+        // Elite count increases by 1 every 5 waves: Wave 2-4 = 1 elite, Wave 5-9 = 2 elites, Wave 10-14 = 3 elites, etc.
         bool isEvenWave = currentWaveNumber > 0 && currentWaveNumber % 2 == 0;
-        Debug.Log($"[WaveSpawner] SpawnEnemy check - Wave: {currentWaveNumber}, IsEven: {isEvenWave}, HasSpawnedElite: {hasSpawnedElite}, EnemiesSpawned: {enemiesSpawned}/{enemiesToSpawn}");
+        int eliteCountForWave = 1 + (currentWaveNumber / 5); // +1 elite every 5 waves
+        Debug.Log($"[WaveSpawner] SpawnEnemy check - Wave: {currentWaveNumber}, IsEven: {isEvenWave}, ElitesSpawned: {elitesSpawnedThisWave}/{eliteCountForWave}, EnemiesSpawned: {enemiesSpawned}/{enemiesToSpawn}");
         
-        if (!hasSpawnedElite && isEvenWave && enemyGroups != null && enemyGroups.Length > 0)
+        if (elitesSpawnedThisWave < eliteCountForWave && isEvenWave && enemyGroups != null && enemyGroups.Length > 0)
         {
-            Debug.Log($"[WaveSpawner] Attempting to spawn ELITE enemy on wave {currentWaveNumber}");
+            Debug.Log($"[WaveSpawner] Attempting to spawn ELITE enemy #{elitesSpawnedThisWave + 1} on wave {currentWaveNumber}");
             SpawnEliteEnemy();
-            hasSpawnedElite = true;
+            elitesSpawnedThisWave++;
             enemiesSpawned++;
             return;
         }
@@ -776,6 +794,13 @@ public class WaveSpawner : MonoBehaviour
             waveManager.RegisterEnemySpawned();
         }
         
+        // Play boss spawn sound
+        if (audioSource != null && bossSpawnSound != null)
+        {
+            audioSource.PlayOneShot(bossSpawnSound, bossSpawnSoundVolume);
+            Debug.Log($"[WaveSpawner] Playing boss spawn audio: {bossSpawnSound.name}");
+        }
+        
         hasSpawnedBoss = true;
         Debug.Log($"[WaveSpawner] Spawned BOSS '{boss.name}' on wave {currentWaveNumber} at {spawnPosition}");
     }
@@ -910,6 +935,7 @@ public class WaveSpawner : MonoBehaviour
         currentWaveNumber = 0;
         hasSpawnedElite = false;
         hasSpawnedBoss = false;
+        elitesSpawnedThisWave = 0;
         
         Debug.Log($"[WaveSpawner] Spawner '{gameObject.name}' reset complete");
     }
