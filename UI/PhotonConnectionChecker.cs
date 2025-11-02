@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -5,7 +6,7 @@ using Photon.Pun;
 using Photon.Realtime;
 
 /// <summary>
-/// Photon Connection Checker - Displays real-time connection status
+/// Photon & Supabase Connection Checker - Displays real-time connection status for both services
 /// 
 /// QUICK SETUP DOCUMENTATION:
 /// ==========================
@@ -53,8 +54,14 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     
     [Tooltip("Optional: Legacy UI Text component (use this OR TextMeshPro, not both)")]
     [SerializeField] private UnityEngine.UI.Text legacyStatusText;
+    
+    [Tooltip("Optional: Separate text for Supabase status")]
+    [SerializeField] private TextMeshProUGUI supabaseStatusText;
 
     [Header("Connection Settings")]
+    [Tooltip("Check both Photon and Supabase connections")]
+    [SerializeField] private bool checkSupabaseConnection = true;
+    
     [Tooltip("Automatically connect to Photon on Start")]
     [SerializeField] private bool autoConnectOnStart = true;
     
@@ -74,6 +81,12 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     [SerializeField] private string connectingToMasterMessage = "Connecting to Master...";
     [SerializeField] private string joiningLobbyMessage = "Joining Lobby...";
     [SerializeField] private string errorMessage = "Connection Error";
+    
+    [Header("Supabase Messages")]
+    [SerializeField] private string supabaseConnectedMessage = "Supabase: Ready";
+    [SerializeField] private string supabaseTestingMessage = "Supabase: Testing...";
+    [SerializeField] private string supabaseDisconnectedMessage = "Supabase: Not Configured";
+    [SerializeField] private string supabaseErrorMessage = "Supabase: Connection Error";
 
     [Header("Status Colors")]
     [SerializeField] private Color connectedColor = Color.green;
@@ -81,8 +94,19 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     [SerializeField] private Color disconnectedColor = Color.red;
     [SerializeField] private Color errorColor = new Color(1f, 0.5f, 0f); // Orange
 
+    [Header("Display Options")]
+    [Tooltip("Show connection status on separate lines")]
+    [SerializeField] private bool showMultiLine = true;
+    
+    [Tooltip("Show both Photon and Supabase in single text")]
+    [SerializeField] private bool showCombinedStatus = true;
+
     private float updateTimer = 0f;
     private ClientState lastState = ClientState.Disconnected;
+    private bool lastSupabaseStatus = false;
+    private bool isTestingSupabase = false;
+    private float supabaseTestTimer = 0f;
+    private const float supabaseTestInterval = 10f; // Test every 10 seconds
 
     private void Start()
     {
@@ -105,6 +129,12 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
 
         // Initial update
         UpdateStatusDisplay();
+        
+        // Test Supabase connection if enabled
+        if (checkSupabaseConnection)
+        {
+            StartCoroutine(TestSupabaseConnection());
+        }
     }
 
     private void Update()
@@ -123,6 +153,17 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
             lastState = PhotonNetwork.NetworkClientState;
             UpdateStatusDisplay();
         }
+        
+        // Periodic Supabase connection test
+        if (checkSupabaseConnection)
+        {
+            supabaseTestTimer += Time.deltaTime;
+            if (supabaseTestTimer >= supabaseTestInterval)
+            {
+                supabaseTestTimer = 0f;
+                StartCoroutine(TestSupabaseConnection());
+            }
+        }
     }
 
     /// <summary>
@@ -130,28 +171,52 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     /// </summary>
     private void UpdateStatusDisplay()
     {
-        string statusMessage = GetStatusMessage();
-        Color statusColor = GetStatusColor();
+        string photonMessage = GetPhotonStatusMessage();
+        Color photonColor = GetPhotonStatusColor();
+        
+        string supabaseMessage = GetSupabaseStatusMessage();
+        Color supabaseColor = GetSupabaseStatusColor();
 
-        // Update TextMeshPro if assigned
-        if (statusText != null)
+        // Build combined message
+        string combinedMessage = photonMessage;
+        if (checkSupabaseConnection && showCombinedStatus)
         {
-            statusText.text = statusMessage;
-            statusText.color = statusColor;
+            if (showMultiLine)
+            {
+                combinedMessage += $"\n{supabaseMessage}";
+            }
+            else
+            {
+                combinedMessage += $" | {supabaseMessage}";
+            }
         }
 
-        // Update Legacy Text if assigned
+        // Update main TextMeshPro
+        if (statusText != null)
+        {
+            statusText.text = combinedMessage;
+            statusText.color = photonColor; // Main text uses Photon color
+        }
+
+        // Update Legacy Text
         if (legacyStatusText != null)
         {
-            legacyStatusText.text = statusMessage;
-            legacyStatusText.color = statusColor;
+            legacyStatusText.text = combinedMessage;
+            legacyStatusText.color = photonColor;
+        }
+        
+        // Update separate Supabase text if assigned
+        if (supabaseStatusText != null && checkSupabaseConnection)
+        {
+            supabaseStatusText.text = supabaseMessage;
+            supabaseStatusText.color = supabaseColor;
         }
     }
 
     /// <summary>
-    /// Gets the appropriate status message based on connection state
+    /// Gets the appropriate Photon status message based on connection state
     /// </summary>
-    private string GetStatusMessage()
+    private string GetPhotonStatusMessage()
     {
         string message = "";
 
@@ -210,9 +275,112 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     }
 
     /// <summary>
-    /// Gets the appropriate color based on connection state
+    /// Gets the Supabase status message
     /// </summary>
-    private Color GetStatusColor()
+    private string GetSupabaseStatusMessage()
+    {
+        if (!checkSupabaseConnection)
+        {
+            return "";
+        }
+        
+        if (isTestingSupabase)
+        {
+            return supabaseTestingMessage;
+        }
+        
+        // Check if SupabaseClient exists and is configured
+        if (SupabaseClient.Instance == null)
+        {
+            return supabaseDisconnectedMessage + " (Client Missing)";
+        }
+        
+        if (!SupabaseClient.Instance.IsConfigured())
+        {
+            return supabaseDisconnectedMessage;
+        }
+        
+        // Check if we have recent successful connection
+        if (lastSupabaseStatus)
+        {
+            return supabaseConnectedMessage;
+        }
+        else
+        {
+            return supabaseErrorMessage;
+        }
+    }
+    
+    /// <summary>
+    /// Gets the Supabase status color
+    /// </summary>
+    private Color GetSupabaseStatusColor()
+    {
+        if (!checkSupabaseConnection)
+        {
+            return Color.white;
+        }
+        
+        if (isTestingSupabase)
+        {
+            return connectingColor;
+        }
+        
+        if (SupabaseClient.Instance == null || !SupabaseClient.Instance.IsConfigured())
+        {
+            return disconnectedColor;
+        }
+        
+        return lastSupabaseStatus ? connectedColor : errorColor;
+    }
+    
+    /// <summary>
+    /// Test Supabase connection by attempting a simple query
+    /// </summary>
+    private IEnumerator TestSupabaseConnection()
+    {
+        if (SupabaseClient.Instance == null || !SupabaseClient.Instance.IsConfigured())
+        {
+            lastSupabaseStatus = false;
+            UpdateStatusDisplay();
+            yield break;
+        }
+        
+        isTestingSupabase = true;
+        UpdateStatusDisplay();
+        
+        bool testResult = false;
+        
+        // Attempt a simple query to test connection (get 1 row to minimize data)
+        yield return SupabaseClient.Instance.Get(
+            SupabaseLeaderboardManager.Instance != null 
+                ? "wave_leaderboards" 
+                : "wave_leaderboards", 
+            "limit=1", 
+            (response, success) =>
+            {
+                testResult = success;
+                
+                if (success)
+                {
+                    Debug.Log("PhotonConnectionChecker: Supabase connection test successful!");
+                }
+                else
+                {
+                    Debug.LogWarning($"PhotonConnectionChecker: Supabase connection test failed: {response}");
+                }
+            }
+        );
+        
+        lastSupabaseStatus = testResult;
+        isTestingSupabase = false;
+        UpdateStatusDisplay();
+    }
+    
+    /// <summary>
+    /// Gets the appropriate Photon color based on connection state
+    /// </summary>
+    private Color GetPhotonStatusColor()
     {
         switch (PhotonNetwork.NetworkClientState)
         {
@@ -280,6 +448,40 @@ public class PhotonConnectionChecker : MonoBehaviour, IConnectionCallbacks
     public ClientState GetConnectionState()
     {
         return PhotonNetwork.NetworkClientState;
+    }
+    
+    /// <summary>
+    /// Public method to check if Supabase is connected
+    /// </summary>
+    public bool IsSupabaseConnected()
+    {
+        return lastSupabaseStatus && SupabaseClient.Instance != null && SupabaseClient.Instance.IsConfigured();
+    }
+    
+    /// <summary>
+    /// Force test Supabase connection now
+    /// </summary>
+    public void TestSupabaseNow()
+    {
+        if (checkSupabaseConnection)
+        {
+            StartCoroutine(TestSupabaseConnection());
+        }
+    }
+    
+    /// <summary>
+    /// Get combined status (both Photon and Supabase)
+    /// </summary>
+    public string GetCombinedStatus()
+    {
+        string status = $"Photon: {(IsConnected() ? "Connected" : "Disconnected")}";
+        
+        if (checkSupabaseConnection)
+        {
+            status += $" | Supabase: {(IsSupabaseConnected() ? "Connected" : "Disconnected")}";
+        }
+        
+        return status;
     }
 
     #region Photon Callbacks

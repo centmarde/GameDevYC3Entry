@@ -385,6 +385,13 @@ public class LobbyController : MonoBehaviour
             PhotonGameManager.Instance.SetPlayerName(playerName);
         }
         
+        // Save player name to SupabaseLeaderboardManager
+        if (SupabaseLeaderboardManager.Instance != null)
+        {
+            SupabaseLeaderboardManager.Instance.SetPlayerName(playerName);
+            Debug.Log($"Player name sent to SupabaseLeaderboardManager: {playerName}");
+        }
+        
         Debug.Log($"Starting game with player name: {playerName}");
         Debug.Log($"Loading scene: {gameSceneName}");
         

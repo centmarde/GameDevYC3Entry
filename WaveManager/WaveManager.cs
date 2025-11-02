@@ -475,6 +475,13 @@ public class WaveManager : MonoBehaviour
         {
             spawningComplete = true;
             OnWaveComplete?.Invoke(currentWave);
+            
+            // Notify Supabase leaderboard manager
+            if (SupabaseLeaderboardManager.Instance != null)
+            {
+                // This is handled automatically by OnWaveComplete listener in SupabaseLeaderboardManager
+                Debug.Log("[WaveManager] Wave complete notification sent to SupabaseLeaderboardManager");
+            }
         }
         else
         {
@@ -527,6 +534,12 @@ public class WaveManager : MonoBehaviour
     public void RegisterEnemyKilled()
     {
         enemiesAlive--;
+        
+        // Also notify Supabase leaderboard manager
+        if (SupabaseLeaderboardManager.Instance != null)
+        {
+            SupabaseLeaderboardManager.Instance.RegisterKill();
+        }
         
         if (enemiesAlive <= 0 && spawningComplete)
         {

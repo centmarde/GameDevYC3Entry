@@ -64,6 +64,16 @@ public class WaveLeaderboardUI : MonoBehaviour
     [Tooltip("Show highest wave reached")]
     [SerializeField] private bool showHighestWave = true;
 
+    [Header("Leaderboard Sources")]
+    [Tooltip("Show combined data from Local + Photon + Supabase")]
+    [SerializeField] private bool useCombinedLeaderboard = true;
+    
+    [Tooltip("Show Supabase scores even when offline")]
+    [SerializeField] private bool showSupabaseWhenOffline = true;
+    
+    [Tooltip("Indicator text for data source")]
+    [SerializeField] private TextMeshProUGUI dataSourceText;
+
     private float updateTimer = 0f;
     private List<GameObject> activeEntries = new List<GameObject>();
     private bool hasValidConfiguration = false;
@@ -241,30 +251,44 @@ public class WaveLeaderboardUI : MonoBehaviour
             return; // Silently skip if configuration is invalid (error already logged in Awake)
         }
 
-        if (PhotonGameManager.Instance == null)
+        List<LeaderboardEntry> leaderboard = null;
+        string dataSource = "";
+
+        // Try to get combined leaderboard (Local + Photon + Supabase)
+        if (useCombinedLeaderboard && SupabaseLeaderboardManager.Instance != null)
         {
-            ShowNoPlayers("Game Manager not found");
-            return;
+            leaderboard = SupabaseLeaderboardManager.Instance.GetCombinedLeaderboard();
+            dataSource = "📊 Local + Photon + Supabase";
+            
+            Debug.Log($"WaveLeaderboardUI: Using combined leaderboard ({leaderboard?.Count ?? 0} entries)");
+        }
+        // Fallback to Photon only
+        else if (PhotonGameManager.Instance != null && PhotonGameManager.Instance.IsConnectedToPhoton() && PhotonGameManager.Instance.IsInLobby())
+        {
+            leaderboard = PhotonGameManager.Instance.GetLeaderboardData();
+            dataSource = "☁️ Photon Lobby";
+            
+            Debug.Log($"WaveLeaderboardUI: Using Photon leaderboard ({leaderboard?.Count ?? 0} entries)");
+        }
+        // Fallback to Supabase only (offline mode)
+        else if (showSupabaseWhenOffline && SupabaseLeaderboardManager.Instance != null)
+        {
+            leaderboard = SupabaseLeaderboardManager.Instance.GetSupabaseScoresOnly();
+            dataSource = "💾 Supabase (Offline)";
+            
+            Debug.Log($"WaveLeaderboardUI: Using Supabase leaderboard ({leaderboard?.Count ?? 0} entries)");
         }
 
-        if (!PhotonGameManager.Instance.IsConnectedToPhoton())
+        // Show data source indicator
+        if (dataSourceText != null)
         {
-            ShowNoPlayers("Not connected to server");
-            return;
+            dataSourceText.text = dataSource;
         }
 
-        if (!PhotonGameManager.Instance.IsInLobby())
-        {
-            ShowNoPlayers("Not in lobby");
-            return;
-        }
-
-        // Get leaderboard data
-        List<LeaderboardEntry> leaderboard = PhotonGameManager.Instance.GetLeaderboardData();
-
+        // Check if we have any data
         if (leaderboard == null || leaderboard.Count == 0)
         {
-            ShowNoPlayers("No players online");
+            ShowNoPlayers("No leaderboard data available");
             return;
         }
 
