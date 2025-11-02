@@ -22,7 +22,8 @@ public class Player : Entity
     public Player_IdleState idleState { get; private set; }
     public Player_OpenChestState openChestState { get; private set; }
     public Player_RangeAttackState rangeAttackState { get; private set; }
-    
+
+    public Player_ScatterAttackState scatterAttackState { get; private set; }
 
     public Player_HurtState hurtState { get; private set; }
 
@@ -31,7 +32,6 @@ public class Player : Entity
     public Player_ChargedAttackState chargedAttackState { get; private set; }
 
     public Player_DeathState deathState { get; private set; }
-
 
     public EntityState CurrentState => stateMachine.currentState;
 
@@ -87,6 +87,7 @@ public class Player : Entity
         hurtState = new Player_HurtState(this, stateMachine, "hurt");
         rollState = new Player_RollState(this, stateMachine, "isRolling");
         chargedAttackState = new Player_ChargedAttackState(this, stateMachine, "isCharging");
+        scatterAttackState = new Player_ScatterAttackState(this, stateMachine, "scatterAttack");
         deathState = new Player_DeathState(this, stateMachine, "isDead");
 
         health = GetComponent<Entity_Health>();

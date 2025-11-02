@@ -13,13 +13,19 @@ public class AttackIndicatorUIController : MonoBehaviour
     public GameObject scatterAttackUI;
     public Image weaponUseUI;
 
+    [Header("Shared Shine Image (behind icons)")]
+    public Image shineImage;   // ← your single shine sprite
+
     [Header("Label")]
     public TextMeshProUGUI attackLabelText;
 
     [Header("Animation Settings")]
     [SerializeField] private float normalScale = 1f;
-    [SerializeField] private float selectedScale = 1.5f;
+    [SerializeField] private float selectedScale = 1.2f;
     [SerializeField] private float scaleLerpSpeed = 6f;
+    [SerializeField] private float shineFadeSpeed = 6f;
+    [SerializeField] private float pulseSpeed = 4f;
+    [SerializeField] private float pulseAmount = 0.15f;
 
     private GameObject[] attackIcons;
     private int currentIndex = 0;
@@ -27,39 +33,43 @@ public class AttackIndicatorUIController : MonoBehaviour
 
     void Start()
     {
-        // Destroy any old runtime "AttackTypeCanvas" if it exists
         GameObject autoCanvas = GameObject.Find("AttackTypeCanvas");
         if (autoCanvas != null)
             Destroy(autoCanvas);
 
         attackIcons = new GameObject[]
         {
-        normalAttackUI,
-        chargedAttackUI,
-        scatterAttackUI
+            normalAttackUI,
+            chargedAttackUI,
+            scatterAttackUI
         };
 
-        // Make sure all icons are visible and scaled normally
         foreach (var icon in attackIcons)
         {
             icon.SetActive(true);
             icon.transform.localScale = Vector3.one * normalScale;
         }
 
-        // ✅ Force initial display to Normal Shot
         currentIndex = 0;
         if (attackLabelText != null)
             attackLabelText.text = GetDisplayName(currentIndex);
 
-        // ✅ Also make sure the normal shot icon starts scaled up
         attackIcons[currentIndex].transform.localScale = Vector3.one * selectedScale;
-    }
 
+        // hide shine initially
+        if (shineImage != null)
+        {
+            Color c = shineImage.color;
+            c.a = 0f;
+            shineImage.color = c;
+        }
+    }
 
     void Update()
     {
         UpdateAttackIndicator(rangeController.CurrentAttack);
         AnimateScaleTransition();
+        AnimateShine();
     }
 
     private void AnimateScaleTransition()
@@ -73,6 +83,23 @@ public class AttackIndicatorUIController : MonoBehaviour
                 Time.deltaTime * scaleLerpSpeed
             );
         }
+    }
+
+    private void AnimateShine()
+    {
+        if (shineImage == null) return;
+
+        // fade the shine in
+        Color c = shineImage.color;
+        c.a = Mathf.Lerp(c.a, 1f, Time.deltaTime * shineFadeSpeed);
+        shineImage.color = c;
+
+        // pulse softly
+        float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
+        shineImage.transform.localScale = Vector3.one * pulse;
+
+        // position the shine behind the active icon
+        shineImage.transform.position = attackIcons[currentIndex].transform.position;
     }
 
     public void UpdateAttackIndicator(Player_RangeAttack attack)
@@ -91,6 +118,12 @@ public class AttackIndicatorUIController : MonoBehaviour
 
             if (attackLabelText)
                 attackLabelText.text = GetDisplayName(index);
+
+            // brief brightness pop when switching
+            if (shineImage != null)
+            {
+                shineImage.color = new Color(shineImage.color.r, shineImage.color.g, shineImage.color.b, 1.2f);
+            }
         }
     }
 

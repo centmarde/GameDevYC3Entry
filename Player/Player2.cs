@@ -15,6 +15,9 @@ public class Player2 : Player
     public Player2_DashAttackState dashAttackState { get; private set; }
     public Player2_BlinkState blinkState { get; private set; }
 
+    public MeleeAttackIndicator meleeIndicator;
+
+
     protected override void Awake()
     {
         Debug.Log($"[Player2] Awake called for {gameObject.name}");
@@ -224,8 +227,18 @@ public class Player2 : Player
         stateMachine.ChangeState(blinkState);
     }
 
-    // EntityDeath is now properly handled by base Player class
-    // No need to override unless Player2 needs special death behavior
+    public override void EntityDeath()
+    {
+        float delay = Mathf.Max(0.1f, Stats.deathDelay);
+        Invoke(nameof(ShowGameOverAfterDelay), delay);
+    }
+
+    private void ShowGameOverAfterDelay()
+    {
+        UIManager.Instance?.ShowGameOverPanel();
+        Destroy(gameObject);  // Clean up player after showing panel
+        Debug.Log("You died — Game Over panel displayed.");
+    }
 
     /// <summary>
     /// Ensures that Player2 has all required skill components for the upgrade system

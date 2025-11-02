@@ -6,25 +6,27 @@ public class PauseMenuUI : MonoBehaviour
     [Header("Panels")]
     public GameObject mainPanel;
     public GameObject aboutPanel;
-    public GameObject monsterDatabasePanel; // 👈 add this line
+    public GameObject monsterDatabasePanel;
+    public GameObject tutorialPanel; // 👈 NEW
 
     private void OnEnable()
     {
-        Time.timeScale = 0f; // pause game when active
+        Time.timeScale = 0f; // pause game
         if (aboutPanel) aboutPanel.SetActive(false);
         if (monsterDatabasePanel) monsterDatabasePanel.SetActive(false);
+        if (tutorialPanel) tutorialPanel.SetActive(false);
         if (mainPanel) mainPanel.SetActive(true);
-
     }
 
     private void OnDisable()
     {
-        Time.timeScale = 1f; // resume game when closed
+        Time.timeScale = 1f; // resume game
     }
 
+    // === Main menu navigation ===
     public void OnContinueButton()
     {
-        gameObject.SetActive(false); // closes this UI
+        gameObject.SetActive(false);
     }
 
     public void OnAboutButton()
@@ -39,7 +41,7 @@ public class PauseMenuUI : MonoBehaviour
         if (mainPanel) mainPanel.SetActive(true);
     }
 
-    // 👇 new section for Monster Database navigation
+    // === Monster Database ===
     public void OnOpenMonsterDatabase()
     {
         if (aboutPanel) aboutPanel.SetActive(false);
@@ -52,17 +54,31 @@ public class PauseMenuUI : MonoBehaviour
         if (aboutPanel) aboutPanel.SetActive(true);
     }
 
+    // === Tutorial navigation ===
+    public void OnOpenTutorial()
+    {
+        if (aboutPanel) aboutPanel.SetActive(false);
+        if (tutorialPanel) tutorialPanel.SetActive(true);
+    }
+
+    public void OnCloseTutorial()
+    {
+        if (tutorialPanel) tutorialPanel.SetActive(false);
+        if (aboutPanel) aboutPanel.SetActive(true);
+    }
+
+    // === Quit to main menu ===
     public void OnQuitButton()
     {
         Time.timeScale = 1f;
 
-        // --- Reset the PlayerSpawnManager session flag ---
         var spawner = FindObjectOfType<PlayerSpawnManager>();
         if (spawner != null)
         {
             spawner.DespawnPlayer();
             typeof(PlayerSpawnManager)
-                .GetField("playerSpawnedThisSession", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                .GetField("playerSpawnedThisSession",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
                 ?.SetValue(null, false);
         }
 

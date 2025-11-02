@@ -135,21 +135,23 @@ public class Player_Combat : MonoBehaviour
 
         // Face attack direction instantly during attack
         FaceInstant(cachedAimDirection);
-        
-        // NOTE: After attack ends, Update() will resume using keyboard direction
-        // This ensures player returns to facing keyboard input direction when idle
 
         var current = player.playerCombat.currentAttack;
 
         if (current is not Player_ChargedRangeAttack)
             player.playerMovement.movementLocked = true;
 
-        // Tell the state to start the appropriate attack
+        // Tell the state machine which attack state to use
         if (current is Player_ChargedRangeAttack)
         {
             player.RequestStateChange(player.chargedAttackState);
         }
-        else
+        else if (current is Player_ScatterRangeAttack) //
+        {
+            player.scatterAttackState.SetCachedAim(cachedAimDirection);
+            player.RequestStateChange(player.scatterAttackState);
+        }
+        else // Default normal ranged attack
         {
             player.rangeAttackState.SetCachedAim(cachedAimDirection);
             player.RequestStateChange(player.rangeAttackState);
