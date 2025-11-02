@@ -27,6 +27,9 @@ public class Enemy : Entity, ITargetable
     private bool isDead = false;
 
     private Player player;
+    private Vector3 spawnPosition; // Store original spawn position
+    private float distanceCheckTimer = 0f;
+    private const float DISTANCE_CHECK_INTERVAL = 2f; // Check every 2 seconds
 
 
 
@@ -62,6 +65,9 @@ public class Enemy : Entity, ITargetable
         if (pGO != null) player = pGO.GetComponent<Player>();
         if (combat != null) combat.SetTarget(player != null ? player.transform : null);
 
+        // Store spawn position
+        spawnPosition = transform.position;
+
         if (movement != null)
         {
             movement.Init(Stats, transform.position, transform.forward, player != null ? player.transform : null);
@@ -89,6 +95,7 @@ public class Enemy : Entity, ITargetable
         if (!isDead)
         {
             base.Update();
+            CheckDistanceFromPlayer();
         }
     }
 
@@ -359,6 +366,62 @@ public class Enemy : Entity, ITargetable
         return particleObj;
     }
 
+    /// <summary>
+    /// Check if enemy is too far from player and respawn if needed
+    /// </summary>
+    private void CheckDistanceFromPlayer()
+    {
+        // Only check periodically to reduce performance cost
+        distanceCheckTimer += Time.deltaTime;
+        if (distanceCheckTimer < DISTANCE_CHECK_INTERVAL)
+            return;
+        
+        distanceCheckTimer = 0f;
+        
+        // Skip if maxDistanceFromPlayer is 0 (disabled) or player is null
+        if (Stats == null || Stats.maxDistanceFromPlayer <= 0f || player == null)
+            return;
+        
+        // Calculate distance from player
+        float distanceFromPlayer = Vector3.Distance(transform.position, player.transform.position);
+        
+        // If too far, respawn at spawn position
+        if (distanceFromPlayer > Stats.maxDistanceFromPlayer)
+        {
+            RespawnAtSpawnPosition();
+        }
+    }
+    
+    /// <summary>
+    /// Teleport enemy back to spawn position and reset state
+    /// </summary>
+    private void RespawnAtSpawnPosition()
+    {
+        Debug.Log($"[Enemy] {gameObject.name} respawning at spawn position - was too far from player");
+        
+        // Teleport to spawn position
+        transform.position = spawnPosition;
+        
+        // Reset velocity
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        
+        // Reset movement system to use spawn position as home
+        if (movement != null)
+        {
+            movement.Init(Stats, spawnPosition, transform.forward, player != null ? player.transform : null);
+        }
+        
+        // Return to idle state
+        if (stateMachine != null && idleState != null)
+        {
+            stateMachine.ChangeState(idleState);
+        }
+    }
+
     private void OnDrawGizmos()
     {
         if (Stats == null) return;
@@ -368,5 +431,16 @@ public class Enemy : Entity, ITargetable
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, Stats.aggroRadius);
+        
+        // Draw max distance sphere (if enabled)
+        if (Stats.maxDistanceFromPlayer > 0f)
+        {
+            Gizmos.color = new Color(1f, 0f, 1f, 0.2f); // Magenta with transparency
+            
+            // Draw around player if available, otherwise around spawn point
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            Vector3 center = playerObj != null ? playerObj.transform.position : transform.position;
+            Gizmos.DrawWireSphere(center, Stats.maxDistanceFromPlayer);
+        }
     }
 }

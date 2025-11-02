@@ -16,6 +16,8 @@ public class EnemyStatData_SO : ScriptableObject
     public float aggroRadius = 5f;
     public float leashRadius = 10f;
     public float homeStopDistance = 0.15f;
+    [Tooltip("Maximum distance from player before enemy respawns at spawn point. Set to 0 to disable.")]
+    public float maxDistanceFromPlayer = 50f;
 
     [Header("Attack")]
     public float attackDamage = 10f;
