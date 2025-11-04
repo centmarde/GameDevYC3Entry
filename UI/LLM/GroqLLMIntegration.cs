@@ -10,8 +10,10 @@ using TMPro;
 public class GroqLLMIntegration : MonoBehaviour
 {
     [Header("Groq API Configuration")]
-    [SerializeField] private string apiKey = "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";
+    [Tooltip("Leave empty to load from .env file (recommended)")]
+    [SerializeField] private string apiKey = "";
     [SerializeField] private string model = "llama-3.3-70b-versatile"; // Default Groq model
+    [SerializeField] private bool useEnvFile = true;
     
     [Header("UI References")]
     [SerializeField] private TMP_InputField inputField;
@@ -56,6 +58,9 @@ After Q3, analyze and end with the personality tag.";
     
     private void Start()
     {
+        // Load API key from .env file
+        LoadAPIKey();
+        
         SetupUI();
         
         if (sendButton != null)
@@ -70,6 +75,31 @@ After Q3, analyze and end with the personality tag.";
         
         // Initialize Game Master
         StartGameMaster();
+    }
+    
+    private void LoadAPIKey()
+    {
+        if (useEnvFile || string.IsNullOrEmpty(apiKey))
+        {
+            // Load from .env file
+            EnvLoader.Load();
+            string envApiKey = EnvLoader.GetVariable("GROQ_API_KEY");
+            
+            if (!string.IsNullOrEmpty(envApiKey))
+            {
+                apiKey = envApiKey;
+                Debug.Log("[GroqLLM] ✓ API Key loaded from .env file");
+            }
+            else if (string.IsNullOrEmpty(apiKey))
+            {
+                Debug.LogError("[GroqLLM] ✗ API Key not found in .env file and not set in Inspector!");
+                Debug.LogError("[GroqLLM] Please create a .env file in project root with: GROQ_API_KEY=your_key_here");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[GroqLLM] Using API Key from Inspector (not recommended for production)");
+        }
     }
     
     private void StartGameMaster()
