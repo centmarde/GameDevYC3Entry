@@ -33,8 +33,7 @@ public class Player2_MeleeCombat : MonoBehaviour
     {
         // Only rotate with movement if not in combat states and not locked
         bool isInCombatState = player2.CurrentState == player2.dashAttackState ||
-                               player2.CurrentState == player2.blinkState ||
-                               player2.CurrentState == player2.rollState;
+                               player2.CurrentState == player2.blinkState;
         
         if (!isInCombatState && !player2.playerMovement.movementLocked)
         {

@@ -118,7 +118,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
         
         if (waveManager == null)
         {
-            Debug.LogError("[Supabase] WaveManager NOT FOUND! Wave tracking will not work. Ensure WaveManager is in the scene.");
+            // Debug.LogError("[Supabase] WaveManager NOT FOUND! Wave tracking will not work. Ensure WaveManager is in the scene.");
         }
         else
         {
@@ -235,18 +235,18 @@ public class SupabaseLeaderboardManager : MonoBehaviour
     /// </summary>
     private void OnWaveCompleted(int waveNumber)
     {
-        Debug.Log($"[Supabase] ✓✓✓ OnWaveCompleted EVENT FIRED! Wave: {waveNumber}");
+        // Debug.Log($"[Supabase] ✓✓✓ OnWaveCompleted EVENT FIRED! Wave: {waveNumber}");
         
         // Sync with WaveManager's current wave to ensure accuracy
         if (waveManager != null)
         {
             int actualWave = waveManager.GetCurrentWave();
-            Debug.Log($"[Supabase] Synced with WaveManager: Event wave={waveNumber}, Actual wave={actualWave}");
+            // Debug.Log($"[Supabase] Synced with WaveManager: Event wave={waveNumber}, Actual wave={actualWave}");
             waveNumber = actualWave;
         }
         else
         {
-            Debug.LogWarning($"[Supabase] WaveManager is NULL during OnWaveCompleted!");
+            // Debug.LogWarning($"[Supabase] WaveManager is NULL during OnWaveCompleted!");
         }
         
         // Update local entry
@@ -261,7 +261,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
         localEntry.wavesCompleted = sessionWavesCompleted;
         
         // Log all current stats
-        Debug.Log($"[Supabase] [Wave Stats] Current: {localEntry.currentWave}, Highest: {localEntry.highestWave}, Kills: {localEntry.totalKills}, WavesCompleted: {localEntry.wavesCompleted}, Deaths: {localEntry.deathCount}");
+        // Debug.Log($"[Supabase] [Wave Stats] Current: {localEntry.currentWave}, Highest: {localEntry.highestWave}, Kills: {localEntry.totalKills}, WavesCompleted: {localEntry.wavesCompleted}, Deaths: {localEntry.deathCount}");
     }
     
     /// <summary>
@@ -297,7 +297,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
                 {
                     localEntry.highestWave = currentWave;
                     SaveLocalHighestWave(currentWave);
-                    Debug.Log($"[Supabase] NEW HIGHEST WAVE: {currentWave}!");
+                    // Debug.Log($"[Supabase] NEW HIGHEST WAVE: {currentWave}!");
                 }
                 LogDebug($"[Supabase] Wave synced on kill: Now on wave {currentWave}");
             }
@@ -336,7 +336,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
         
         if (SupabaseClient.Instance == null || !SupabaseClient.Instance.IsConfigured())
         {
-            Debug.LogWarning("SupabaseClient not configured! Cannot save to database.");
+            // Debug.LogWarning("SupabaseClient not configured! Cannot save to database.");
             return;
         }
         
@@ -419,7 +419,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"Failed to update leaderboard: {response}");
+                    // Debug.LogError($"Failed to update leaderboard: {response}");
                 }
             });
         }
@@ -434,7 +434,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"Failed to save leaderboard: {response}");
+                    // Debug.LogError($"Failed to save leaderboard: {response}");
                 }
             });
         }
@@ -449,7 +449,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
     {
         if (SupabaseClient.Instance == null || !SupabaseClient.Instance.IsConfigured())
         {
-            Debug.LogWarning("SupabaseClient not configured!");
+            // Debug.LogWarning("SupabaseClient not configured!");
             yield break;
         }
         
@@ -470,12 +470,12 @@ public class SupabaseLeaderboardManager : MonoBehaviour
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"Failed to parse Supabase response: {e.Message}");
+                    // Debug.LogError($"Failed to parse Supabase response: {e.Message}");
                 }
             }
             else
             {
-                Debug.LogError($"Failed to load scores: {response}");
+                // Debug.LogError($"Failed to load scores: {response}");
             }
         });
     }
@@ -613,7 +613,7 @@ public class SupabaseLeaderboardManager : MonoBehaviour
     {
         if (showDebugLogs)
         {
-            Debug.Log($"[SupabaseLeaderboardManager] {message}");
+            // Debug.Log($"[SupabaseLeaderboardManager] {message}");
         }
     }
     

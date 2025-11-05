@@ -12,7 +12,6 @@ public class Player : Entity
     public PlayerSkill_Manager skillManager { get; private set; }
     public Player_Movement playerMovement { get; private set; }
 
-    public Player_Roll playerRoll { get; private set; }
     public Player_Combat playerCombat { get; private set; }
     public Player_RangeAttackController rangeAttackController { get; private set; }
 
@@ -20,14 +19,9 @@ public class Player : Entity
     //State Variables
     public Player_MoveState moveState { get; private set; }
     public Player_IdleState idleState { get; private set; }
-    public Player_OpenChestState openChestState { get; private set; }
     public Player_RangeAttackState rangeAttackState { get; private set; }
 
     public Player_ScatterAttackState scatterAttackState { get; private set; }
-
-    public Player_HurtState hurtState { get; private set; }
-
-    public Player_RollState rollState { get; private set; }
 
     public Player_ChargedAttackState chargedAttackState { get; private set; }
 
@@ -77,15 +71,11 @@ public class Player : Entity
         playerMovement = GetComponent<Player_Movement>();
         playerCombat = GetComponent<Player_Combat>();
         rangeAttackController = GetComponent<Player_RangeAttackController>();
-        playerRoll = GetComponent<Player_Roll>();
 
         input = new PlayerInputSet();
         moveState = new Player_MoveState(this, stateMachine, "move");
         idleState = new Player_IdleState(this, stateMachine, "idle");
-        openChestState = new Player_OpenChestState(this, stateMachine, "isOpeningChest");
         rangeAttackState = new Player_RangeAttackState(this, stateMachine, "rangeAttack");
-        hurtState = new Player_HurtState(this, stateMachine, "hurt");
-        rollState = new Player_RollState(this, stateMachine, "isRolling");
         chargedAttackState = new Player_ChargedAttackState(this, stateMachine, "isCharging");
         scatterAttackState = new Player_ScatterAttackState(this, stateMachine, "scatterAttack");
         deathState = new Player_DeathState(this, stateMachine, "isDead");
@@ -212,8 +202,6 @@ public class Player : Entity
             input.Player.SwitchAttackType.performed += rangeAttackController.OnScroll;
         }
 
-        input.Player.Roll.performed += ctx => TryStartRoll();
-
         // Movement Input
         if (playerMovement != null)
         {
@@ -242,8 +230,6 @@ public class Player : Entity
         {
             input.Player.SwitchAttackType.performed -= rangeAttackController.OnScroll;
         }
-
-        input.Player.Roll.performed -= ctx => TryStartRoll();
 
         input.Player.MonsterDex.performed -= ctx => ToggleMonsterBook();
 
@@ -300,21 +286,6 @@ public class Player : Entity
         }
 
         return false;
-    }
-
-    private void TryStartRoll()
-    {
-        if (stateMachine.currentState == rollState ||
-            stateMachine.currentState == hurtState ||
-            stateMachine.currentState == rangeAttackState)
-            return;
-
-        if (playerRoll == null) return;
-        if (playerRoll.IsOnCooldown)
-            return;
-
-        stateMachine.ChangeState(rollState);
-
     }
 
     public override void EntityDeath()

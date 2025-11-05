@@ -62,7 +62,6 @@ public class Player2 : Player
         if (health && player2Stats != null)
         {
             health.SetMaxHealth(player2Stats.maxHealth);
-            health.SetEvasionCheck(() => player2Stats.RollEvasion());
         }
     }
 
@@ -151,9 +150,6 @@ public class Player2 : Player
             input.Player.Attack.canceled += meleeCombat.OnAttackPerformed;
         }
 
-        // Subscribe to Roll
-        input.Player.Roll.performed += ctx => TryStartRoll_Player2();
-
         // Subscribe to Blink (Space key - you'll need to add this to the Input Actions in Unity Editor)
         // For now, we'll use the Search key (C) as a placeholder for testing
         input.Player.Search.performed += ctx => TryStartBlink();
@@ -184,9 +180,6 @@ public class Player2 : Player
             input.Player.Attack.canceled -= meleeCombat.OnAttackPerformed;
         }
 
-        // Unsubscribe roll
-        input.Player.Roll.performed -= ctx => TryStartRoll_Player2();
-
         // Unsubscribe blink
         input.Player.Search.performed -= ctx => TryStartBlink();
 
@@ -194,26 +187,10 @@ public class Player2 : Player
 
     }
 
-    private void TryStartRoll_Player2()
-    {
-        if (stateMachine.currentState == rollState ||
-            stateMachine.currentState == hurtState ||
-            stateMachine.currentState == dashAttackState)
-            return;
-
-        if (playerRoll == null) return;
-        if (playerRoll.IsOnCooldown)
-            return;
-
-        stateMachine.ChangeState(rollState);
-    }
-
     private void TryStartBlink()
     {
         // Cannot blink during certain states
-        if (stateMachine.currentState == hurtState ||
-            stateMachine.currentState == dashAttackState ||
-            stateMachine.currentState == rollState ||
+        if (stateMachine.currentState == dashAttackState ||
             stateMachine.currentState == blinkState)
             return;
 
@@ -237,7 +214,7 @@ public class Player2 : Player
     {
         UIManager.Instance?.ShowGameOverPanel();
         Destroy(gameObject);  // Clean up player after showing panel
-        Debug.Log("You died — Game Over panel displayed.");
+        Debug.Log("You died ï¿½ Game Over panel displayed.");
     }
 
     /// <summary>

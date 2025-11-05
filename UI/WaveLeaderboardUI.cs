@@ -65,11 +65,8 @@ public class WaveLeaderboardUI : MonoBehaviour
     [SerializeField] private bool showHighestWave = true;
 
     [Header("Leaderboard Sources")]
-    [Tooltip("Show combined data from Local + Photon + Supabase")]
+    [Tooltip("Show combined data from Local + Supabase")]
     [SerializeField] private bool useCombinedLeaderboard = true;
-    
-    [Tooltip("Show Supabase scores even when offline")]
-    [SerializeField] private bool showSupabaseWhenOffline = true;
     
     [Tooltip("Indicator text for data source")]
     [SerializeField] private TextMeshProUGUI dataSourceText;
@@ -254,27 +251,27 @@ public class WaveLeaderboardUI : MonoBehaviour
         List<LeaderboardEntry> leaderboard = null;
         string dataSource = "";
 
-        // Try to get combined leaderboard (Local + Photon + Supabase)
-        if (useCombinedLeaderboard && SupabaseLeaderboardManager.Instance != null)
+        // Check if Supabase is available
+        if (SupabaseLeaderboardManager.Instance == null)
         {
+            ShowNoPlayers("Supabase not configured");
+            return;
+        }
+
+        // Get leaderboard from Supabase
+        if (useCombinedLeaderboard)
+        {
+            // Get combined leaderboard (Local + Supabase)
             leaderboard = SupabaseLeaderboardManager.Instance.GetCombinedLeaderboard();
-            dataSource = "📊 Local + Photon + Supabase";
+            dataSource = "📊 Local + Supabase";
             
             Debug.Log($"WaveLeaderboardUI: Using combined leaderboard ({leaderboard?.Count ?? 0} entries)");
         }
-        // Fallback to Photon only
-        else if (PhotonGameManager.Instance != null && PhotonGameManager.Instance.IsConnectedToPhoton() && PhotonGameManager.Instance.IsInLobby())
+        else
         {
-            leaderboard = PhotonGameManager.Instance.GetLeaderboardData();
-            dataSource = "☁️ Photon Lobby";
-            
-            Debug.Log($"WaveLeaderboardUI: Using Photon leaderboard ({leaderboard?.Count ?? 0} entries)");
-        }
-        // Fallback to Supabase only (offline mode)
-        else if (showSupabaseWhenOffline && SupabaseLeaderboardManager.Instance != null)
-        {
+            // Get Supabase scores only
             leaderboard = SupabaseLeaderboardManager.Instance.GetSupabaseScoresOnly();
-            dataSource = "💾 Supabase (Offline)";
+            dataSource = "💾 Supabase";
             
             Debug.Log($"WaveLeaderboardUI: Using Supabase leaderboard ({leaderboard?.Count ?? 0} entries)");
         }

@@ -41,9 +41,6 @@ public class Player_Feedback : Entity_Feedback
     {
         anim.SetTrigger("hurt");
 
-        if (player != null)
-            player.RequestStateChange(player.hurtState);
-
         if (rb != null && !isKnockedBack)
             StartCoroutine(ApplyKnockback(hitNormal));
     }

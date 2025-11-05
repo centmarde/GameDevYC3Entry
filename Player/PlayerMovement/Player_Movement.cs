@@ -13,7 +13,6 @@ public class Player_Movement : MonoBehaviour
     public bool movementLocked;
 
     private float baseMoveSpeed;
-    private float turnSpeed;
     private float currentSpeedMultiplier;
 
 
@@ -36,7 +35,6 @@ public class Player_Movement : MonoBehaviour
         rb = player.GetComponent<Rigidbody>();
 
         baseMoveSpeed = player.Stats.moveSpeed;
-        turnSpeed = player.Stats.turnSpeed;
         currentSpeedMultiplier = player.Stats.currentSpeedMultiplier;
         
         // Initialize lastMoveDir to face forward (down in isometric view)
@@ -144,7 +142,7 @@ public class Player_Movement : MonoBehaviour
         // This ensures the player always faces the direction of their last input
         if (hasLookRotation)
         {
-            var next = Quaternion.RotateTowards(rb.rotation, lookRotation, turnSpeed * Time.fixedDeltaTime);
+            var next = Quaternion.RotateTowards(rb.rotation, lookRotation, 360f * Time.fixedDeltaTime);
             rb.MoveRotation(next);
             
             // Update transform.forward to match the rotation (for external systems)
@@ -154,7 +152,7 @@ public class Player_Movement : MonoBehaviour
         {
             // If no explicit look rotation, use last movement direction
             Quaternion targetRotation = Quaternion.LookRotation(lastNonZeroMoveDir, Vector3.up);
-            var next = Quaternion.RotateTowards(rb.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime);
+            var next = Quaternion.RotateTowards(rb.rotation, targetRotation, 360f * Time.fixedDeltaTime);
             rb.MoveRotation(next);
         }
 

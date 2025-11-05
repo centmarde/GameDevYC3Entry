@@ -40,10 +40,7 @@ public class PlayerState : EntityState
                 player.pendingInteractable = interactable;
                 player.pendingProfile = profile;
 
-                if(interactable is Object_Chest)
-                    stateMachine.ChangeState(player.openChestState);
-                else
-                    interactable.Interact(player);
+                interactable.Interact(player);
             }
         }
 
