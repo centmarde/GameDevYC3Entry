@@ -21,6 +21,33 @@ public class Enemy_ChaseState : EnemyState
     {
         base.Update();
 
+        // Check if this is a minion (collision-based damage)
+        bool isMinion = enemy is Enemy_Minions;
+        
+        if (isMinion)
+        {
+            // Minions don't use attack states - just chase continuously
+            // They deal damage through collision
+            if (enemy.movement != null)
+            {
+                enemy.movement.LookAtPlayer();
+                enemy.movement.MoveToPlayer();
+            }
+            return;
+        }
+
+        // Null safety checks for regular enemies
+        if (enemy.combat == null || enemy.combat.CurrentAttack == null || enemy.combat.Target == null)
+        {
+            // Continue chasing if combat isn't ready yet
+            if (enemy.movement != null)
+            {
+                enemy.movement.LookAtPlayer();
+                enemy.movement.MoveToPlayer();
+            }
+            return;
+        }
+
         // 1. Check if the player is in range to attack.
         bool isInAttackRange = enemy.combat.CurrentAttack.CanAttack(enemy.combat.Target);
 
@@ -35,12 +62,7 @@ public class Enemy_ChaseState : EnemyState
         enemy.movement.LookAtPlayer();
         enemy.movement.MoveToPlayer();
 
-        // 4. Check if the player is too far away to chase.
-        if (!enemy.movement.EnemyWithinLeash() || !enemy.movement.PlayerWithinChaseWindow())
-        {
-            stateMachine.ChangeState(enemy.returnHomeState);
-            return;
-        }
+        // 4. Always chase player - no return home check
     }
 
 }

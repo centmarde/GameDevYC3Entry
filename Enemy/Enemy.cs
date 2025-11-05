@@ -7,8 +7,8 @@ public class Enemy : Entity, ITargetable
     [SerializeField] private EnemyStatData_SO enemyStats;
     protected virtual EnemyStatData_SO Stats => enemyStats;
     public float AttackDamage => enemyStats != null ? enemyStats.attackDamage : 10f;
-    public float AttackRadius => enemyStats != null ? enemyStats.attackRadius : 2f;
-    public float AttackRange => enemyStats != null ? enemyStats.attackRange : 2f;
+    public float AttackRadius => 0f;  // Deprecated: Use collision-based damage instead
+    public float AttackRange => 0f;   // Deprecated: Use collision-based damage instead
     public float AttackCooldown => enemyStats != null ? enemyStats.attackCooldown : 1f;
 
 
@@ -27,9 +27,6 @@ public class Enemy : Entity, ITargetable
     private bool isDead = false;
 
     private Player player;
-    private Vector3 spawnPosition; // Store original spawn position
-    private float distanceCheckTimer = 0f;
-    private const float DISTANCE_CHECK_INTERVAL = 2f; // Check every 2 seconds
 
 
 
@@ -60,32 +57,33 @@ public class Enemy : Entity, ITargetable
 
         if (health != null) health.SetMaxHealth(Stats.maxHealth);
 
-        var pGO = GameObject.FindWithTag("Player");
-
-        if (pGO != null) player = pGO.GetComponent<Player>();
+        // Auto-find player by tag or layer
+        FindPlayer();
         if (combat != null) combat.SetTarget(player != null ? player.transform : null);
-
-        // Store spawn position
-        spawnPosition = transform.position;
 
         if (movement != null)
         {
             movement.Init(Stats, transform.position, transform.forward, player != null ? player.transform : null);
         }
 
+        // Initialize states (no more patrol/idle/move states needed)
+        chaseState = new Enemy_ChaseState(this, stateMachine, "isChasing");
+        meleeAttackState = new Enemy_MeleeAttackState(this, stateMachine, "isAttacking");
+        
+        // Keep these for compatibility but they won't be used
         idleState = new Enemy_IdleState(this, stateMachine, "isIdle");
         moveState = new Enemy_MoveState(this, stateMachine, "isMoving");
-        chaseState = new Enemy_ChaseState(this, stateMachine, "isChasing");
         returnHomeState = new Enemy_ReturnHomeState(this, stateMachine, "isChasing");
-        meleeAttackState = new Enemy_MeleeAttackState(this, stateMachine, "isAttacking");
     }
 
     protected override void Start()
     {
         base.Start();
-        if (Stats != null && stateMachine != null && idleState != null)
+        // Start directly in chase state to immediately pursue player
+        if (Stats != null && stateMachine != null && chaseState != null)
         {
-            stateMachine.Initialize(idleState);
+            stateMachine.Initialize(chaseState);
+            Debug.Log($"[Enemy] {gameObject.name} spawned and immediately chasing player");
         }
     }
 
@@ -94,8 +92,61 @@ public class Enemy : Entity, ITargetable
         // Don't update state machine if dead
         if (!isDead)
         {
+            // Auto-find player if lost
+            if (player == null)
+            {
+                FindPlayer();
+            }
+            
             base.Update();
-            CheckDistanceFromPlayer();
+        }
+    }
+    
+    /// <summary>
+    /// Auto-find player by tag or layer
+    /// </summary>
+    private void FindPlayer()
+    {
+        // Try to find by tag first
+        GameObject pGO = GameObject.FindWithTag("Player");
+        
+        // If not found by tag, try to find by name patterns
+        if (pGO == null)
+        {
+            pGO = GameObject.Find("Player1") ?? GameObject.Find("Player2") ?? GameObject.Find("Player");
+        }
+        
+        // If still not found, try to find any object with Player component
+        if (pGO == null)
+        {
+            Player[] players = FindObjectsOfType<Player>();
+            if (players.Length > 0)
+            {
+                pGO = players[0].gameObject;
+            }
+        }
+        
+        if (pGO != null)
+        {
+            player = pGO.GetComponent<Player>();
+            
+            // Update combat target
+            if (combat != null && player != null)
+            {
+                combat.SetTarget(player.transform);
+            }
+            
+            // Update movement reference
+            if (movement != null && player != null)
+            {
+                movement.UpdatePlayerReference(player.transform);
+            }
+            
+            Debug.Log($"[Enemy] {gameObject.name} found player: {pGO.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"[Enemy] {gameObject.name} could not find player!");
         }
     }
 
@@ -366,61 +417,7 @@ public class Enemy : Entity, ITargetable
         return particleObj;
     }
 
-    /// <summary>
-    /// Check if enemy is too far from player and respawn if needed
-    /// </summary>
-    private void CheckDistanceFromPlayer()
-    {
-        // Only check periodically to reduce performance cost
-        distanceCheckTimer += Time.deltaTime;
-        if (distanceCheckTimer < DISTANCE_CHECK_INTERVAL)
-            return;
-        
-        distanceCheckTimer = 0f;
-        
-        // Skip if maxDistanceFromPlayer is 0 (disabled) or player is null
-        if (Stats == null || Stats.maxDistanceFromPlayer <= 0f || player == null)
-            return;
-        
-        // Calculate distance from player
-        float distanceFromPlayer = Vector3.Distance(transform.position, player.transform.position);
-        
-        // If too far, respawn at spawn position
-        if (distanceFromPlayer > Stats.maxDistanceFromPlayer)
-        {
-            RespawnAtSpawnPosition();
-        }
-    }
-    
-    /// <summary>
-    /// Teleport enemy back to spawn position and reset state
-    /// </summary>
-    private void RespawnAtSpawnPosition()
-    {
-        Debug.Log($"[Enemy] {gameObject.name} respawning at spawn position - was too far from player");
-        
-        // Teleport to spawn position
-        transform.position = spawnPosition;
-        
-        // Reset velocity
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-        
-        // Reset movement system to use spawn position as home
-        if (movement != null)
-        {
-            movement.Init(Stats, spawnPosition, transform.forward, player != null ? player.transform : null);
-        }
-        
-        // Return to idle state
-        if (stateMachine != null && idleState != null)
-        {
-            stateMachine.ChangeState(idleState);
-        }
-    }
+
 
     private void OnDrawGizmos()
     {
@@ -428,19 +425,5 @@ public class Enemy : Entity, ITargetable
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, AttackRadius);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, Stats.aggroRadius);
-        
-        // Draw max distance sphere (if enabled)
-        if (Stats.maxDistanceFromPlayer > 0f)
-        {
-            Gizmos.color = new Color(1f, 0f, 1f, 0.2f); // Magenta with transparency
-            
-            // Draw around player if available, otherwise around spawn point
-            GameObject playerObj = GameObject.FindWithTag("Player");
-            Vector3 center = playerObj != null ? playerObj.transform.position : transform.position;
-            Gizmos.DrawWireSphere(center, Stats.maxDistanceFromPlayer);
-        }
     }
 }

@@ -15,9 +15,11 @@ public class Enemy_MeleeAttack : EnemyAttack
 
     public override bool CanAttack(Transform target)
     {
-        if (!IsOffCooldown || !target) return false;
+        if (!IsOffCooldown || !target || enemy == null) return false;
         Vector3 to = target.position - enemy.transform.position; to.y = 0f;
-        return to.sqrMagnitude <= enemy.AttackRange * enemy.AttackRange;
+        // Use default attack range of 2.0f since we removed it from ScriptableObject
+        float attackRange = enemy.AttackRange > 0 ? enemy.AttackRange : 2.0f;
+        return to.sqrMagnitude <= attackRange * attackRange;
     }
 
     public override void BeginAttack(Transform target)
@@ -35,8 +37,12 @@ public class Enemy_MeleeAttack : EnemyAttack
     // Anim event (hit frame)
     public void AnimEvent_DealDamage()
     {
-        Vector3 center = enemy.AimPoint + enemy.transform.forward * (enemy.AttackRange * 0.5f);
-        int count = Physics.OverlapSphereNonAlloc(center, enemy.AttackRadius, hits, damageableMask, QueryTriggerInteraction.Ignore);
+        // Use default values since attackRange/attackRadius removed from ScriptableObject
+        float attackRange = enemy.AttackRange > 0 ? enemy.AttackRange : 2.0f;
+        float attackRadius = enemy.AttackRadius > 0 ? enemy.AttackRadius : 2.0f;
+        
+        Vector3 center = enemy.AimPoint + enemy.transform.forward * (attackRange * 0.5f);
+        int count = Physics.OverlapSphereNonAlloc(center, attackRadius, hits, damageableMask, QueryTriggerInteraction.Ignore);
 
         // Calculate final damage (base + any bonuses from wave scaling)
         float finalDamage = enemy.AttackDamage;

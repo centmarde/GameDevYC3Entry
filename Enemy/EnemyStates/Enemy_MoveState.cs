@@ -15,19 +15,11 @@ public class Enemy_MoveState : EnemyState
     {
         base.Update();
 
-        // Aggro check: if player close to HOME ring → chase
+        // This state is no longer used, but kept for compatibility
+        // Immediately transition to chase if player exists
         if (enemy.movement.PlayerWithinAggro())
         {
             stateMachine.ChangeState(enemy.chaseState);
-            return;
-        }
-
-        // Patrol step; returns true when an end (-1 or +1) is reached
-        bool hitEnd = enemy.movement.PatrolStep(Time.deltaTime);
-        if (hitEnd)
-        {
-            // If you want 4s idle pauses at ends:
-            stateMachine.ChangeState(enemy.idleState);
             return;
         }
     }

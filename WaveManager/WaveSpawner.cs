@@ -43,6 +43,8 @@ public class WaveSpawner : MonoBehaviour
     private bool isSpawning = false;
     private float currentHealthBonus = 0f;
     private float currentDamageBonus = 0f;
+    private float currentMoveSpeedMultiplier = 1f;
+    private float currentAttackCooldownMultiplier = 1f;
     private EnemyGroup currentWaveGroup = null; // The group selected for this wave
     private float lastPlayerRefreshTime = 0f; // Track when we last refreshed player reference
     private int currentWaveNumber = 0; // Track current wave for special spawning logic
@@ -236,7 +238,9 @@ public class WaveSpawner : MonoBehaviour
     /// <param name="healthBonus">Health bonus to apply to spawned enemies</param>
     /// <param name="damageBonus">Damage bonus to apply to spawned enemies</param>
     /// <param name="waveNumber">The current wave number (optional, will try to get from WaveManager if not provided)</param>
-    public void StartWave(int enemyCount, float healthBonus = 0f, float damageBonus = 0f, int waveNumber = 0)
+    /// <param name="moveSpeedMultiplier">Move speed multiplier for minions (1.0 = normal speed)</param>
+    /// <param name="attackCooldownMultiplier">Attack cooldown multiplier for minions (1.0 = normal, 0.5 = 2x faster)</param>
+    public void StartWave(int enemyCount, float healthBonus = 0f, float damageBonus = 0f, int waveNumber = 0, float moveSpeedMultiplier = 1f, float attackCooldownMultiplier = 1f)
     {
         // Get current wave number - use parameter if provided, otherwise get from WaveManager
         if (waveNumber > 0)
@@ -264,6 +268,8 @@ public class WaveSpawner : MonoBehaviour
         
         currentHealthBonus = healthBonus;
         currentDamageBonus = damageBonus;
+        currentMoveSpeedMultiplier = moveSpeedMultiplier;
+        currentAttackCooldownMultiplier = attackCooldownMultiplier;
         
         // Validate enemy configuration
         if (enemyGroups == null || enemyGroups.Length == 0)
@@ -504,15 +510,21 @@ public class WaveSpawner : MonoBehaviour
     }
     
     /// <summary>
-    /// Apply stat bonuses to a spawned enemy
+    /// Apply stat bonuses to a spawned enemy (includes minion-specific scaling)
     /// </summary>
     private void ApplyStatBonuses(GameObject enemyObject)
     {
-        if (currentHealthBonus == 0f && currentDamageBonus == 0f) return;
+        bool hasAnyBonus = currentHealthBonus != 0f || currentDamageBonus != 0f || 
+                          currentMoveSpeedMultiplier != 1f || currentAttackCooldownMultiplier != 1f;
+        if (!hasAnyBonus) return;
         
         // Get the Enemy component
         Enemy enemy = enemyObject.GetComponent<Enemy>();
         if (enemy == null) return;
+        
+        // Check if this is a minion
+        Enemy_Minions minion = enemyObject.GetComponent<Enemy_Minions>();
+        bool isMinion = minion != null;
         
         // Apply health bonus
         if (currentHealthBonus > 0f)
@@ -525,20 +537,26 @@ public class WaveSpawner : MonoBehaviour
             }
         }
         
-        // Apply damage bonus by adding a modifier component
-        if (currentDamageBonus > 0f)
+        // Get or add EnemyStatModifier component
+        EnemyStatModifier modifier = enemyObject.GetComponent<EnemyStatModifier>();
+        if (modifier == null && (currentDamageBonus > 0f || isMinion))
         {
-            Enemy_Combat combat = enemyObject.GetComponent<Enemy_Combat>();
-            if (combat != null)
-            {
-                // Add a component to track damage bonus
-                EnemyStatModifier modifier = enemyObject.GetComponent<EnemyStatModifier>();
-                if (modifier == null)
-                {
-                    modifier = enemyObject.AddComponent<EnemyStatModifier>();
-                }
-                modifier.damageBonus = currentDamageBonus;
-            }
+            modifier = enemyObject.AddComponent<EnemyStatModifier>();
+        }
+        
+        // Apply damage bonus
+        if (currentDamageBonus > 0f && modifier != null)
+        {
+            modifier.damageBonus = currentDamageBonus;
+        }
+        
+        // Apply minion-specific stat multipliers
+        if (isMinion && modifier != null)
+        {
+            modifier.moveSpeedMultiplier = currentMoveSpeedMultiplier;
+            modifier.attackCooldownMultiplier = currentAttackCooldownMultiplier;
+            
+            Debug.Log($"[WaveSpawner] Applied minion stats to {enemyObject.name}: MoveSpeed×{currentMoveSpeedMultiplier:F2}, AttackCD×{currentAttackCooldownMultiplier:F2}, HP+{currentHealthBonus}, DMG+{currentDamageBonus}");
         }
     }
     

@@ -19,6 +19,10 @@ public class Enemy_MeleeAttackState : EnemyState
     {
         base.Update();
 
+        // Keep moving toward player while attacking
+        enemy.movement?.LookAtPlayer();
+        enemy.movement?.MoveToPlayer();
+
         // Only try to transition AFTER the attack is marked Finished
         if (melee != null && melee.Finished)
         {
@@ -35,8 +39,6 @@ public class Enemy_MeleeAttackState : EnemyState
 
             return;
         }
-
-        enemy.movement?.LookAtPlayer();
     }
 
     public override void Exit()

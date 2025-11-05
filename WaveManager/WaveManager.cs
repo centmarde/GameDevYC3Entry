@@ -24,6 +24,14 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private float healthIncreasePerInterval = 10f; // Health increase per interval
     [SerializeField] private float damageIncreasePerInterval = 10f; // Damage increase per interval
     
+    [Header("Minion Stat Scaling")]
+    [Tooltip("Enable additional stat scaling for minion enemies")]
+    [SerializeField] private bool useMinionStatScaling = true;
+    [Tooltip("Move speed increase per scaling interval (percentage, 0.1 = 10% faster)")]
+    [SerializeField] private float moveSpeedIncreasePerInterval = 0.05f; // 5% faster per interval
+    [Tooltip("Attack cooldown reduction per interval (percentage, 0.1 = 10% faster attacks)")]
+    [SerializeField] private float attackCooldownReductionPerInterval = 0.05f; // 5% faster per interval
+    
     [Header("Dynamic Wave Configuration")]
     [SerializeField] private bool useDynamicScaling = true;
     [Tooltip("If enabled, enemy count scales: baseEnemyCount + (currentWave - 1) * enemyIncreasePerWave")]
@@ -62,6 +70,8 @@ public class WaveManager : MonoBehaviour
     // Stat scaling tracking
     private float currentHealthBonus = 0f;
     private float currentDamageBonus = 0f;
+    private float currentMoveSpeedMultiplier = 1f;
+    private float currentAttackCooldownMultiplier = 1f;
     
     // Audio
     private AudioSource audioSource;
@@ -407,8 +417,8 @@ public class WaveManager : MonoBehaviour
                     // Give extra enemy to first spawners if there's a remainder
                     int enemiesToGive = enemiesPerSpawner + (spawnerIndex < remainderEnemies ? 1 : 0);
                     
-                    Debug.Log($"[WaveManager] Starting spawner {spawnerIndex} ({spawner.gameObject.name}) with {enemiesToGive} enemies (HP+{currentHealthBonus}, DMG+{currentDamageBonus}) on wave {currentWave}");
-                    spawner.StartWave(enemiesToGive, currentHealthBonus, currentDamageBonus, currentWave);
+                    Debug.Log($"[WaveManager] Starting spawner {spawnerIndex} ({spawner.gameObject.name}) with {enemiesToGive} enemies (HP+{currentHealthBonus}, DMG+{currentDamageBonus}, SPD×{currentMoveSpeedMultiplier:F2}, ATK×{currentAttackCooldownMultiplier:F2}) on wave {currentWave}");
+                    spawner.StartWave(enemiesToGive, currentHealthBonus, currentDamageBonus, currentWave, currentMoveSpeedMultiplier, currentAttackCooldownMultiplier);
                     spawnerIndex++;
                 }
             }
@@ -590,6 +600,19 @@ public class WaveManager : MonoBehaviour
         
         currentHealthBonus = intervals * healthIncreasePerInterval;
         currentDamageBonus = intervals * damageIncreasePerInterval;
+        
+        // Update minion-specific stat multipliers
+        if (useMinionStatScaling)
+        {
+            // Move speed: 1.0 + (intervals * 0.05) = 1.0, 1.05, 1.10, etc.
+            currentMoveSpeedMultiplier = 1f + (intervals * moveSpeedIncreasePerInterval);
+            
+            // Attack cooldown: 1.0 - (intervals * 0.05) = 1.0, 0.95, 0.90, etc. (faster attacks)
+            // Clamp to minimum of 0.5 (can't go faster than 50% original cooldown)
+            currentAttackCooldownMultiplier = Mathf.Max(0.5f, 1f - (intervals * attackCooldownReductionPerInterval));
+            
+            Debug.Log($"[WaveManager] Wave {currentWave} stat scaling - Intervals: {intervals}, HP+{currentHealthBonus}, DMG+{currentDamageBonus}, MoveSpeed×{currentMoveSpeedMultiplier:F2}, AttackCD×{currentAttackCooldownMultiplier:F2}");
+        }
     }
     
     // Getters for UI and other systems
@@ -604,6 +627,8 @@ public class WaveManager : MonoBehaviour
     public bool AreWavesPaused() => wavesPaused;
     public float GetCurrentHealthBonus() => currentHealthBonus;
     public float GetCurrentDamageBonus() => currentDamageBonus;
+    public float GetCurrentMoveSpeedMultiplier() => currentMoveSpeedMultiplier;
+    public float GetCurrentAttackCooldownMultiplier() => currentAttackCooldownMultiplier;
     public GameObject GetActivePlayer() => activePlayer;
     
     /// <summary>
@@ -825,6 +850,8 @@ public class WaveManager : MonoBehaviour
         // Reset stat bonuses
         currentHealthBonus = 0f;
         currentDamageBonus = 0f;
+        currentMoveSpeedMultiplier = 1f;
+        currentAttackCooldownMultiplier = 1f;
         
         // Reset activation state
         wavesActivated = false;

@@ -9,7 +9,6 @@ public class Enemy_IdleState : EnemyState
     public override void Enter()
     {
         base.Enter();
-        enemy.movement.StartPatrolIdleTimer();
         enemy.rb.linearVelocity = Vector3.zero;
         enemy.rb.angularVelocity = Vector3.zero;
     }
@@ -18,15 +17,10 @@ public class Enemy_IdleState : EnemyState
     {
         base.Update();
 
+        // Immediately transition to chase if player exists
         if (enemy.movement.PlayerWithinAggro())
         {
             stateMachine.ChangeState(enemy.chaseState);
-            return;
-        }
-
-        if (enemy.movement.TickPatrolIdle(Time.deltaTime))
-        {
-            stateMachine.ChangeState(enemy.moveState);
             return;
         }
     }

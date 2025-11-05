@@ -53,6 +53,8 @@ public class Enemy_Combat : MonoBehaviour
         if (Target == null) return false;
 
         float distanceToTarget = Vector3.Distance(transform.position, Target.position);
-        return distanceToTarget <= enemy.AttackRange;
+        // Use default attack range of 2.0f since we removed it from ScriptableObject
+        float attackRange = enemy.AttackRange > 0 ? enemy.AttackRange : 2.0f;
+        return distanceToTarget <= attackRange;
     }
 }

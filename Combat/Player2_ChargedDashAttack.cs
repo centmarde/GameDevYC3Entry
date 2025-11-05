@@ -12,6 +12,12 @@ public class Player2_ChargedDashAttack : MonoBehaviour
     private bool isCharging;
     private bool isExecutingDash;
     
+    [Header("Invulnerability Settings")]
+    [Tooltip("Layer to switch player to during dash (should NOT be in enemy's damageableLayer)")]
+    [SerializeField] private string invulnerableLayerName = "Ignore Raycast";
+    private int originalLayer;
+    private int invulnerableLayer;
+    
     [Header("Dash Settings")]
     private Vector3 dashDirection;
     private float dashProgress;
@@ -62,6 +68,18 @@ public class Player2_ChargedDashAttack : MonoBehaviour
             enabled = false;
             return;
         }
+        
+        // Cache the player's original layer and setup invulnerable layer
+        originalLayer = gameObject.layer;
+        invulnerableLayer = LayerMask.NameToLayer(invulnerableLayerName);
+        
+        if (invulnerableLayer == -1)
+        {
+            Debug.LogError($"[Player2_ChargedDashAttack] Layer '{invulnerableLayerName}' not found! Invulnerability will not work. Using 'Ignore Raycast' as fallback.", this);
+            invulnerableLayer = LayerMask.NameToLayer("Ignore Raycast");
+        }
+        
+        Debug.Log($"[Player2_ChargedDashAttack] Invulnerability setup: Original Layer={LayerMask.LayerToName(originalLayer)} ({originalLayer}), Invulnerable Layer={invulnerableLayerName} ({invulnerableLayer})");
         
         // Setup LineRenderer if not assigned
         if (dashLineRenderer == null)
@@ -181,6 +199,9 @@ public class Player2_ChargedDashAttack : MonoBehaviour
         // Start cooldown (get current cooldown value from Stats)
         cooldownTimer = GetDashCooldown();
         
+        // Enable invulnerability - ignore collision with enemies
+        EnableInvulnerability();
+        
         // Spawn the dash projectile
         SpawnDashProjectile();
         
@@ -270,6 +291,9 @@ public class Player2_ChargedDashAttack : MonoBehaviour
             activeDashProjectile = null;
         }
         
+        // Disable invulnerability - restore collision with enemies
+        DisableInvulnerability();
+        
         isExecutingDash = false;
         damageMultiplier = 1f;
         
@@ -286,6 +310,10 @@ public class Player2_ChargedDashAttack : MonoBehaviour
         if (isExecutingDash)
         {
             StopAllCoroutines();
+            
+            // Restore collision before ending dash
+            DisableInvulnerability();
+            
             isExecutingDash = false;
             damageMultiplier = 1f;
             
@@ -386,6 +414,30 @@ public class Player2_ChargedDashAttack : MonoBehaviour
             // Delay between spawns synced with dash movement
             yield return new WaitForSeconds(spawnDelay);
         }
+    }
+    
+    /// <summary>
+    /// Enable invulnerability by changing player layer to one enemies can't damage
+    /// </summary>
+    private void EnableInvulnerability()
+    {
+        // Change player's layer to invulnerable layer
+        // This prevents Enemy_Minions_CollisionDamage from detecting the player
+        // since it checks against its damageableLayer LayerMask
+        gameObject.layer = invulnerableLayer;
+        
+        Debug.Log($"[Player2_ChargedDashAttack] Invulnerability ENABLED - changed layer from {LayerMask.LayerToName(originalLayer)} to {LayerMask.LayerToName(invulnerableLayer)}");
+    }
+    
+    /// <summary>
+    /// Disable invulnerability by restoring player's original layer
+    /// </summary>
+    private void DisableInvulnerability()
+    {
+        // Restore player's original layer
+        gameObject.layer = originalLayer;
+        
+        Debug.Log($"[Player2_ChargedDashAttack] Invulnerability DISABLED - restored layer to {LayerMask.LayerToName(originalLayer)}");
     }
     
     /// <summary>

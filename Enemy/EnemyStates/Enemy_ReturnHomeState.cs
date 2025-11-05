@@ -10,13 +10,11 @@ public class Enemy_ReturnHomeState : EnemyState
     {
         base.Update();
 
-        // Walk straight back to HOME
-        enemy.movement.ReturnHome(Time.deltaTime);
-
-        // When close enough to home, resume patrol
-        if (enemy.movement.AtHome())
+        // This state is no longer used, but kept for compatibility
+        // Immediately transition to chase instead
+        if (enemy.movement.PlayerWithinAggro())
         {
-            stateMachine.ChangeState(enemy.moveState);
+            stateMachine.ChangeState(enemy.chaseState);
             return;
         }
     }
