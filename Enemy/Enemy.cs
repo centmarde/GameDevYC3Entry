@@ -11,6 +11,9 @@ public class Enemy : Entity, ITargetable
     public float AttackRange => 0f;   // Deprecated: Use collision-based damage instead
     public float AttackCooldown => enemyStats != null ? enemyStats.attackCooldown : 1f;
 
+    [Header("Drops")]
+    [Tooltip("Experience orb prefab to drop on death (leave empty for no drop)")]
+    [SerializeField] protected GameObject experienceOrbPrefab;
 
     public Enemy_Movement movement {  get; private set; }  
 
@@ -189,6 +192,9 @@ public class Enemy : Entity, ITargetable
         {
             deathTracker.NotifyDeath();
         }
+
+        // Drop experience orb if prefab is assigned
+        DropExperienceOrb();
 
         // Start shrink effect and destroy after animation
         StartCoroutine(ShrinkAndDestroy());
@@ -417,7 +423,51 @@ public class Enemy : Entity, ITargetable
         return particleObj;
     }
 
+    /// <summary>
+    /// Drop an experience orb at the enemy's position
+    /// </summary>
+    protected virtual void DropExperienceOrb()
+    {
+        if (experienceOrbPrefab == null)
+        {
+            // No orb prefab assigned, skip dropping
+            return;
+        }
 
+        try
+        {
+            // Spawn orb above the enemy's position
+            Vector3 dropPosition = transform.position + Vector3.up * 1.5f;
+            GameObject orb = Instantiate(experienceOrbPrefab, dropPosition, Random.rotation);
+            
+            // Add upward and random directional force for ragdoll effect
+            Rigidbody orbRb = orb.GetComponent<Rigidbody>();
+            if (orbRb != null)
+            {
+                // Upward force with slight random horizontal spread
+                Vector3 randomDirection = new Vector3(
+                    Random.Range(-1f, 1f),
+                    1f,
+                    Random.Range(-1f, 1f)
+                ).normalized;
+                
+                orbRb.AddForce(randomDirection * Random.Range(2f, 4f), ForceMode.Impulse);
+                
+                // Add random torque for tumbling effect (smoother)
+                orbRb.AddTorque(new Vector3(
+                    Random.Range(-3f, 3f),
+                    Random.Range(-3f, 3f),
+                    Random.Range(-3f, 3f)
+                ), ForceMode.Impulse);
+            }
+            
+            Debug.Log($"[Enemy] {gameObject.name} dropped experience orb at {dropPosition}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Enemy] Failed to drop experience orb: {e.Message}");
+        }
+    }
 
     private void OnDrawGizmos()
     {
