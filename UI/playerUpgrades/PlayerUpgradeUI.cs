@@ -77,6 +77,48 @@ public class PlayerUpgradeUI : MonoBehaviour
         EnsureEventSystem();
     }
     
+    private void Start()
+    {
+        // Subscribe to level up event
+        if (ExperienceManager.Instance != null)
+        {
+            ExperienceManager.Instance.OnLevelUp += OnPlayerLevelUp;
+            Debug.Log("PlayerUpgradeUI: Subscribed to ExperienceManager.OnLevelUp event");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerUpgradeUI: ExperienceManager.Instance is null! Cannot subscribe to level up event.");
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe from level up event to prevent memory leaks
+        if (ExperienceManager.Instance != null)
+        {
+            ExperienceManager.Instance.OnLevelUp -= OnPlayerLevelUp;
+        }
+    }
+    
+    /// <summary>
+    /// Called when player levels up - shows the upgrade UI
+    /// </summary>
+    private void OnPlayerLevelUp(int newLevel)
+    {
+        Debug.Log($"PlayerUpgradeUI: Player leveled up to {newLevel}! Showing upgrade panel...");
+
+        // Ensure we have generated upgrade options so the UI shows three choices
+        if (upgradeManager != null)
+        {
+            upgradeManager.GenerateRandomUpgrades();
+        }
+
+        // Pause the game when showing upgrades
+        Time.timeScale = 0f;
+
+        ShowUpgradePanel();
+    }
+    
     /// <summary>
     /// Ensure EventSystem exists in the scene for UI interaction
     /// </summary>
@@ -488,6 +530,9 @@ public class PlayerUpgradeUI : MonoBehaviour
         {
             upgradeManager.ApplyUpgrade(pendingUpgradeType);
         }
+        
+        // Resume the game after upgrade is applied
+        Time.timeScale = 1f;
     }
     
     /// <summary>
@@ -496,5 +541,6 @@ public class PlayerUpgradeUI : MonoBehaviour
     private void OnUpgradeCancelled()
     {
         // Just close the dialog, player can choose again
+        // Note: Game remains paused until player confirms an upgrade
     }
 }

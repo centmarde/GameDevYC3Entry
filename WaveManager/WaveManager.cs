@@ -14,9 +14,14 @@ public class WaveManager : MonoBehaviour
     
     [Header("Wave Settings")]
     [SerializeField] private int startingWave = 1;
-    [SerializeField] private int baseEnemyCount = 5; // Base number of enemies in first wave
+    [SerializeField] private bool waitForLevelUpToAdvance = true; // Wait for player to level up before next wave
+    [SerializeField] private bool unlimitedSpawning = true; // Spawn unlimited enemies per wave
+    [SerializeField] private int minEnemiesAlive = 10; // Minimum enemies to maintain (when below, spawn more)
+    [SerializeField] private int spawnBatchSize = 5; // How many enemies to spawn per batch
+    [SerializeField] private float spawnCheckInterval = 2f; // How often to check if we need to spawn more
+    [SerializeField] private int baseEnemyCount = 5; // Base number of enemies in first wave (used for initial spawn)
     [SerializeField] private int enemyIncreasePerWave = 3; // How many more enemies per wave
-    [SerializeField] private float timeBetweenWaves = 10f; // Time between waves
+    [SerializeField] private float timeBetweenWaves = 10f; // Time between waves (only used if not waiting for level up)
     
     [Header("Stat Scaling")]
     [SerializeField] private bool useStatScaling = true;
@@ -66,6 +71,10 @@ public class WaveManager : MonoBehaviour
     private bool spawningComplete = false;
     private bool allEnemiesCleared = false;
     private float timeSinceWaveEnd = 0f;
+    private bool waitingForLevelUp = false;
+    private int playerLevelAtWaveStart = 0;
+    private float lastSpawnCheckTime = 0f;
+    private bool levelUpSubscribed = false;
     
     // Stat scaling tracking
     private float currentHealthBonus = 0f;
@@ -135,6 +144,12 @@ public class WaveManager : MonoBehaviour
         
         // Detect active player
         DetectActivePlayer();
+        
+        // Subscribe to level up event if waiting for level up is enabled
+        if (waitForLevelUpToAdvance && ExperienceManager.Instance != null)
+        {
+            ExperienceManager.Instance.OnLevelUp += HandlePlayerLevelUp;
+        }
     }
     
     private void Start()
@@ -169,6 +184,37 @@ public class WaveManager : MonoBehaviour
         if (autoStartWaves && wavesActivated)
         {
             Invoke(nameof(StartNextWave), 2f);
+        }
+
+        // Ensure we subscribe to ExperienceManager.OnLevelUp even if ExperienceManager wasn't ready in Awake
+        if (waitForLevelUpToAdvance && !levelUpSubscribed)
+        {
+            if (ExperienceManager.Instance != null)
+            {
+                ExperienceManager.Instance.OnLevelUp += HandlePlayerLevelUp;
+                levelUpSubscribed = true;
+                Debug.Log("[WaveManager] Subscribed to ExperienceManager.OnLevelUp in Start");
+            }
+            else
+            {
+                // Start a coroutine to wait for ExperienceManager to become available
+                StartCoroutine(SubscribeWhenExperienceReady());
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator SubscribeWhenExperienceReady()
+    {
+        while (ExperienceManager.Instance == null)
+        {
+            yield return null;
+        }
+
+        if (!levelUpSubscribed)
+        {
+            ExperienceManager.Instance.OnLevelUp += HandlePlayerLevelUp;
+            levelUpSubscribed = true;
+            Debug.Log("[WaveManager] Subscribed to ExperienceManager.OnLevelUp (late)");
         }
     }
     
@@ -268,15 +314,38 @@ public class WaveManager : MonoBehaviour
         // Don't update if waves are paused
         if (wavesPaused) return;
         
+        // Check if we need to spawn more enemies (unlimited spawning mode)
+        if (waveInProgress && unlimitedSpawning && !waitingForLevelUp)
+        {
+            if (Time.time - lastSpawnCheckTime >= spawnCheckInterval)
+            {
+                lastSpawnCheckTime = Time.time;
+                CheckAndSpawnMoreEnemies();
+            }
+        }
+        
         // Check if spawning is complete but wave is still in progress (enemies still alive)
         if (waveInProgress && spawningComplete && !allEnemiesCleared)
         {
             CheckEnemiesAlive();
         }
         
+        // If waiting for level up, check if player has leveled up
+        if (waitingForLevelUp && waitForLevelUpToAdvance)
+        {
+            // Level up event will handle wave progression
+            return;
+        }
+        
         // If all enemies cleared and wave ended, count down to next wave
         if (!waveInProgress && allEnemiesCleared && currentWave > 0 && wavesActivated)
         {
+            if (waitForLevelUpToAdvance)
+            {
+                // Don't auto-advance, wait for level up
+                return;
+            }
+            
             timeSinceWaveEnd += Time.deltaTime;
             
             if (timeSinceWaveEnd >= timeBetweenWaves)
@@ -316,14 +385,22 @@ public class WaveManager : MonoBehaviour
             UpdateStatBonuses();
         }
         
+        // Store player's current level at wave start
+        if (ExperienceManager.Instance != null)
+        {
+            playerLevelAtWaveStart = ExperienceManager.Instance.GetCurrentLevel();
+        }
+        
         enemiesInCurrentWave = CalculateEnemyCount(currentWave);
-        Debug.Log($"[WaveManager] Wave {currentWave} starting - Total enemies: {enemiesInCurrentWave}, Base: {baseEnemyCount}, Increase: {enemyIncreasePerWave}, Dynamic: {useDynamicScaling}");
+        Debug.Log($"[WaveManager] Wave {currentWave} starting - Initial enemies: {enemiesInCurrentWave}, Base: {baseEnemyCount}, Unlimited: {unlimitedSpawning}, WaitForLevelUp: {waitForLevelUpToAdvance}, PlayerLevel: {playerLevelAtWaveStart}");
         
         enemiesAlive = 0;
         waveInProgress = true;
-        spawningComplete = false;
+        spawningComplete = !unlimitedSpawning; // If unlimited, spawning never "completes"
         allEnemiesCleared = false;
         timeSinceWaveEnd = 0f;
+        waitingForLevelUp = false;
+        lastSpawnCheckTime = Time.time;
         
         // Notify UI
         if (waveUI != null)
@@ -524,10 +601,100 @@ public class WaveManager : MonoBehaviour
         if (allEnemiesCleared) return; // Prevent multiple calls
         
         allEnemiesCleared = true;
-        waveInProgress = false;
         
         // Trigger event
         OnAllEnemiesCleared?.Invoke(currentWave);
+        
+        // Note: We don't end the wave or wait here anymore
+        // Wave only ends when player levels up (handled in HandlePlayerLevelUp)
+    }
+    
+    /// <summary>
+    /// Handle player level up event
+    /// </summary>
+    private void HandlePlayerLevelUp(int newLevel)
+    {
+        Debug.Log($"[WaveManager] Player leveled up to {newLevel}!");
+        
+        // Advance wave if player leveled up since wave started (don't need to wait for enemies cleared)
+        if (waveInProgress && newLevel > playerLevelAtWaveStart)
+        {
+            Debug.Log($"[WaveManager] Player leveled up from {playerLevelAtWaveStart} to {newLevel}. Starting next wave!");
+            
+            // Don't clear enemies - let them stack from previous waves
+            
+            // End current wave and start next
+            waveInProgress = false;
+            allEnemiesCleared = true;
+            waitingForLevelUp = false;
+            
+            StartNextWave();
+        }
+    }
+    
+    /// <summary>
+    /// Check if we need to spawn more enemies and spawn them if needed
+    /// </summary>
+    private void CheckAndSpawnMoreEnemies()
+    {
+        if (!waveInProgress || !unlimitedSpawning) return;
+        
+        // Count current enemies
+        CheckEnemiesAlive();
+        
+        // If below minimum threshold, spawn more
+        if (enemiesAlive < minEnemiesAlive)
+        {
+            int enemiesToSpawn = spawnBatchSize;
+            Debug.Log($"[WaveManager] Enemy count ({enemiesAlive}) below minimum ({minEnemiesAlive}). Spawning {enemiesToSpawn} more enemies...");
+            
+            // Spawn through all spawners
+            if (waveSpawners != null && waveSpawners.Length > 0)
+            {
+                int activeSpawnerCount = 0;
+                foreach (WaveSpawner spawner in waveSpawners)
+                {
+                    if (spawner != null && spawner.enabled && spawner.gameObject.activeInHierarchy)
+                    {
+                        activeSpawnerCount++;
+                    }
+                }
+                
+                if (activeSpawnerCount > 0)
+                {
+                    int enemiesPerSpawner = enemiesToSpawn / activeSpawnerCount;
+                    int remainderEnemies = enemiesToSpawn % activeSpawnerCount;
+                    
+                    int spawnerIndex = 0;
+                    foreach (WaveSpawner spawner in waveSpawners)
+                    {
+                        if (spawner != null && spawner.enabled && spawner.gameObject.activeInHierarchy)
+                        {
+                            int count = enemiesPerSpawner + (spawnerIndex < remainderEnemies ? 1 : 0);
+                            spawner.StartWave(count, currentHealthBonus, currentDamageBonus, currentWave, currentMoveSpeedMultiplier, currentAttackCooldownMultiplier);
+                            spawnerIndex++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Clear all remaining enemies from the scene
+    /// </summary>
+    private void ClearRemainingEnemies()
+    {
+        GameObject[] remainingEnemies = GameObject.FindGameObjectsWithTag("Enemy");
+        int clearedCount = remainingEnemies.Length;
+        
+        foreach (GameObject enemy in remainingEnemies)
+        {
+            Destroy(enemy);
+        }
+        
+        enemiesAlive = 0;
+        Debug.Log($"[WaveManager] Cleared {clearedCount} remaining enemies from previous wave");
     }
     
     /// <summary>
@@ -827,6 +994,17 @@ public class WaveManager : MonoBehaviour
             {
                 audioSource.PlayOneShot(randomSound, waveStartSoundVolume);
             }
+        }
+    }
+    
+    /// <summary>
+    /// Cleanup subscriptions
+    /// </summary>
+    private void OnDestroy()
+    {
+        if (waitForLevelUpToAdvance && ExperienceManager.Instance != null)
+        {
+            ExperienceManager.Instance.OnLevelUp -= HandlePlayerLevelUp;
         }
     }
     

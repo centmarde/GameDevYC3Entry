@@ -42,7 +42,8 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     private void Start()
     {
-        SubscribeToEvents();
+        // Note: We no longer subscribe to wave events
+        // PlayerUpgradeUI handles showing upgrades on level up directly
         
         // Hide upgrade UI at start
         if (upgradeUI != null)
@@ -53,7 +54,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     private void OnDestroy()
     {
-        UnsubscribeFromEvents();
+        // Note: No need to unsubscribe since we don't subscribe to wave events anymore
     }
     
     /// <summary>
@@ -123,63 +124,18 @@ public class PlayerUpgradeManager : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// Subscribe to wave events
-    /// </summary>
-    private void SubscribeToEvents()
-    {
-        if (waveManager != null)
-        {
-            waveManager.OnAllEnemiesCleared.AddListener(OnWaveCleared);
-        }
-    }
-    
-    /// <summary>
-    /// Unsubscribe from wave events
-    /// </summary>
-    private void UnsubscribeFromEvents()
-    {
-        if (waveManager != null)
-        {
-            waveManager.OnAllEnemiesCleared.RemoveListener(OnWaveCleared);
-        }
-    }
-    
-    /// <summary>
-    /// Called when a wave is cleared
-    /// </summary>
-    private void OnWaveCleared(int waveNumber)
-    {
-        GenerateRandomUpgrades();
-        PauseGameForUpgrade();
-    }
+    // Note: Wave event subscription removed - upgrades now trigger on level up via PlayerUpgradeUI
     
     /// <summary>
     /// Generate random upgrade options
     /// </summary>
-    private void GenerateRandomUpgrades()
+    public void GenerateRandomUpgrades()
     {
         currentUpgradeOptions = upgradeProvider.GenerateRandomUpgrades();
+        Debug.Log($"PlayerUpgradeManager: Generated {currentUpgradeOptions.Length} upgrade options");
     }
     
-    /// <summary>
-    /// Pause game and show upgrade UI
-    /// </summary>
-    private void PauseGameForUpgrade()
-    {
-        if (waveManager != null)
-        {
-            waveManager.PauseWaves();
-        }
-        
-        upgradePending = true;
-        if (upgradeUI != null)
-        {
-            upgradeUI.ShowUpgradePanel();
-        }
-        
-        Time.timeScale = 0f;
-    }
+    // Note: PauseGameForUpgrade removed - PlayerUpgradeUI handles this directly on level up
     
     /// <summary>
     /// Apply the selected upgrade
@@ -188,6 +144,9 @@ public class PlayerUpgradeManager : MonoBehaviour
     {
         // Refresh player references in case players were spawned after Awake
         RefreshPlayerReferences();
+        
+        // Generate new random upgrades for next time
+        GenerateRandomUpgrades();
         
         // Apply the upgrade using the applicator
         upgradeApplicator.ApplyUpgrade(upgradeType);
@@ -207,12 +166,9 @@ public class PlayerUpgradeManager : MonoBehaviour
         }
         
         upgradePending = false;
-        if (waveManager != null)
-        {
-            waveManager.ResumeWaves();
-        }
         
-        Time.timeScale = 1f;
+        // Note: Time.timeScale is handled by PlayerUpgradeUI
+        // WaveManager automatically resumes when player levels up
     }
     
     #region Public Getters for UI

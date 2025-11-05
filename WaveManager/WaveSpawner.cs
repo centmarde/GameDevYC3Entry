@@ -52,6 +52,7 @@ public class WaveSpawner : MonoBehaviour
     private bool hasSpawnedBoss = false; // Track if boss has spawned this wave
     private int elitesSpawnedThisWave = 0; // Track how many elites spawned this wave
     private AudioSource audioSource; // Audio source for boss spawn sounds
+    private static bool bossSpawnedGlobally = false; // Track if boss has been spawned across all waves
     
     public enum SpawnMode
     {
@@ -318,10 +319,11 @@ public class WaveSpawner : MonoBehaviour
         enemiesSpawned = 0;
         isSpawning = true;
         
-        // Spawn boss first if this is a boss wave (every 5th wave)
-        if (currentWaveNumber > 0 && currentWaveNumber % 5 == 0 && bossPrefabs != null && bossPrefabs.Length > 0)
+        // Spawn boss ONLY on wave 5 (once per game)
+        if (currentWaveNumber == 5 && !bossSpawnedGlobally && bossPrefabs != null && bossPrefabs.Length > 0)
         {
             SpawnBoss();
+            bossSpawnedGlobally = true;
         }
         
         InvokeRepeating(nameof(SpawnEnemy), 0f, spawnDelay);
@@ -928,6 +930,8 @@ public class WaveSpawner : MonoBehaviour
     /// </summary>
     public void ResetSpawner()
     {
+        // Reset boss spawn flag
+        bossSpawnedGlobally = false;
         Debug.Log($"[WaveSpawner] Resetting spawner '{gameObject.name}' to initial state...");
         
         // Stop any spawning coroutines
