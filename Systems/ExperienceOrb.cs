@@ -27,8 +27,16 @@ public class ExperienceOrb : MonoBehaviour
     [SerializeField] private float minHeightAboveGround = 0.5f;
 
     [Header("Visuals")]
-    [Tooltip("Optional particle effect to play when collected")]
+    [Tooltip("Particle effect to play when collected")]
     [SerializeField] private GameObject collectEffect;
+    
+    [Header("Audio")]
+    [Tooltip("Audio clips to play when collected (picks one randomly)")]
+    [SerializeField] private AudioClip[] collectSounds;
+    
+    [Tooltip("Volume of the collection sound (0 to 1)")]
+    [Range(0f, 1f)]
+    [SerializeField] private float collectVolume = 1f;
 
     private Transform targetPlayer;
     private Rigidbody rb;
@@ -244,11 +252,28 @@ public class ExperienceOrb : MonoBehaviour
         // Give experience to the player
         ExperienceManager.Instance?.AddExperience(experienceAmount);
 
-        // Play collection effect
+        // Play particle effect
         if (collectEffect != null)
         {
             GameObject effect = Instantiate(collectEffect, transform.position, Quaternion.identity);
             Destroy(effect, 2f);
+        }
+
+        // Play random audio clip
+        if (collectSounds != null && collectSounds.Length > 0)
+        {
+            // Filter out null entries
+            AudioClip[] validClips = System.Array.FindAll(collectSounds, clip => clip != null);
+            
+            if (validClips.Length > 0)
+            {
+                // Pick a random sound from the array
+                int randomIndex = Random.Range(0, validClips.Length);
+                AudioClip selectedClip = validClips[randomIndex];
+                
+                // Play the sound at the orb's position with specified volume
+                AudioSource.PlayClipAtPoint(selectedClip, transform.position, collectVolume);
+            }
         }
 
         // Destroy the orb

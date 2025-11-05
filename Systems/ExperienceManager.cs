@@ -61,7 +61,8 @@ public class ExperienceManager : MonoBehaviour
         }
         else
         {
-            // Update UI with initial values
+            // Update UI with initial values (start at 0 XP)
+            Debug.Log($"[ExperienceManager] Initializing UI - Level: {currentLevel}, XP: {currentExperience}/{experienceToNextLevel}");
             UpdateUI();
         }
     }

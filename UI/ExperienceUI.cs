@@ -104,7 +104,10 @@ public class ExperienceUI : MonoBehaviour
         fillBar.color = fillColor;
         fillBar.type = Image.Type.Filled;
         fillBar.fillMethod = Image.FillMethod.Horizontal;
-        fillBar.fillAmount = 0f;
+        fillBar.fillOrigin = (int)Image.OriginHorizontal.Left;
+        fillBar.fillAmount = 0f; // Start empty
+        
+        Debug.Log("[ExperienceUI] Created fill bar - Initial fillAmount: 0");
 
         // Create level text
         GameObject levelTextObj = new GameObject("LevelText");
@@ -151,8 +154,16 @@ public class ExperienceUI : MonoBehaviour
     {
         if (fillBar != null)
         {
-            float fillAmount = (float)currentExp / requiredExp;
+            float fillAmount = requiredExp > 0 ? (float)currentExp / requiredExp : 0f;
             fillBar.fillAmount = Mathf.Clamp01(fillAmount);
+            
+            // Ensure the fill bar is set to Filled type and Horizontal fill
+            if (fillBar.type != Image.Type.Filled)
+            {
+                fillBar.type = Image.Type.Filled;
+                fillBar.fillMethod = Image.FillMethod.Horizontal;
+                fillBar.fillOrigin = (int)Image.OriginHorizontal.Left;
+            }
         }
 
         if (levelText != null)
