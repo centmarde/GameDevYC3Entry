@@ -154,4 +154,20 @@ public class Entity_Health : MonoBehaviour, IDamageable
         evasionCheck = evasionFunction;
     }
 
+    /// <summary>
+    /// Set invulnerability state (used by powerups)
+    /// </summary>
+    public void SetInvulnerable(bool isInvulnerable)
+    {
+        invulnerable = isInvulnerable;
+    }
+
+    /// <summary>
+    /// Check if entity is currently invulnerable
+    /// </summary>
+    public bool IsInvulnerable()
+    {
+        return invulnerable || (invuln != null && invuln.ShouldIgnoreDamage());
+    }
+
 }

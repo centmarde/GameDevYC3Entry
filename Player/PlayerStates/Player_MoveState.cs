@@ -6,7 +6,8 @@ public class Player_MoveState : PlayerState
     {
     }
 
-    private float playerMoveSpeed => player.Stats.moveSpeed;
+    // Use movement component's MoveSpeed which includes multipliers (powerups, slowdowns, etc.)
+    private float playerMoveSpeed => player.playerMovement.MoveSpeed;
     private Vector3 playerDirection;
 
     public override void Update()

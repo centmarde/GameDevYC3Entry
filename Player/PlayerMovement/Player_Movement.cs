@@ -42,7 +42,10 @@ public class Player_Movement : MonoBehaviour
         lastNonZeroMoveDir = transform.forward;
     }
 
-    private float MoveSpeed => baseMoveSpeed * currentSpeedMultiplier;
+    /// <summary>
+    /// Get the current effective move speed (base speed * multiplier)
+    /// </summary>
+    public float MoveSpeed => baseMoveSpeed * currentSpeedMultiplier;
 
 
     public void RequestMove(Vector3 velocityXZ)
@@ -227,6 +230,28 @@ public class Player_Movement : MonoBehaviour
     {
         currentSpeedMultiplier = slowAmount;
         slowdownTimer = duration;
+    }
+
+    /// <summary>
+    /// Set the speed multiplier (used by powerups and buffs)
+    /// </summary>
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        currentSpeedMultiplier = multiplier;
+        
+        // Cancel any active slowdown when a new multiplier is set
+        if (multiplier > currentSpeedMultiplier && slowdownTimer > 0f)
+        {
+            slowdownTimer = 0f;
+        }
+    }
+
+    /// <summary>
+    /// Get the current speed multiplier
+    /// </summary>
+    public float GetSpeedMultiplier()
+    {
+        return currentSpeedMultiplier;
     }
 
 }

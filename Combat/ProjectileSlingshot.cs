@@ -75,7 +75,36 @@ public class ProjectileSlingshot : MonoBehaviour
         if (other == null) return;
         
         // only react to layers we care about
-        if ((hitMask.value & (1 << other.gameObject.layer)) == 0) return;
+        if ((hitMask.value & (1 << other.gameObject.layer)) == 0) 
+        {
+            // SPECIAL CASE: Check if it's a destructible container (barrel, crate, etc.)
+            // Containers should be damageable regardless of layer
+            var container = other.GetComponentInParent<DestructibleContainer>();
+            if (container != null)
+            {
+                Vector3 hitPoint = transform.position;
+                Vector3 hitNormal = rb != null ? -rb.linearVelocity.normalized : Vector3.back;
+                
+                // Apply damage falloff if this is a scatter pellet
+                float finalDamage = damage;
+                var damageFalloff = GetComponent<ScatterPelletDamageFalloff>();
+                if (damageFalloff != null)
+                {
+                    float multiplier = damageFalloff.GetDamageMultiplier();
+                    finalDamage = damage * multiplier;
+                }
+                
+                // Damage the container
+                container.TakeDamage(finalDamage, hitPoint, hitNormal, source);
+                
+                Debug.Log($"[ProjectileSlingshot] Hit container {other.name} for {finalDamage} damage");
+                
+                Destroy(gameObject);
+                return;
+            }
+            
+            return; // Not a valid target
+        }
 
         var target = other.GetComponentInParent<IDamageable>();
         if (target != null && target.IsAlive)
