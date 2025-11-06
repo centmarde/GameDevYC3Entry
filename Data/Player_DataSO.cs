@@ -48,6 +48,14 @@ public class Player_DataSO : ScriptableObject
     [Range(0f, 100f)]
     public float evasionChance = 5f; // Percentage chance to evade incoming damage
     
+    [Header("Upgrade Levels")]
+    public int damageUpgradeLevel = 0;
+    public int maxHealthUpgradeLevel = 0;
+    public int criticalChanceUpgradeLevel = 0;
+    public int criticalDamageUpgradeLevel = 0;
+    public int evasionUpgradeLevel = 0;
+    public const int MaxUpgradeLevel = 10;
+    
     /// <summary>
     /// Calculate if an attack is a critical hit
     /// </summary>

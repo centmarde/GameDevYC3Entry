@@ -93,4 +93,59 @@ public class Enemy_Minions : Enemy
             Debug.Log($"[Enemy_Minions] {gameObject.name} initialized in chase-only mode (collision damage)");
         }
     }
+
+    /// <summary>
+    /// Override to drop multiple experience orbs (1-5 random)
+    /// </summary>
+    protected override void DropExperienceOrb()
+    {
+        if (experienceOrbPrefab == null)
+        {
+            // No orb prefab assigned, skip dropping
+            return;
+        }
+
+        // Random number of orbs between 1 and 5
+        int orbCount = Random.Range(1, 6); // Range is inclusive min, exclusive max (so 1-5)
+        
+        Debug.Log($"[Enemy_Minions] {gameObject.name} dropping {orbCount} experience orbs");
+
+        for (int i = 0; i < orbCount; i++)
+        {
+            try
+            {
+                // Spawn orb above the enemy's position with slight random offset
+                Vector3 dropPosition = transform.position + Vector3.up * 1.5f;
+                // Add small random offset to spread orbs slightly
+                dropPosition += new Vector3(Random.Range(-0.3f, 0.3f), 0, Random.Range(-0.3f, 0.3f));
+                
+                GameObject orb = Instantiate(experienceOrbPrefab, dropPosition, Random.rotation);
+                
+                // Add upward and random directional force for ragdoll effect
+                Rigidbody orbRb = orb.GetComponent<Rigidbody>();
+                if (orbRb != null)
+                {
+                    // Upward force with slight random horizontal spread
+                    Vector3 randomDirection = new Vector3(
+                        Random.Range(-1f, 1f),
+                        1f,
+                        Random.Range(-1f, 1f)
+                    ).normalized;
+                    
+                    orbRb.AddForce(randomDirection * Random.Range(2f, 4f), ForceMode.Impulse);
+                    
+                    // Add random torque for tumbling effect (smoother)
+                    orbRb.AddTorque(new Vector3(
+                        Random.Range(-3f, 3f),
+                        Random.Range(-3f, 3f),
+                        Random.Range(-3f, 3f)
+                    ), ForceMode.Impulse);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Enemy_Minions] Failed to drop experience orb {i + 1}/{orbCount}: {e.Message}");
+            }
+        }
+    }
 }

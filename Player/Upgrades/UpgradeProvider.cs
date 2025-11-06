@@ -36,31 +36,62 @@ namespace PlayerUpgrades
             // Add skill upgrades if available
             AddSkillUpgrades(allUpgrades);
             
+            // Shuffle the list to ensure randomness
+            ShuffleList(allUpgrades);
+            
+            Debug.Log($"[UpgradeProvider] Total available upgrades: {allUpgrades.Count} - {string.Join(", ", allUpgrades)}");
+            
             return PickRandomUpgrades(allUpgrades);
         }
         
         private void AddPlayer1Upgrades(List<UpgradeType> allUpgrades)
         {
+            var refs = referenceManager.References;
+            if (refs.PlayerStats == null)
+            {
+                Debug.LogWarning("[UpgradeProvider] PlayerStats is null. Player may not be spawned yet.");
+                return;
+            }
+            
+            // Damage and MaxHealth have no level cap
             allUpgrades.Add(UpgradeType.Damage);
             allUpgrades.Add(UpgradeType.MaxHealth);
-            allUpgrades.Add(UpgradeType.Heal);
-            allUpgrades.Add(UpgradeType.CriticalChance);
-            allUpgrades.Add(UpgradeType.CriticalDamage);
-            allUpgrades.Add(UpgradeType.Evasion);
+            allUpgrades.Add(UpgradeType.Heal); // Heal has no level cap
+            if (refs.PlayerStats.criticalChanceUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.CriticalChance);
+            if (refs.PlayerStats.criticalDamageUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.CriticalDamage);
+            if (refs.PlayerStats.evasionUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.Evasion);
         }
         
         private void AddPlayer2Upgrades(List<UpgradeType> allUpgrades)
         {
+            var refs = referenceManager.References;
+            if (refs.Player2Stats == null)
+            {
+                Debug.LogWarning("[UpgradeProvider] Player2Stats is null. Player2 may not be spawned yet.");
+                return;
+            }
+            
+            // Damage and MaxHealth have no level cap
             allUpgrades.Add(UpgradeType.Damage);
             allUpgrades.Add(UpgradeType.MaxHealth);
-            allUpgrades.Add(UpgradeType.Heal);
-            allUpgrades.Add(UpgradeType.CriticalChance);
-            allUpgrades.Add(UpgradeType.CriticalDamage);
-            allUpgrades.Add(UpgradeType.Evasion);
-            allUpgrades.Add(UpgradeType.UpgradeBlinkDistance);
-            allUpgrades.Add(UpgradeType.ReduceBlinkCooldown);
-            allUpgrades.Add(UpgradeType.ReduceDashCooldown);
-            allUpgrades.Add(UpgradeType.UpgradeBlinkDashSpeed);
+            allUpgrades.Add(UpgradeType.Heal); // Heal has no level cap
+            if (refs.Player2Stats.criticalChanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.CriticalChance);
+            if (refs.Player2Stats.criticalDamageUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.CriticalDamage);
+            if (refs.Player2Stats.evasionUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.Evasion);
+            if (refs.Player2Stats.blinkDistanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.UpgradeBlinkDistance);
+            if (refs.Player2Stats.blinkCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.ReduceBlinkCooldown);
+            if (refs.Player2Stats.dashCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.ReduceDashCooldown);
+            if (refs.Player2Stats.blinkDashSpeedUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                allUpgrades.Add(UpgradeType.UpgradeBlinkDashSpeed);
         }
         
         private void AddSkillUpgrades(List<UpgradeType> allUpgrades)
@@ -146,15 +177,39 @@ namespace PlayerUpgrades
             }
         }
         
+        /// <summary>
+        /// Fisher-Yates shuffle algorithm for true randomization
+        /// </summary>
+        private void ShuffleList(List<UpgradeType> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int randomIndex = Random.Range(0, i + 1);
+                UpgradeType temp = list[i];
+                list[i] = list[randomIndex];
+                list[randomIndex] = temp;
+            }
+        }
+        
         private UpgradeType[] PickRandomUpgrades(List<UpgradeType> allUpgrades)
         {
             UpgradeType[] selectedUpgrades = new UpgradeType[3];
             
-            for (int i = 0; i < 3 && allUpgrades.Count > 0; i++)
+            if (allUpgrades.Count == 0)
             {
-                int randomIndex = Random.Range(0, allUpgrades.Count);
-                selectedUpgrades[i] = allUpgrades[randomIndex];
-                allUpgrades.RemoveAt(randomIndex);
+                Debug.LogError("[UpgradeProvider] No upgrades available! This should not happen.");
+                // Emergency fallback - should never reach here
+                selectedUpgrades[0] = UpgradeType.Damage;
+                selectedUpgrades[1] = UpgradeType.MaxHealth;
+                selectedUpgrades[2] = UpgradeType.Heal;
+                return selectedUpgrades;
+            }
+            
+            // Pick first 3 from already shuffled list
+            // If less than 3 available, allow duplicates by cycling through the list
+            for (int i = 0; i < 3; i++)
+            {
+                selectedUpgrades[i] = allUpgrades[i % allUpgrades.Count];
             }
             
             return selectedUpgrades;

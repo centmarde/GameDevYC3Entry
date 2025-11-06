@@ -42,6 +42,12 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     private void Start()
     {
+        // Setup references first
+        if (autoFindReferences)
+        {
+            SetupReferences();
+        }
+        
         // Note: We no longer subscribe to wave events
         // PlayerUpgradeUI handles showing upgrades on level up directly
         
@@ -50,6 +56,10 @@ public class PlayerUpgradeManager : MonoBehaviour
         {
             upgradeUI.HideUpgradePanel();
         }
+        
+        // DON'T generate initial upgrades here - wait until player levels up
+        // This avoids issues when players aren't spawned yet
+        // Upgrades will be generated when ShowUpgradePanel is called
     }
     
     private void OnDestroy()
@@ -131,8 +141,11 @@ public class PlayerUpgradeManager : MonoBehaviour
     /// </summary>
     public void GenerateRandomUpgrades()
     {
+        // Refresh references in case players were spawned after initialization
+        RefreshPlayerReferences();
+        
         currentUpgradeOptions = upgradeProvider.GenerateRandomUpgrades();
-        Debug.Log($"PlayerUpgradeManager: Generated {currentUpgradeOptions.Length} upgrade options");
+        Debug.Log($"[PlayerUpgradeManager] Generated {currentUpgradeOptions.Length} upgrade options: {string.Join(", ", currentUpgradeOptions)}");
     }
     
     // Note: PauseGameForUpgrade removed - PlayerUpgradeUI handles this directly on level up
@@ -145,11 +158,11 @@ public class PlayerUpgradeManager : MonoBehaviour
         // Refresh player references in case players were spawned after Awake
         RefreshPlayerReferences();
         
-        // Generate new random upgrades for next time
-        GenerateRandomUpgrades();
-        
-        // Apply the upgrade using the applicator
+        // Apply the upgrade using the applicator FIRST
         upgradeApplicator.ApplyUpgrade(upgradeType);
+        
+        // Generate new random upgrades for next time AFTER applying (so level is updated)
+        GenerateRandomUpgrades();
         
         // Resume game
         ResumeGameAfterUpgrade();
@@ -199,6 +212,18 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetCurrentBlinkCooldown() => statsProvider.GetCurrentBlinkCooldown();
     public float GetCurrentDashCooldown() => statsProvider.GetCurrentDashCooldown();
     public float GetCurrentBlinkDashSpeed() => statsProvider.GetCurrentBlinkDashSpeed();
+    
+    // Stat upgrade level getters
+    public int GetDamageUpgradeLevel() => statsProvider.GetDamageUpgradeLevel();
+    public int GetMaxHealthUpgradeLevel() => statsProvider.GetMaxHealthUpgradeLevel();
+    public int GetCriticalChanceUpgradeLevel() => statsProvider.GetCriticalChanceUpgradeLevel();
+    public int GetCriticalDamageUpgradeLevel() => statsProvider.GetCriticalDamageUpgradeLevel();
+    public int GetEvasionUpgradeLevel() => statsProvider.GetEvasionUpgradeLevel();
+    public int GetBlinkDistanceUpgradeLevel() => statsProvider.GetBlinkDistanceUpgradeLevel();
+    public int GetBlinkCooldownUpgradeLevel() => statsProvider.GetBlinkCooldownUpgradeLevel();
+    public int GetDashCooldownUpgradeLevel() => statsProvider.GetDashCooldownUpgradeLevel();
+    public int GetBlinkDashSpeedUpgradeLevel() => statsProvider.GetBlinkDashSpeedUpgradeLevel();
+    public int GetStatUpgradeMaxLevel() => statsProvider.GetStatUpgradeMaxLevel();
     
     // Skill stat getters
     public int GetCirclingProjectilesLevel() => statsProvider.GetCirclingProjectilesLevel();

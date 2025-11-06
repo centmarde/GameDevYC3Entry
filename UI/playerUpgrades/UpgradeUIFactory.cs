@@ -121,6 +121,8 @@ public static class UpgradeUIFactory
         text.fontStyle = FontStyles.Bold;
         
         UpgradeButton upgradeButton = buttonObj.AddComponent<UpgradeButton>();
+        upgradeButton.Initialize(0); // Will be re-initialized with proper index later
+        upgradeButton.CreateLevelIndicator(10); // Create level indicator with max 10 levels
         
         return upgradeButton;
     }

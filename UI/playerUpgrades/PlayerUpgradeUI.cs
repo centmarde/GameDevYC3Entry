@@ -212,6 +212,7 @@ public class PlayerUpgradeUI : MonoBehaviour
                     upgradeButtons[i] = manualButtons[i].gameObject.AddComponent<UpgradeButton>();
                 }
                 upgradeButtons[i].Initialize(i);
+                upgradeButtons[i].CreateLevelIndicator(10); // Auto-setup level indicator
                 int index = i; // Capture loop variable
                 upgradeButtons[i].AddClickListener(() => OnUpgradeButtonClicked(index));
             }
@@ -436,9 +437,85 @@ public class PlayerUpgradeUI : MonoBehaviour
                     // Update button background image
                     Sprite sprite = spriteManager.GetSprite(upgradeOptions[i]);
                     upgradeButtons[i].SetSprite(sprite, buttonColor, buttonHighlight, new Color(0.5f, 0.7f, 1f, 1f));
+                    
+                    // Update level indicator
+                    UpdateLevelIndicatorForUpgrade(i, upgradeOptions[i]);
                 }
             }
         }
+    }
+    
+    /// <summary>
+    /// Update level indicator for a specific upgrade button
+    /// </summary>
+    private void UpdateLevelIndicatorForUpgrade(int buttonIndex, PlayerUpgradeData.UpgradeType upgradeType)
+    {
+        if (upgradeButtons[buttonIndex] == null || upgradeManager == null) return;
+        
+        int currentLevel = 0;
+        int maxLevel = 10;
+        bool hasLevelSystem = true;
+        
+        // Get current level based on upgrade type
+        switch (upgradeType)
+        {
+            case PlayerUpgradeData.UpgradeType.Damage:
+                hasLevelSystem = false; // Damage has no level cap (unlimited)
+                break;
+            case PlayerUpgradeData.UpgradeType.MaxHealth:
+                hasLevelSystem = false; // MaxHealth has no level cap (unlimited)
+                break;
+            case PlayerUpgradeData.UpgradeType.Heal:
+                hasLevelSystem = false; // Heal has no level system
+                break;
+            case PlayerUpgradeData.UpgradeType.CriticalChance:
+                currentLevel = upgradeManager.GetCriticalChanceUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.CriticalDamage:
+                currentLevel = upgradeManager.GetCriticalDamageUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.Evasion:
+                currentLevel = upgradeManager.GetEvasionUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeCirclingProjectiles:
+                currentLevel = upgradeManager.GetCirclingProjectilesLevel();
+                maxLevel = upgradeManager.GetCirclingProjectilesMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradePushWave:
+                currentLevel = upgradeManager.GetPushWaveLevel();
+                maxLevel = upgradeManager.GetPushWaveMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeExtraHand:
+                currentLevel = upgradeManager.GetExtraHandLevel();
+                maxLevel = upgradeManager.GetExtraHandMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
+                currentLevel = upgradeManager.GetDefenseLevel();
+                maxLevel = upgradeManager.GetDefenseMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
+                currentLevel = upgradeManager.GetVampireAuraLevel();
+                maxLevel = upgradeManager.GetVampireAuraMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
+                currentLevel = upgradeManager.GetPiccoloFireCrackerLevel();
+                maxLevel = upgradeManager.GetPiccoloFireCrackerMaxLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
+                currentLevel = upgradeManager.GetBlinkDistanceUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
+                currentLevel = upgradeManager.GetBlinkCooldownUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
+                currentLevel = upgradeManager.GetDashCooldownUpgradeLevel();
+                break;
+            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
+                currentLevel = upgradeManager.GetBlinkDashSpeedUpgradeLevel();
+                break;
+        }
+        
+        upgradeButtons[buttonIndex].UpdateLevelIndicator(currentLevel, maxLevel, hasLevelSystem);
     }
     
     /// <summary>

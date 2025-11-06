@@ -38,6 +38,10 @@ public class ExperienceOrb : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float collectVolume = 1f;
 
+    [Header("Optimization")]
+    [Tooltip("Time in seconds after which the orb will auto-destroy if not collected")]
+    [SerializeField] private float autoDestroyTime = 120f; // 2 minutes
+
     private Transform targetPlayer;
     private Rigidbody rb;
     private float currentSpeed = 0f;
@@ -70,6 +74,9 @@ public class ExperienceOrb : MonoBehaviour
         
         // Record spawn time for pickup delay
         spawnTime = Time.time;
+        
+        // Start auto-destroy timer for optimization
+        StartCoroutine(AutoDestroyTimer());
     }
 
     private void Update()
@@ -278,6 +285,21 @@ public class ExperienceOrb : MonoBehaviour
 
         // Destroy the orb
         Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// Auto-destroy the orb after specified time for optimization purposes
+    /// </summary>
+    private System.Collections.IEnumerator AutoDestroyTimer()
+    {
+        yield return new WaitForSeconds(autoDestroyTime);
+        
+        // Only destroy if not already being collected
+        if (!isBeingCollected && gameObject != null)
+        {
+            Debug.Log($"[ExperienceOrb] Auto-destroying uncollected orb after {autoDestroyTime} seconds for optimization");
+            Destroy(gameObject);
+        }
     }
 
     private void OnDrawGizmosSelected()

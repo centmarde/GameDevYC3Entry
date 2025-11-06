@@ -96,11 +96,14 @@ namespace PlayerUpgrades
             if (hasPlayer2)
             {
                 refs.Player2Stats.projectileDamage += config.damageUpgradeAmount;
-                Debug.Log($"[UpgradeApplicator] Player2 Damage upgraded to {refs.Player2Stats.projectileDamage}");
+                refs.Player2Stats.damageUpgradeLevel++;
+                Debug.Log($"[UpgradeApplicator] Player2 Damage upgraded to {refs.Player2Stats.projectileDamage} (Level {refs.Player2Stats.damageUpgradeLevel})");
             }
             else
             {
                 refs.PlayerStats.projectileDamage += config.damageUpgradeAmount;
+                refs.PlayerStats.damageUpgradeLevel++;
+                Debug.Log($"[UpgradeApplicator] Player Damage upgraded to {refs.PlayerStats.projectileDamage} (Level {refs.PlayerStats.damageUpgradeLevel})");
             }
         }
         
@@ -109,10 +112,14 @@ namespace PlayerUpgrades
             if (hasPlayer2)
             {
                 refs.Player2Stats.maxHealth += config.maxHealthUpgradeAmount;
+                refs.Player2Stats.maxHealthUpgradeLevel++;
+                Debug.Log($"[UpgradeApplicator] Player2 MaxHealth upgraded to {refs.Player2Stats.maxHealth} (Level {refs.Player2Stats.maxHealthUpgradeLevel})");
             }
             else
             {
                 refs.PlayerStats.maxHealth += config.maxHealthUpgradeAmount;
+                refs.PlayerStats.maxHealthUpgradeLevel++;
+                Debug.Log($"[UpgradeApplicator] Player MaxHealth upgraded to {refs.PlayerStats.maxHealth} (Level {refs.PlayerStats.maxHealthUpgradeLevel})");
             }
             
             Player[] allPlayers = hasPlayer2 ? refs.Player2s : refs.Players;
@@ -185,13 +192,23 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2)
             {
-                refs.Player2Stats.criticalChance += config.criticalChanceUpgradeAmount;
-                refs.Player2Stats.criticalChance = Mathf.Min(refs.Player2Stats.criticalChance, 100f);
+                if (refs.Player2Stats.criticalChanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.criticalChance += config.criticalChanceUpgradeAmount;
+                    refs.Player2Stats.criticalChance = Mathf.Min(refs.Player2Stats.criticalChance, 100f);
+                    refs.Player2Stats.criticalChanceUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player2 Critical Chance upgraded to {refs.Player2Stats.criticalChance}% (Level {refs.Player2Stats.criticalChanceUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
             else
             {
-                refs.PlayerStats.criticalChance += config.criticalChanceUpgradeAmount;
-                refs.PlayerStats.criticalChance = Mathf.Min(refs.PlayerStats.criticalChance, 100f);
+                if (refs.PlayerStats.criticalChanceUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                {
+                    refs.PlayerStats.criticalChance += config.criticalChanceUpgradeAmount;
+                    refs.PlayerStats.criticalChance = Mathf.Min(refs.PlayerStats.criticalChance, 100f);
+                    refs.PlayerStats.criticalChanceUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player Critical Chance upgraded to {refs.PlayerStats.criticalChance}% (Level {refs.PlayerStats.criticalChanceUpgradeLevel}/{Player_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -199,11 +216,21 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2)
             {
-                refs.Player2Stats.criticalDamageMultiplier += config.criticalDamageUpgradeAmount;
+                if (refs.Player2Stats.criticalDamageUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.criticalDamageMultiplier += config.criticalDamageUpgradeAmount;
+                    refs.Player2Stats.criticalDamageUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player2 Critical Damage upgraded to {refs.Player2Stats.criticalDamageMultiplier}x (Level {refs.Player2Stats.criticalDamageUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
             else
             {
-                refs.PlayerStats.criticalDamageMultiplier += config.criticalDamageUpgradeAmount;
+                if (refs.PlayerStats.criticalDamageUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                {
+                    refs.PlayerStats.criticalDamageMultiplier += config.criticalDamageUpgradeAmount;
+                    refs.PlayerStats.criticalDamageUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player Critical Damage upgraded to {refs.PlayerStats.criticalDamageMultiplier}x (Level {refs.PlayerStats.criticalDamageUpgradeLevel}/{Player_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -211,13 +238,23 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2)
             {
-                refs.Player2Stats.evasionChance += config.evasionChanceUpgradeAmount;
-                refs.Player2Stats.evasionChance = Mathf.Min(refs.Player2Stats.evasionChance, 100f);
+                if (refs.Player2Stats.evasionUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.evasionChance += config.evasionChanceUpgradeAmount;
+                    refs.Player2Stats.evasionChance = Mathf.Min(refs.Player2Stats.evasionChance, 100f);
+                    refs.Player2Stats.evasionUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player2 Evasion upgraded to {refs.Player2Stats.evasionChance}% (Level {refs.Player2Stats.evasionUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
             else
             {
-                refs.PlayerStats.evasionChance += config.evasionChanceUpgradeAmount;
-                refs.PlayerStats.evasionChance = Mathf.Min(refs.PlayerStats.evasionChance, 100f);
+                if (refs.PlayerStats.evasionUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
+                {
+                    refs.PlayerStats.evasionChance += config.evasionChanceUpgradeAmount;
+                    refs.PlayerStats.evasionChance = Mathf.Min(refs.PlayerStats.evasionChance, 100f);
+                    refs.PlayerStats.evasionUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Player Evasion upgraded to {refs.PlayerStats.evasionChance}% (Level {refs.PlayerStats.evasionUpgradeLevel}/{Player_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -365,8 +402,12 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2 && refs.Player2Stats != null)
             {
-                refs.Player2Stats.blinkDistance += config.blinkDistanceUpgradeAmount;
-                Debug.Log($"[UpgradeApplicator] Blink/Dash distance upgraded to {refs.Player2Stats.blinkDistance}");
+                if (refs.Player2Stats.blinkDistanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.blinkDistance += config.blinkDistanceUpgradeAmount;
+                    refs.Player2Stats.blinkDistanceUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Blink/Dash distance upgraded to {refs.Player2Stats.blinkDistance} (Level {refs.Player2Stats.blinkDistanceUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -374,9 +415,13 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2 && refs.Player2Stats != null)
             {
-                refs.Player2Stats.blinkCooldown -= config.blinkCooldownReduction;
-                refs.Player2Stats.blinkCooldown = Mathf.Max(refs.Player2Stats.blinkCooldown, 0.5f);
-                Debug.Log($"[UpgradeApplicator] Blink cooldown reduced to {refs.Player2Stats.blinkCooldown}s");
+                if (refs.Player2Stats.blinkCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.blinkCooldown -= config.blinkCooldownReduction;
+                    refs.Player2Stats.blinkCooldown = Mathf.Max(refs.Player2Stats.blinkCooldown, 0.5f);
+                    refs.Player2Stats.blinkCooldownUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Blink cooldown reduced to {refs.Player2Stats.blinkCooldown}s (Level {refs.Player2Stats.blinkCooldownUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -384,9 +429,13 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2 && refs.Player2Stats != null)
             {
-                refs.Player2Stats.dashAttackCooldown -= config.dashCooldownReduction;
-                refs.Player2Stats.dashAttackCooldown = Mathf.Max(refs.Player2Stats.dashAttackCooldown, 0.3f);
-                Debug.Log($"[UpgradeApplicator] Dash cooldown reduced to {refs.Player2Stats.dashAttackCooldown}s");
+                if (refs.Player2Stats.dashCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.dashAttackCooldown -= config.dashCooldownReduction;
+                    refs.Player2Stats.dashAttackCooldown = Mathf.Max(refs.Player2Stats.dashAttackCooldown, 0.3f);
+                    refs.Player2Stats.dashCooldownUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Dash cooldown reduced to {refs.Player2Stats.dashAttackCooldown}s (Level {refs.Player2Stats.dashCooldownUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
         
@@ -394,8 +443,12 @@ namespace PlayerUpgrades
         {
             if (hasPlayer2 && refs.Player2Stats != null)
             {
-                refs.Player2Stats.blinkDashSpeed += config.blinkDashSpeedUpgrade;
-                Debug.Log($"[UpgradeApplicator] Blink/Dash speed upgraded to {refs.Player2Stats.blinkDashSpeed}");
+                if (refs.Player2Stats.blinkDashSpeedUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
+                {
+                    refs.Player2Stats.blinkDashSpeed += config.blinkDashSpeedUpgrade;
+                    refs.Player2Stats.blinkDashSpeedUpgradeLevel++;
+                    Debug.Log($"[UpgradeApplicator] Blink/Dash speed upgraded to {refs.Player2Stats.blinkDashSpeed} (Level {refs.Player2Stats.blinkDashSpeedUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
+                }
             }
         }
     }

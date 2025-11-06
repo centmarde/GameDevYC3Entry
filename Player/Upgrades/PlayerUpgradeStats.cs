@@ -98,6 +98,82 @@ namespace PlayerUpgrades
                 ? refs.Player2Stats.blinkDashSpeed : 0f;
         }
         
+        // Stat upgrade level getters
+        public int GetDamageUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.damageUpgradeLevel;
+            if (referenceManager.References.PlayerStats != null)
+                return referenceManager.References.PlayerStats.damageUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetMaxHealthUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.maxHealthUpgradeLevel;
+            if (referenceManager.References.PlayerStats != null)
+                return referenceManager.References.PlayerStats.maxHealthUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetCriticalChanceUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.criticalChanceUpgradeLevel;
+            if (referenceManager.References.PlayerStats != null)
+                return referenceManager.References.PlayerStats.criticalChanceUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetCriticalDamageUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.criticalDamageUpgradeLevel;
+            if (referenceManager.References.PlayerStats != null)
+                return referenceManager.References.PlayerStats.criticalDamageUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetEvasionUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.evasionUpgradeLevel;
+            if (referenceManager.References.PlayerStats != null)
+                return referenceManager.References.PlayerStats.evasionUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetBlinkDistanceUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.blinkDistanceUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetBlinkCooldownUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.blinkCooldownUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetDashCooldownUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.dashCooldownUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetBlinkDashSpeedUpgradeLevel()
+        {
+            if (referenceManager.References.Player2Stats != null)
+                return referenceManager.References.Player2Stats.blinkDashSpeedUpgradeLevel;
+            return 0;
+        }
+        
+        public int GetStatUpgradeMaxLevel() => 10;
+        
         // Skill stat getters
         public int GetCirclingProjectilesLevel() => GetSkillLevel(referenceManager.References.CirclingProjectilesSkills);
         public int GetCirclingProjectilesMaxLevel() => GetSkillMaxLevel(referenceManager.References.CirclingProjectilesSkills, 10);

@@ -151,8 +151,15 @@ public class ResetPlayerData : MonoBehaviour
             playerData.criticalDamageMultiplier = defaultCriticalDamageMultiplier;
             playerData.evasionChance = defaultEvasionChance;
             
+            // Reset all upgrade levels to 0
+            playerData.damageUpgradeLevel = 0;
+            playerData.maxHealthUpgradeLevel = 0;
+            playerData.criticalChanceUpgradeLevel = 0;
+            playerData.criticalDamageUpgradeLevel = 0;
+            playerData.evasionUpgradeLevel = 0;
+            
             if (showDebugMessages)
-                Debug.Log("[ResetPlayerData] Player1 data reset to defaults");
+                Debug.Log("[ResetPlayerData] Player1 data reset to defaults (including upgrade levels)");
             
             // Find and reset the actual Player1 entity in the scene
             Player player1Instance = FindObjectOfType<Player>();
@@ -193,8 +200,19 @@ public class ResetPlayerData : MonoBehaviour
             player2Data.blinkCooldown = defaultBlinkCooldown;
             player2Data.blinkDashSpeed = defaultBlinkDashSpeed;
             
+            // Reset all upgrade levels to 0
+            player2Data.damageUpgradeLevel = 0;
+            player2Data.maxHealthUpgradeLevel = 0;
+            player2Data.criticalChanceUpgradeLevel = 0;
+            player2Data.criticalDamageUpgradeLevel = 0;
+            player2Data.evasionUpgradeLevel = 0;
+            player2Data.blinkDistanceUpgradeLevel = 0;
+            player2Data.blinkCooldownUpgradeLevel = 0;
+            player2Data.dashCooldownUpgradeLevel = 0;
+            player2Data.blinkDashSpeedUpgradeLevel = 0;
+            
             if (showDebugMessages)
-                Debug.Log("[ResetPlayerData] Player2 data reset to defaults (including blink/dash settings)");
+                Debug.Log("[ResetPlayerData] Player2 data reset to defaults (including blink/dash settings and upgrade levels)");
             
             // Find and reset the actual Player2 entity in the scene
             Player2 player2Instance = FindObjectOfType<Player2>();

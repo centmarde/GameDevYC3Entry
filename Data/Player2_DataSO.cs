@@ -40,6 +40,18 @@ public class Player2_DataSO : ScriptableObject
     [Tooltip("Speed used for both blink and dash attack movements")]
     public float blinkDashSpeed = 50f;
     
+    [Header("Upgrade Levels")]
+    public int damageUpgradeLevel = 0;
+    public int maxHealthUpgradeLevel = 0;
+    public int criticalChanceUpgradeLevel = 0;
+    public int criticalDamageUpgradeLevel = 0;
+    public int evasionUpgradeLevel = 0;
+    public int blinkDistanceUpgradeLevel = 0;
+    public int blinkCooldownUpgradeLevel = 0;
+    public int dashCooldownUpgradeLevel = 0;
+    public int blinkDashSpeedUpgradeLevel = 0;
+    public const int MaxUpgradeLevel = 10;
+    
     /// <summary>
     /// Calculate if an attack is a critical hit
     /// </summary>

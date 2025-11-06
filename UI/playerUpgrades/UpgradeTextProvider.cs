@@ -28,17 +28,23 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.CriticalChance:
                 float currentCritChance = upgradeManager.GetCurrentCriticalChance();
                 float critChanceUpgrade = upgradeManager.GetCriticalChanceUpgradeAmount();
-                return $"CRIT CHANCE\n<size=24>{currentCritChance:F1}% → {Mathf.Min(currentCritChance + critChanceUpgrade, 100f):F1}%</size>";
+                int critChanceLevel = upgradeManager.GetCriticalChanceUpgradeLevel();
+                int maxUpgradeLevelCC = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"CRIT CHANCE (Lv{critChanceLevel}/{maxUpgradeLevelCC})\n<size=24>{currentCritChance:F1}% → {Mathf.Min(currentCritChance + critChanceUpgrade, 100f):F1}%</size>";
                 
             case PlayerUpgradeData.UpgradeType.CriticalDamage:
                 float currentCritDamage = upgradeManager.GetCurrentCriticalDamage();
                 float critDamageUpgrade = upgradeManager.GetCriticalDamageUpgradeAmount();
-                return $"CRIT DAMAGE\n<size=24>{currentCritDamage:F2}x → {currentCritDamage + critDamageUpgrade:F2}x</size>";
+                int critDamageLevel = upgradeManager.GetCriticalDamageUpgradeLevel();
+                int maxUpgradeLevelCD = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"CRIT DAMAGE (Lv{critDamageLevel}/{maxUpgradeLevelCD})\n<size=24>{currentCritDamage:F2}x → {currentCritDamage + critDamageUpgrade:F2}x</size>";
                 
             case PlayerUpgradeData.UpgradeType.Evasion:
                 float currentEvasion = upgradeManager.GetCurrentEvasion();
                 float evasionUpgrade = upgradeManager.GetEvasionChanceUpgradeAmount();
-                return $"EVASION\n<size=24>{currentEvasion:F1}% → {Mathf.Min(currentEvasion + evasionUpgrade, 100f):F1}%</size>";
+                int evasionLevel = upgradeManager.GetEvasionUpgradeLevel();
+                int maxUpgradeLevelEv = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"EVASION (Lv{evasionLevel}/{maxUpgradeLevelEv})\n<size=24>{currentEvasion:F1}% → {Mathf.Min(currentEvasion + evasionUpgrade, 100f):F1}%</size>";
                 
             case PlayerUpgradeData.UpgradeType.UpgradeCirclingProjectiles:
                 int currentLevel = upgradeManager.GetCirclingProjectilesLevel();
@@ -174,24 +180,32 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 float currentBlinkDist = upgradeManager.GetCurrentBlinkDistance();
                 float blinkDistUpgrade = upgradeManager.GetBlinkDistanceUpgradeAmount();
-                return $"BLINK RANGE\n<size=24>{currentBlinkDist:F1}m → {currentBlinkDist + blinkDistUpgrade:F1}m</size>";
+                int blinkDistLevel = upgradeManager.GetBlinkDistanceUpgradeLevel();
+                int maxUpgradeLevelBD = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"BLINK RANGE (Lv{blinkDistLevel}/{maxUpgradeLevelBD})\n<size=24>{currentBlinkDist:F1}m → {currentBlinkDist + blinkDistUpgrade:F1}m</size>";
                 
             case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
                 float currentBlinkCD = upgradeManager.GetCurrentBlinkCooldown();
                 float blinkCDReduction = upgradeManager.GetBlinkCooldownReduction();
                 float newBlinkCD = Mathf.Max(currentBlinkCD - blinkCDReduction, 0.5f);
-                return $"BLINK COOLDOWN\n<size=24>{currentBlinkCD:F1}s → {newBlinkCD:F1}s</size>";
+                int blinkCDLevel = upgradeManager.GetBlinkCooldownUpgradeLevel();
+                int maxUpgradeLevelBC = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"BLINK COOLDOWN (Lv{blinkCDLevel}/{maxUpgradeLevelBC})\n<size=24>{currentBlinkCD:F1}s → {newBlinkCD:F1}s</size>";
                 
             case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
                 float currentDashCD = upgradeManager.GetCurrentDashCooldown();
                 float dashCDReduction = upgradeManager.GetDashCooldownReduction();
                 float newDashCD = Mathf.Max(currentDashCD - dashCDReduction, 0.3f);
-                return $"DASH COOLDOWN\n<size=24>{currentDashCD:F1}s → {newDashCD:F1}s</size>";
+                int dashCDLevel = upgradeManager.GetDashCooldownUpgradeLevel();
+                int maxUpgradeLevelDC = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"DASH COOLDOWN (Lv{dashCDLevel}/{maxUpgradeLevelDC})\n<size=24>{currentDashCD:F1}s → {newDashCD:F1}s</size>";
                 
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
                 float currentSpeed2 = upgradeManager.GetCurrentBlinkDashSpeed();
                 float speedUpgrade2 = upgradeManager.GetBlinkDashSpeedUpgrade();
-                return $"DASH SPEED\n<size=24>{currentSpeed2:F0} → {currentSpeed2 + speedUpgrade2:F0}</size>";
+                int dashSpeedLevel = upgradeManager.GetBlinkDashSpeedUpgradeLevel();
+                int maxUpgradeLevelDS = upgradeManager.GetStatUpgradeMaxLevel();
+                return $"DASH SPEED (Lv{dashSpeedLevel}/{maxUpgradeLevelDS})\n<size=24>{currentSpeed2:F0} → {currentSpeed2 + speedUpgrade2:F0}</size>";
                 
             default:
                 return "UNKNOWN";
