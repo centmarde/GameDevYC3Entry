@@ -132,6 +132,19 @@ namespace PlayerUpgrades
             // Defense is now handled in AddPlayer1Upgrades/AddPlayer2Upgrades based on defenseUpgradeLevel
             // No longer needed here since it's a stat-based upgrade, not a skill
             
+            // Check Spear Throw
+            if (refs.SpearThrowSkills != null)
+            {
+                foreach (var skill in refs.SpearThrowSkills)
+                {
+                    if (skill != null && skill.CurrentLevel < 10)
+                    {
+                        allUpgrades.Add(UpgradeType.UpgradeSpearThrow);
+                        break;
+                    }
+                }
+            }
+            
             // Check Piccolo FireCracker
             if (refs.PiccoloFireCrackerSkills != null)
             {

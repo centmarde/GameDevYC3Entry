@@ -488,6 +488,11 @@ public class PlayerUpgradeUI : MonoBehaviour
                 maxLevel = upgradeManager.GetExtraHandMaxLevel();
                 break;
 
+            case PlayerUpgradeData.UpgradeType.UpgradeSpearThrow:
+                currentLevel = upgradeManager.GetSpearThrowLevel();
+                maxLevel = upgradeManager.GetSpearThrowMaxLevel();
+                break;
+                
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
                 currentLevel = upgradeManager.GetPiccoloFireCrackerLevel();
                 maxLevel = upgradeManager.GetPiccoloFireCrackerMaxLevel();

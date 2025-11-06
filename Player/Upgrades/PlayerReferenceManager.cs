@@ -52,6 +52,7 @@ namespace PlayerUpgrades
             List<PlayerSkill_CirclingProjectiles> circlingSkillsList = new List<PlayerSkill_CirclingProjectiles>();
             List<PlayerSkill_PushWave> pushWaveSkillsList = new List<PlayerSkill_PushWave>();
             List<PlayerSkill_ExtraHand> extraHandSkillsList = new List<PlayerSkill_ExtraHand>();
+            List<PlayerSkill_SpearThrow> spearThrowSkillsList = new List<PlayerSkill_SpearThrow>();
             List<PlayerSkill_PiccoloFireCracker> piccoloFireCrackerSkillsList = new List<PlayerSkill_PiccoloFireCracker>();
             
             foreach (Player p in allPlayers)
@@ -70,6 +71,10 @@ namespace PlayerUpgrades
                     if (extraHandSkill != null)
                         extraHandSkillsList.Add(extraHandSkill);
                     
+                    var spearThrowSkill = p.GetComponent<PlayerSkill_SpearThrow>();
+                    if (spearThrowSkill != null)
+                        spearThrowSkillsList.Add(spearThrowSkill);
+                    
                     var piccoloFireCrackerSkill = p.GetComponent<PlayerSkill_PiccoloFireCracker>();
                     if (piccoloFireCrackerSkill != null)
                         piccoloFireCrackerSkillsList.Add(piccoloFireCrackerSkill);
@@ -79,11 +84,12 @@ namespace PlayerUpgrades
             references.CirclingProjectilesSkills = circlingSkillsList.ToArray();
             references.PushWaveSkills = pushWaveSkillsList.ToArray();
             references.ExtraHandSkills = extraHandSkillsList.ToArray();
+            references.SpearThrowSkills = spearThrowSkillsList.ToArray();
             references.PiccoloFireCrackerSkills = piccoloFireCrackerSkillsList.ToArray();
             
             Debug.Log($"[PlayerReferenceManager] Found {references.CirclingProjectilesSkills.Length} CirclingProjectiles skills, " +
                      $"{references.PushWaveSkills.Length} PushWave skills, {references.ExtraHandSkills.Length} ExtraHand skills, " +
-                     $"and {references.PiccoloFireCrackerSkills.Length} PiccoloFireCracker skills");
+                     $"{references.SpearThrowSkills.Length} SpearThrow skills, and {references.PiccoloFireCrackerSkills.Length} PiccoloFireCracker skills");
         }
         
         private void ValidatePlayer2Skills()

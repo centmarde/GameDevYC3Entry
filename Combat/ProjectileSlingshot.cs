@@ -22,6 +22,14 @@ public class ProjectileSlingshot : MonoBehaviour
     {
         hitMask = mask;
     }
+    
+    /// <summary>
+    /// Set the lifetime for this projectile (used when creating projectiles at runtime)
+    /// </summary>
+    public void SetLifeTime(float time)
+    {
+        lifeTime = time;
+    }
 
     private void Awake()
     {
@@ -136,6 +144,13 @@ public class ProjectileSlingshot : MonoBehaviour
                 // Broadcast damage dealt event for skills like Vampire Aura
                 DamageEventBroadcaster.BroadcastPlayerDamage(finalDamage, hitPoint, source);
             }
+        }
+
+        // Notify spear projectile component if present
+        var spearComponent = GetComponent<SpearProjectile>();
+        if (spearComponent != null)
+        {
+            spearComponent.OnSpearHit();
         }
 
         Destroy(gameObject);

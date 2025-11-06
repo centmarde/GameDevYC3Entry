@@ -64,6 +64,9 @@ namespace PlayerUpgrades
                 case UpgradeType.UpgradeExtraHand:
                     ApplyExtraHandUpgrade(refs);
                     break;
+                case UpgradeType.UpgradeSpearThrow:
+                    ApplySpearThrowUpgrade(refs);
+                    break;
                 case UpgradeType.UpgradePiccoloFireCracker:
                     ApplyPiccoloFireCrackerUpgrade(refs);
                     break;
@@ -265,6 +268,29 @@ namespace PlayerUpgrades
         }
         
 
+        
+        private void ApplySpearThrowUpgrade(PlayerReferences refs)
+        {
+            if (refs.SpearThrowSkills != null)
+            {
+                foreach (var skill in refs.SpearThrowSkills)
+                {
+                    if (skill != null)
+                    {
+                        if (!skill.IsObtained)
+                        {
+                            skill.ObtainSkill();
+                            Debug.Log($"[UpgradeApplicator] Obtained Spear Throw skill! Level: {skill.CurrentLevel}, Damage: {skill.CurrentDamage:F1}, Spears: {skill.CurrentSpearCount}");
+                        }
+                        else if (skill.CurrentLevel < skill.MaxLevel)
+                        {
+                            skill.UpgradeSkill();
+                            Debug.Log($"[UpgradeApplicator] Upgraded Spear Throw to Level {skill.CurrentLevel}, Damage: {skill.CurrentDamage:F1}, Spears: {skill.CurrentSpearCount}");
+                        }
+                    }
+                }
+            }
+        }
         
         private void ApplyPiccoloFireCrackerUpgrade(PlayerReferences refs)
         {

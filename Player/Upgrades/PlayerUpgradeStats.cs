@@ -168,6 +168,9 @@ namespace PlayerUpgrades
             }
             return 10;
         }
+
+        public int GetSpearThrowLevel() => GetSkillLevel(referenceManager.References.SpearThrowSkills);
+        public int GetSpearThrowMaxLevel() => GetSkillMaxLevel(referenceManager.References.SpearThrowSkills, 10);
         
         private int GetSkillLevel(PlayerSkill_CirclingProjectiles[] skills)
         {
@@ -183,6 +186,19 @@ namespace PlayerUpgrades
         }
         
         private int GetSkillLevel(PlayerSkill_PushWave[] skills)
+        {
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill != null)
+                        return skill.CurrentLevel;
+                }
+            }
+            return 0;
+        }
+        
+        private int GetSkillLevel(PlayerSkill_SpearThrow[] skills)
         {
             if (skills != null)
             {

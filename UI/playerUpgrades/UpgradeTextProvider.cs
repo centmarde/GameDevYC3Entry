@@ -105,6 +105,25 @@ public static class UpgradeTextProvider
                     return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>MAX LEVEL ({extraHandMaxLevel})</size>";
                 }
                 
+            case PlayerUpgradeData.UpgradeType.UpgradeSpearThrow:
+                int spearLevel = upgradeManager.GetSpearThrowLevel();
+                int spearMaxLevel = upgradeManager.GetSpearThrowMaxLevel();
+                
+                if (spearLevel == 0)
+                {
+                    // Not obtained yet - show as unlock
+                    return $"<color=#FFD700>SPEAR THROW</color>\n<size=24>Unlock Skill (Level 1/{spearMaxLevel})</size>";
+                }
+                else if (spearLevel < spearMaxLevel)
+                {
+                    // Show level upgrade
+                    return $"<color=#FFD700>SPEAR THROW</color>\n<size=24>Level {spearLevel} → {spearLevel + 1}</size>";
+                }
+                else
+                {
+                    // Max level reached (shouldn't appear but handle it)
+                    return $"<color=#FFD700>SPEAR THROW</color>\n<size=24>MAX LEVEL ({spearMaxLevel})</size>";
+                }
 
                 
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
@@ -181,6 +200,8 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.UpgradeExtraHand:
                 return "<b><color=#00FF00>GRANDMOTHERS CANDY</color></b>\n\nUnlock or upgrade this auto-targeting skill! A Grand Mothers Candy shoots projectiles at nearby enemies. Each level increases:\n• <b>Damage</b> (+2 per level)\n• <b>Fire Rate</b> (-0.2s interval per level)\n• <b>Range</b> (+1m per level)\n• <b>Projectiles</b> (+1 on even levels 2,4,6,8,10)\n\n<i>Max Level: 10 - Never miss with this auto-aiming companion!</i>";
                 
+            case PlayerUpgradeData.UpgradeType.UpgradeSpearThrow:
+                return "<b><color=#FFD700>SPEAR THROW</color></b>\n\nUnlock or upgrade this powerful ranged skill! Throws 3-5 spears in formation ahead of your aim direction. Each level increases:\n• <b>Damage</b> (+3 per level, 15 → 42 at Lv10)\n• <b>Projectile Speed</b> (+2 per level)\n• <b>Cooldown Reduction</b> (-0.2s per level, 4s → 2.2s)\n• <b>Spear Count</b> (+1 every 3 levels, 3 → 5 max)\n\nSpears inherit critical hits and player damage bonuses. Great for clearing groups of enemies in a straight line!\n\n<i>Max Level: 10 - Pierce through enemies with deadly precision!</i>";
 
                 
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
