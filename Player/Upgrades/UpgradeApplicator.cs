@@ -46,9 +46,6 @@ namespace PlayerUpgrades
                 case UpgradeType.MaxHealth:
                     ApplyMaxHealthUpgrade(hasPlayer2, refs);
                     break;
-                case UpgradeType.Heal:
-                    ApplyHealUpgrade(hasPlayer2, refs);
-                    break;
                 case UpgradeType.CriticalChance:
                     ApplyCriticalChanceUpgrade(hasPlayer2, refs);
                     break;
@@ -67,26 +64,11 @@ namespace PlayerUpgrades
                 case UpgradeType.UpgradeExtraHand:
                     ApplyExtraHandUpgrade(refs);
                     break;
-                case UpgradeType.UpgradeDefense:
-                    ApplyDefenseUpgrade(refs);
-                    break;
-                case UpgradeType.UpgradeVampireAura:
-                    ApplyVampireAuraUpgrade(refs);
-                    break;
                 case UpgradeType.UpgradePiccoloFireCracker:
                     ApplyPiccoloFireCrackerUpgrade(refs);
                     break;
                 case UpgradeType.UpgradeBlinkDistance:
                     ApplyBlinkDistanceUpgrade(hasPlayer2, refs);
-                    break;
-                case UpgradeType.ReduceBlinkCooldown:
-                    ApplyBlinkCooldownUpgrade(hasPlayer2, refs);
-                    break;
-                case UpgradeType.ReduceDashCooldown:
-                    ApplyDashCooldownUpgrade(hasPlayer2, refs);
-                    break;
-                case UpgradeType.UpgradeBlinkDashSpeed:
-                    ApplyBlinkDashSpeedUpgrade(hasPlayer2, refs);
                     break;
             }
         }
@@ -139,54 +121,7 @@ namespace PlayerUpgrades
             }
         }
         
-        private void ApplyHealUpgrade(bool hasPlayer2, PlayerReferences refs)
-        {
-            Debug.Log($"[UpgradeApplicator] Heal upgrade selected. hasPlayer2: {hasPlayer2}");
-            
-            if (hasPlayer2)
-            {
-                HealPlayers(refs.Player2s, "Player2");
-            }
-            else
-            {
-                HealPlayers(refs.Players, "Player");
-            }
-        }
-        
-        private void HealPlayers(Player[] players, string playerType)
-        {
-            Debug.Log($"[UpgradeApplicator] Healing {playerType} instances. Count: {(players != null ? players.Length : 0)}");
-            
-            if (players != null && players.Length > 0)
-            {
-                foreach (Player p in players)
-                {
-                    if (p != null && p.gameObject.activeInHierarchy)
-                    {
-                        var health = p.GetComponent<Entity_Health>();
-                        if (health != null)
-                        {
-                            float currentHP = health.CurrentHealth;
-                            float maxHP = health.MaxHealth;
-                            health.Heal(maxHP);
-                            Debug.Log($"[UpgradeApplicator] Healed {p.name}: {currentHP} -> {health.CurrentHealth} (Max: {maxHP})");
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"[UpgradeApplicator] {playerType} {p.name} has no Entity_Health component!");
-                        }
-                    }
-                    else if (p != null)
-                    {
-                        Debug.LogWarning($"[UpgradeApplicator] {playerType} {p.name} is not active in hierarchy!");
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogError($"[UpgradeApplicator] No {playerType} instances found to heal!");
-            }
-        }
+
         
         private void ApplyCriticalChanceUpgrade(bool hasPlayer2, PlayerReferences refs)
         {
@@ -329,51 +264,7 @@ namespace PlayerUpgrades
             }
         }
         
-        private void ApplyDefenseUpgrade(PlayerReferences refs)
-        {
-            if (refs.DefenseSkills != null)
-            {
-                foreach (var skill in refs.DefenseSkills)
-                {
-                    if (skill != null)
-                    {
-                        if (!skill.IsObtained)
-                        {
-                            skill.ObtainSkill();
-                            Debug.Log($"[UpgradeApplicator] Obtained Defense skill! Level: {skill.CurrentLevel}, Absorption: {skill.DamageAbsorptionPercent:F1}%");
-                        }
-                        else if (skill.CurrentLevel < 10)
-                        {
-                            skill.UpgradeSkill();
-                            Debug.Log($"[UpgradeApplicator] Upgraded Defense to Level {skill.CurrentLevel}, Absorption: {skill.DamageAbsorptionPercent:F1}%");
-                        }
-                    }
-                }
-            }
-        }
-        
-        private void ApplyVampireAuraUpgrade(PlayerReferences refs)
-        {
-            if (refs.VampireAuraSkills != null)
-            {
-                foreach (var skill in refs.VampireAuraSkills)
-                {
-                    if (skill != null)
-                    {
-                        if (!skill.IsObtained)
-                        {
-                            skill.ObtainSkill();
-                            Debug.Log($"[UpgradeApplicator] Obtained Vampire Aura skill! Level: {skill.CurrentLevel}, Lifesteal: {skill.CurrentHealPercentage}%");
-                        }
-                        else if (skill.CurrentLevel < skill.MaxLevel)
-                        {
-                            skill.UpgradeSkill();
-                            Debug.Log($"[UpgradeApplicator] Upgraded Vampire Aura to Level {skill.CurrentLevel}, Lifesteal: {skill.CurrentHealPercentage}%");
-                        }
-                    }
-                }
-            }
-        }
+
         
         private void ApplyPiccoloFireCrackerUpgrade(PlayerReferences refs)
         {
@@ -411,45 +302,6 @@ namespace PlayerUpgrades
             }
         }
         
-        private void ApplyBlinkCooldownUpgrade(bool hasPlayer2, PlayerReferences refs)
-        {
-            if (hasPlayer2 && refs.Player2Stats != null)
-            {
-                if (refs.Player2Stats.blinkCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                {
-                    refs.Player2Stats.blinkCooldown -= config.blinkCooldownReduction;
-                    refs.Player2Stats.blinkCooldown = Mathf.Max(refs.Player2Stats.blinkCooldown, 0.5f);
-                    refs.Player2Stats.blinkCooldownUpgradeLevel++;
-                    Debug.Log($"[UpgradeApplicator] Blink cooldown reduced to {refs.Player2Stats.blinkCooldown}s (Level {refs.Player2Stats.blinkCooldownUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
-                }
-            }
-        }
-        
-        private void ApplyDashCooldownUpgrade(bool hasPlayer2, PlayerReferences refs)
-        {
-            if (hasPlayer2 && refs.Player2Stats != null)
-            {
-                if (refs.Player2Stats.dashCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                {
-                    refs.Player2Stats.dashAttackCooldown -= config.dashCooldownReduction;
-                    refs.Player2Stats.dashAttackCooldown = Mathf.Max(refs.Player2Stats.dashAttackCooldown, 0.3f);
-                    refs.Player2Stats.dashCooldownUpgradeLevel++;
-                    Debug.Log($"[UpgradeApplicator] Dash cooldown reduced to {refs.Player2Stats.dashAttackCooldown}s (Level {refs.Player2Stats.dashCooldownUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
-                }
-            }
-        }
-        
-        private void ApplyBlinkDashSpeedUpgrade(bool hasPlayer2, PlayerReferences refs)
-        {
-            if (hasPlayer2 && refs.Player2Stats != null)
-            {
-                if (refs.Player2Stats.blinkDashSpeedUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                {
-                    refs.Player2Stats.blinkDashSpeed += config.blinkDashSpeedUpgrade;
-                    refs.Player2Stats.blinkDashSpeedUpgradeLevel++;
-                    Debug.Log($"[UpgradeApplicator] Blink/Dash speed upgraded to {refs.Player2Stats.blinkDashSpeed} (Level {refs.Player2Stats.blinkDashSpeedUpgradeLevel}/{Player2_DataSO.MaxUpgradeLevel})");
-                }
-            }
-        }
+
     }
 }

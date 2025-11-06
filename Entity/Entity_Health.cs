@@ -54,17 +54,50 @@ public class Entity_Health : MonoBehaviour, IDamageable
             return false; // Damage was evaded
         }
         
-        // Check for Defense skill absorption (for players only)
-        PlayerSkill_Defense defenseSkill = GetComponent<PlayerSkill_Defense>();
-        if (defenseSkill != null && defenseSkill.IsObtained)
+        // Check for stat-based defense absorption (for players only)
+        float absorbed = 0f;
+        
+        // Check if this is Player1
+        Player player1 = GetComponent<Player>();
+        if (player1 != null && player1.Stats != null)
         {
-            float absorbed = defenseSkill.ProcessIncomingDamage(applied, hitPoint, source);
-            applied -= absorbed; // Reduce damage by absorbed amount
-            
-            if (applied <= 0f)
+            absorbed = player1.Stats.CalculateDefenseAbsorption(applied);
+        }
+        else
+        {
+            // Check if this is Player2
+            Player2 player2 = GetComponent<Player2>();
+            if (player2 != null && player2.Stats != null)
             {
-                // All damage was absorbed!
-                return false;
+                absorbed = player2.Stats.CalculateDefenseAbsorption(applied);
+            }
+        }
+        
+        if (absorbed > 0f)
+        {
+            applied -= absorbed;
+            Debug.Log($"{gameObject.name} absorbed {absorbed} damage! Remaining damage: {applied}");
+            
+            // Show defense absorption indicator
+            try
+            {
+                if (applied <= 0f)
+                {
+                    // All damage was completely absorbed!
+                    Debug.Log($"[Entity_Health] Showing FULL absorption indicator at {hitPoint} for {absorbed} damage");
+                    DefenseAbsorptionIndicator.ShowFullAbsorption(hitPoint, "ABSORBED!");
+                    return false;
+                }
+                else
+                {
+                    // Partial absorption - show amount absorbed
+                    Debug.Log($"[Entity_Health] Showing PARTIAL absorption indicator at {hitPoint} for {absorbed} damage absorbed");
+                    DefenseAbsorptionIndicator.ShowAbsorption(hitPoint, absorbed);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[Entity_Health] Failed to show defense absorption indicator: {ex.Message}");
             }
         }
 

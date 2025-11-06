@@ -56,7 +56,6 @@ namespace PlayerUpgrades
             // Damage and MaxHealth have no level cap
             allUpgrades.Add(UpgradeType.Damage);
             allUpgrades.Add(UpgradeType.MaxHealth);
-            allUpgrades.Add(UpgradeType.Heal); // Heal has no level cap
             if (refs.PlayerStats.criticalChanceUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
                 allUpgrades.Add(UpgradeType.CriticalChance);
             if (refs.PlayerStats.criticalDamageUpgradeLevel < Player_DataSO.MaxUpgradeLevel)
@@ -77,7 +76,6 @@ namespace PlayerUpgrades
             // Damage and MaxHealth have no level cap
             allUpgrades.Add(UpgradeType.Damage);
             allUpgrades.Add(UpgradeType.MaxHealth);
-            allUpgrades.Add(UpgradeType.Heal); // Heal has no level cap
             if (refs.Player2Stats.criticalChanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
                 allUpgrades.Add(UpgradeType.CriticalChance);
             if (refs.Player2Stats.criticalDamageUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
@@ -86,12 +84,6 @@ namespace PlayerUpgrades
                 allUpgrades.Add(UpgradeType.Evasion);
             if (refs.Player2Stats.blinkDistanceUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
                 allUpgrades.Add(UpgradeType.UpgradeBlinkDistance);
-            if (refs.Player2Stats.blinkCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                allUpgrades.Add(UpgradeType.ReduceBlinkCooldown);
-            if (refs.Player2Stats.dashCooldownUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                allUpgrades.Add(UpgradeType.ReduceDashCooldown);
-            if (refs.Player2Stats.blinkDashSpeedUpgradeLevel < Player2_DataSO.MaxUpgradeLevel)
-                allUpgrades.Add(UpgradeType.UpgradeBlinkDashSpeed);
         }
         
         private void AddSkillUpgrades(List<UpgradeType> allUpgrades)
@@ -137,31 +129,8 @@ namespace PlayerUpgrades
                 }
             }
             
-            // Check Defense
-            if (refs.DefenseSkills != null)
-            {
-                foreach (var skill in refs.DefenseSkills)
-                {
-                    if (skill != null && skill.CurrentLevel < 10)
-                    {
-                        allUpgrades.Add(UpgradeType.UpgradeDefense);
-                        break;
-                    }
-                }
-            }
-            
-            // Check Vampire Aura
-            if (refs.VampireAuraSkills != null)
-            {
-                foreach (var skill in refs.VampireAuraSkills)
-                {
-                    if (skill != null && skill.CurrentLevel < 10)
-                    {
-                        allUpgrades.Add(UpgradeType.UpgradeVampireAura);
-                        break;
-                    }
-                }
-            }
+            // Defense is now handled in AddPlayer1Upgrades/AddPlayer2Upgrades based on defenseUpgradeLevel
+            // No longer needed here since it's a stat-based upgrade, not a skill
             
             // Check Piccolo FireCracker
             if (refs.PiccoloFireCrackerSkills != null)
@@ -201,7 +170,7 @@ namespace PlayerUpgrades
                 // Emergency fallback - should never reach here
                 selectedUpgrades[0] = UpgradeType.Damage;
                 selectedUpgrades[1] = UpgradeType.MaxHealth;
-                selectedUpgrades[2] = UpgradeType.Heal;
+                selectedUpgrades[2] = UpgradeType.CriticalChance;
                 return selectedUpgrades;
             }
             

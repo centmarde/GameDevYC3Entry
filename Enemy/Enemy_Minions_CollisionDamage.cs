@@ -14,7 +14,7 @@ public class Enemy_Minions_CollisionDamage : MonoBehaviour
     
     [Header("Current Stats (Read-Only)")]
     [Tooltip("Base collision damage from ScriptableObject")]
-    [SerializeField] private float baseAttackDamage = 10f;
+    [SerializeField] private float baseAttackDamage = 1f;
     
     [Tooltip("Final collision damage including wave scaling bonuses")]
     [SerializeField] private float currentCollisionDamage = 10f;
@@ -30,7 +30,7 @@ public class Enemy_Minions_CollisionDamage : MonoBehaviour
     private bool isCollidingWithPlayer = false;
     
     // Internal stats
-    private float attackDamage = 10f;
+    private float attackDamage = 1f;
     private float attackCooldown = 1f;
     private bool playAttackAnimOnCollision = true;
 
@@ -205,19 +205,44 @@ public class Enemy_Minions_CollisionDamage : MonoBehaviour
             
             Debug.Log($"[Enemy_Minions_CollisionDamage] Attempting to deal {damageAmount} damage (base: {baseAttackDamage}, bonus: +{waveDamageBonus}, cooldown: {currentAttackCooldown}s)");
             
-            // Deal damage
+            // Deal damage (Entity_Health will handle defense absorption automatically)
             Vector3 hitPoint = transform.position;
             Vector3 hitNormal = (target.transform.position - transform.position).normalized;
+            
+            // Check player defense before dealing damage (for logging purposes)
+            float playerDefense = GetPlayerDefenseValue(target);
+            int defenseLevel = GetPlayerDefenseLevel(target);
+            float expectedAbsorption = CalculateExpectedAbsorption(target, damageAmount);
+            float expectedDamage = damageAmount - expectedAbsorption;
+            
+            if (playerDefense > 0)
+            {
+                Debug.Log($"[Enemy_Minions_CollisionDamage] Target defense: {playerDefense} raw + {Mathf.Min(defenseLevel * 10, 50)}% reduction (Level {defenseLevel}), Expected absorption: {expectedAbsorption:F1}, Expected damage: {expectedDamage:F1}");
+            }
             
             bool damageApplied = health.TakeDamage(damageAmount, hitPoint, hitNormal, minion);
             if (damageApplied)
             {
                 lastDamageTime = Time.time;
-                Debug.Log($"[Enemy_Minions_CollisionDamage] ✓ Successfully dealt {damageAmount} collision damage to {target.name}");
+                if (playerDefense > 0)
+                {
+                    Debug.Log($"[Enemy_Minions_CollisionDamage] ✓ Attack processed: {damageAmount} → {expectedDamage:F1} damage to {target.name} (absorbed {expectedAbsorption:F1} via defense)");
+                }
+                else
+                {
+                    Debug.Log($"[Enemy_Minions_CollisionDamage] ✓ Successfully dealt {damageAmount} collision damage to {target.name}");
+                }
             }
             else
             {
-                Debug.LogWarning($"[Enemy_Minions_CollisionDamage] ✗ Failed to deal damage to {target.name} - TakeDamage returned false");
+                if (expectedAbsorption >= damageAmount)
+                {
+                    Debug.Log($"[Enemy_Minions_CollisionDamage] ⚡ Attack completely negated! Defense absorbed all {damageAmount} damage ({playerDefense} raw + {Mathf.Min(defenseLevel * 10, 50)}% reduction)");
+                }
+                else
+                {
+                    Debug.LogWarning($"[Enemy_Minions_CollisionDamage] ✗ Failed to deal damage to {target.name} - TakeDamage returned false");
+                }
             }
         }
         else if (health == null)
@@ -236,6 +261,72 @@ public class Enemy_Minions_CollisionDamage : MonoBehaviour
     /// Get current collision status (for debugging)
     /// </summary>
     public bool IsCollidingWithPlayer => isCollidingWithPlayer;
+    
+    /// <summary>
+    /// Get the defense value of the target player (for logging purposes)
+    /// </summary>
+    private float GetPlayerDefenseValue(GameObject target)
+    {
+        // Check if target is Player1
+        Player player1 = target.GetComponent<Player>();
+        if (player1 != null && player1.Stats != null)
+        {
+            return player1.Stats.defense;
+        }
+        
+        // Check if target is Player2
+        Player2 player2 = target.GetComponent<Player2>();
+        if (player2 != null && player2.Stats != null)
+        {
+            return player2.Stats.defense;
+        }
+        
+        return 0f; // No defense found or not a player
+    }
+    
+    /// <summary>
+    /// Get the defense upgrade level of the target player
+    /// </summary>
+    private int GetPlayerDefenseLevel(GameObject target)
+    {
+        // Check if target is Player1
+        Player player1 = target.GetComponent<Player>();
+        if (player1 != null && player1.Stats != null)
+        {
+            return player1.Stats.defenseUpgradeLevel;
+        }
+        
+        // Check if target is Player2
+        Player2 player2 = target.GetComponent<Player2>();
+        if (player2 != null && player2.Stats != null)
+        {
+            return player2.Stats.defenseUpgradeLevel;
+        }
+        
+        return 0; // No defense found or not a player
+    }
+    
+    /// <summary>
+    /// Calculate expected damage absorption using the same logic as player stats
+    /// </summary>
+    private float CalculateExpectedAbsorption(GameObject target, float incomingDamage)
+    {
+        // Check if target is Player1
+        Player player1 = target.GetComponent<Player>();
+        if (player1 != null && player1.Stats != null)
+        {
+            return player1.Stats.CalculateDefenseAbsorption(incomingDamage);
+        }
+        
+        // Check if target is Player2
+        Player2 player2 = target.GetComponent<Player2>();
+        if (player2 != null && player2.Stats != null)
+        {
+            return player2.Stats.CalculateDefenseAbsorption(incomingDamage);
+        }
+        
+        return 0f; // No defense found or not a player
+    }
 
     private void OnDrawGizmos()
     {

@@ -25,9 +25,6 @@ namespace PlayerUpgrades
         public float GetCriticalDamageUpgradeAmount() => config.criticalDamageUpgradeAmount;
         public float GetEvasionChanceUpgradeAmount() => config.evasionChanceUpgradeAmount;
         public float GetBlinkDistanceUpgradeAmount() => config.blinkDistanceUpgradeAmount;
-        public float GetBlinkCooldownReduction() => config.blinkCooldownReduction;
-        public float GetDashCooldownReduction() => config.dashCooldownReduction;
-        public float GetBlinkDashSpeedUpgrade() => config.blinkDashSpeedUpgrade;
         
         // Current stat getters
         public float GetCurrentDamage()
@@ -77,26 +74,7 @@ namespace PlayerUpgrades
                 ? refs.Player2Stats.blinkDistance : 0f;
         }
         
-        public float GetCurrentBlinkCooldown()
-        {
-            var refs = referenceManager.References;
-            return referenceManager.IsPlayer2Active() && refs.Player2Stats != null 
-                ? refs.Player2Stats.blinkCooldown : 0f;
-        }
-        
-        public float GetCurrentDashCooldown()
-        {
-            var refs = referenceManager.References;
-            return referenceManager.IsPlayer2Active() && refs.Player2Stats != null 
-                ? refs.Player2Stats.dashAttackCooldown : 0f;
-        }
-        
-        public float GetCurrentBlinkDashSpeed()
-        {
-            var refs = referenceManager.References;
-            return referenceManager.IsPlayer2Active() && refs.Player2Stats != null 
-                ? refs.Player2Stats.blinkDashSpeed : 0f;
-        }
+
         
         // Stat upgrade level getters
         public int GetDamageUpgradeLevel()
@@ -151,26 +129,7 @@ namespace PlayerUpgrades
             return 0;
         }
         
-        public int GetBlinkCooldownUpgradeLevel()
-        {
-            if (referenceManager.References.Player2Stats != null)
-                return referenceManager.References.Player2Stats.blinkCooldownUpgradeLevel;
-            return 0;
-        }
-        
-        public int GetDashCooldownUpgradeLevel()
-        {
-            if (referenceManager.References.Player2Stats != null)
-                return referenceManager.References.Player2Stats.dashCooldownUpgradeLevel;
-            return 0;
-        }
-        
-        public int GetBlinkDashSpeedUpgradeLevel()
-        {
-            if (referenceManager.References.Player2Stats != null)
-                return referenceManager.References.Player2Stats.blinkDashSpeedUpgradeLevel;
-            return 0;
-        }
+
         
         public int GetStatUpgradeMaxLevel() => 10;
         
@@ -179,10 +138,8 @@ namespace PlayerUpgrades
         public int GetCirclingProjectilesMaxLevel() => GetSkillMaxLevel(referenceManager.References.CirclingProjectilesSkills, 10);
         public int GetPushWaveLevel() => GetSkillLevel(referenceManager.References.PushWaveSkills);
         public int GetPushWaveMaxLevel() => GetSkillMaxLevel(referenceManager.References.PushWaveSkills, 10);
-        public int GetDefenseLevel() => GetSkillLevel(referenceManager.References.DefenseSkills);
-        public int GetDefenseMaxLevel() => GetSkillMaxLevel(referenceManager.References.DefenseSkills, 10);
-        public int GetVampireAuraLevel() => GetSkillLevel(referenceManager.References.VampireAuraSkills);
-        public int GetVampireAuraMaxLevel() => GetSkillMaxLevel(referenceManager.References.VampireAuraSkills, 10);
+
+
         
         public int GetExtraHandLevel()
         {
@@ -226,32 +183,6 @@ namespace PlayerUpgrades
         }
         
         private int GetSkillLevel(PlayerSkill_PushWave[] skills)
-        {
-            if (skills != null)
-            {
-                foreach (var skill in skills)
-                {
-                    if (skill != null)
-                        return skill.CurrentLevel;
-                }
-            }
-            return 0;
-        }
-        
-        private int GetSkillLevel(PlayerSkill_Defense[] skills)
-        {
-            if (skills != null)
-            {
-                foreach (var skill in skills)
-                {
-                    if (skill != null)
-                        return skill.CurrentLevel;
-                }
-            }
-            return 0;
-        }
-        
-        private int GetSkillLevel(PlayerSkill_VampireAura[] skills)
         {
             if (skills != null)
             {
@@ -430,45 +361,41 @@ namespace PlayerUpgrades
         
         public float GetDefenseAbsorptionPercent()
         {
-            var skills = referenceManager.References.DefenseSkills;
-            if (skills != null)
-            {
-                foreach (var skill in skills)
-                {
-                    if (skill != null && skill.IsObtained)
-                        return skill.DamageAbsorptionPercent;
-                }
-            }
+            // Defense now works as raw damage absorption, not percentage
+            // Return the actual defense value for display purposes
+            var refs = referenceManager.References;
+            if (refs.PlayerStats != null)
+                return refs.PlayerStats.defense;
+            else if (refs.Player2Stats != null)
+                return refs.Player2Stats.defense;
             return 0f;
         }
         
         public float GetDefenseAbsorptionChance()
         {
-            var skills = referenceManager.References.DefenseSkills;
-            if (skills != null)
-            {
-                foreach (var skill in skills)
-                {
-                    if (skill != null && skill.IsObtained)
-                        return skill.AbsorptionChance;
-                }
-            }
+            // Defense always has 100% chance to absorb (up to defense value)
+            var refs = referenceManager.References;
+            if (refs.PlayerStats != null && refs.PlayerStats.defense > 0)
+                return 100f;
+            else if (refs.Player2Stats != null && refs.Player2Stats.defense > 0)
+                return 100f;
             return 0f;
         }
         
-        public float GetVampireAuraHealPercentage()
+        /// <summary>
+        /// Get the raw defense value for damage absorption calculation
+        /// </summary>
+        public float GetDefenseValue()
         {
-            var skills = referenceManager.References.VampireAuraSkills;
-            if (skills != null)
-            {
-                foreach (var skill in skills)
-                {
-                    if (skill != null && skill.IsObtained)
-                        return skill.CurrentHealPercentage;
-                }
-            }
+            var refs = referenceManager.References;
+            if (refs.PlayerStats != null)
+                return refs.PlayerStats.defense;
+            else if (refs.Player2Stats != null)
+                return refs.Player2Stats.defense;
             return 0f;
         }
+        
+
         
         // Piccolo FireCracker getters
         public int GetPiccoloFireCrackerLevel()

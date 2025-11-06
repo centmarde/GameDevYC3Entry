@@ -48,12 +48,17 @@ public class Player_DataSO : ScriptableObject
     [Range(0f, 100f)]
     public float evasionChance = 5f; // Percentage chance to evade incoming damage
     
+    [Header("Defense System")]
+    [Range(0f, 100f)]
+    public float defense = 0f; // Raw damage absorption amount
+    
     [Header("Upgrade Levels")]
     public int damageUpgradeLevel = 0;
     public int maxHealthUpgradeLevel = 0;
     public int criticalChanceUpgradeLevel = 0;
     public int criticalDamageUpgradeLevel = 0;
     public int evasionUpgradeLevel = 0;
+    public int defenseUpgradeLevel = 0;
     public const int MaxUpgradeLevel = 10;
     
     /// <summary>
@@ -78,5 +83,22 @@ public class Player_DataSO : ScriptableObject
     public bool RollEvasion()
     {
         return Random.Range(0f, 100f) < evasionChance;
+    }
+    
+    /// <summary>
+    /// Calculate defense absorption from raw damage with percentage reduction
+    /// </summary>
+    public float CalculateDefenseAbsorption(float incomingDamage)
+    {
+        // First absorb raw damage up to defense value
+        float rawAbsorption = Mathf.Min(defense, incomingDamage);
+        float remainingDamage = incomingDamage - rawAbsorption;
+        
+        // Then reduce remaining damage by 5% per defense level (up to 25% max at level 5+)
+        float percentageReduction = Mathf.Min(defenseUpgradeLevel * 5f, 25f) / 100f;
+        float percentageAbsorption = remainingDamage * percentageReduction;
+        
+        float totalAbsorption = rawAbsorption + percentageAbsorption;
+        return Mathf.Min(totalAbsorption, incomingDamage); // Never absorb more than incoming damage
     }
 }

@@ -157,6 +157,10 @@ public class ResetPlayerData : MonoBehaviour
             playerData.criticalChanceUpgradeLevel = 0;
             playerData.criticalDamageUpgradeLevel = 0;
             playerData.evasionUpgradeLevel = 0;
+            playerData.defenseUpgradeLevel = 0;
+            
+            // Reset defense stat
+            playerData.defense = 0f;
             
             if (showDebugMessages)
                 Debug.Log("[ResetPlayerData] Player1 data reset to defaults (including upgrade levels)");
@@ -206,10 +210,14 @@ public class ResetPlayerData : MonoBehaviour
             player2Data.criticalChanceUpgradeLevel = 0;
             player2Data.criticalDamageUpgradeLevel = 0;
             player2Data.evasionUpgradeLevel = 0;
+            player2Data.defenseUpgradeLevel = 0;
             player2Data.blinkDistanceUpgradeLevel = 0;
             player2Data.blinkCooldownUpgradeLevel = 0;
             player2Data.dashCooldownUpgradeLevel = 0;
             player2Data.blinkDashSpeedUpgradeLevel = 0;
+            
+            // Reset defense stat
+            player2Data.defense = 0f;
             
             if (showDebugMessages)
                 Debug.Log("[ResetPlayerData] Player2 data reset to defaults (including blink/dash settings and upgrade levels)");

@@ -191,7 +191,6 @@ public class PlayerUpgradeManager : MonoBehaviour
     // Delegate stat queries to stats provider
     public float GetDamageUpgradeAmount() => statsProvider.GetDamageUpgradeAmount();
     public float GetMaxHealthUpgradeAmount() => statsProvider.GetMaxHealthUpgradeAmount();
-    public float GetHealAmount() => statsProvider.GetHealAmount();
     public float GetCriticalChanceUpgradeAmount() => statsProvider.GetCriticalChanceUpgradeAmount();
     public float GetCriticalDamageUpgradeAmount() => statsProvider.GetCriticalDamageUpgradeAmount();
     public float GetEvasionChanceUpgradeAmount() => statsProvider.GetEvasionChanceUpgradeAmount();
@@ -204,14 +203,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     
     // Player2 specific getters
     public float GetBlinkDistanceUpgradeAmount() => statsProvider.GetBlinkDistanceUpgradeAmount();
-    public float GetBlinkCooldownReduction() => statsProvider.GetBlinkCooldownReduction();
-    public float GetDashCooldownReduction() => statsProvider.GetDashCooldownReduction();
-    public float GetBlinkDashSpeedUpgrade() => statsProvider.GetBlinkDashSpeedUpgrade();
-    
     public float GetCurrentBlinkDistance() => statsProvider.GetCurrentBlinkDistance();
-    public float GetCurrentBlinkCooldown() => statsProvider.GetCurrentBlinkCooldown();
-    public float GetCurrentDashCooldown() => statsProvider.GetCurrentDashCooldown();
-    public float GetCurrentBlinkDashSpeed() => statsProvider.GetCurrentBlinkDashSpeed();
     
     // Stat upgrade level getters
     public int GetDamageUpgradeLevel() => statsProvider.GetDamageUpgradeLevel();
@@ -220,9 +212,7 @@ public class PlayerUpgradeManager : MonoBehaviour
     public int GetCriticalDamageUpgradeLevel() => statsProvider.GetCriticalDamageUpgradeLevel();
     public int GetEvasionUpgradeLevel() => statsProvider.GetEvasionUpgradeLevel();
     public int GetBlinkDistanceUpgradeLevel() => statsProvider.GetBlinkDistanceUpgradeLevel();
-    public int GetBlinkCooldownUpgradeLevel() => statsProvider.GetBlinkCooldownUpgradeLevel();
-    public int GetDashCooldownUpgradeLevel() => statsProvider.GetDashCooldownUpgradeLevel();
-    public int GetBlinkDashSpeedUpgradeLevel() => statsProvider.GetBlinkDashSpeedUpgradeLevel();
+
     public int GetStatUpgradeMaxLevel() => statsProvider.GetStatUpgradeMaxLevel();
     
     // Skill stat getters
@@ -246,14 +236,9 @@ public class PlayerUpgradeManager : MonoBehaviour
     public float GetExtraHandShootInterval() => statsProvider.GetExtraHandShootInterval();
     public float GetExtraHandRange() => statsProvider.GetExtraHandRange();
     
-    public int GetDefenseLevel() => statsProvider.GetDefenseLevel();
-    public int GetDefenseMaxLevel() => statsProvider.GetDefenseMaxLevel();
+
     public float GetDefenseAbsorptionPercent() => statsProvider.GetDefenseAbsorptionPercent();
     public float GetDefenseAbsorptionChance() => statsProvider.GetDefenseAbsorptionChance();
-    
-    public int GetVampireAuraLevel() => statsProvider.GetVampireAuraLevel();
-    public int GetVampireAuraMaxLevel() => statsProvider.GetVampireAuraMaxLevel();
-    public float GetVampireAuraHealPercentage() => statsProvider.GetVampireAuraHealPercentage();
     
     public int GetPiccoloFireCrackerLevel() => statsProvider.GetPiccoloFireCrackerLevel();
     public int GetPiccoloFireCrackerMaxLevel() => statsProvider.GetPiccoloFireCrackerMaxLevel();

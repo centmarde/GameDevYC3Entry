@@ -23,6 +23,8 @@ public class EvasionFeedback : MonoBehaviour
     private Vector3 startPosition;
     
     private static Canvas worldCanvas;
+    private static float lastShowTime = -999f;
+    private static float showInterval = 0.5f; // Minimum time between indicators
     
     private void Awake()
     {
@@ -75,6 +77,13 @@ public class EvasionFeedback : MonoBehaviour
     /// </summary>
     public static void ShowEvasion(Vector3 worldPosition)
     {
+        // Check show interval to prevent spam
+        if (Time.time - lastShowTime < showInterval)
+        {
+            return;
+        }
+        lastShowTime = Time.time;
+        
         // Ensure we have a world canvas
         if (worldCanvas == null)
         {

@@ -22,8 +22,7 @@ public static class UpgradeTextProvider
                 float maxHealthUpgrade = upgradeManager.GetMaxHealthUpgradeAmount();
                 return $"MAX HEALTH\n<size=24>{currentMaxHealth:F0} → {currentMaxHealth + maxHealthUpgrade:F0}</size>";
                 
-            case PlayerUpgradeData.UpgradeType.Heal:
-                return $"HEAL\n<size=24>Restore to Full Health</size>";
+
                 
             case PlayerUpgradeData.UpgradeType.CriticalChance:
                 float currentCritChance = upgradeManager.GetCurrentCriticalChance();
@@ -106,51 +105,7 @@ public static class UpgradeTextProvider
                     return $"<color=#00FF00>EXTRA HAND</color>\n<size=24>MAX LEVEL ({extraHandMaxLevel})</size>";
                 }
                 
-            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
-                int defenseLevel = upgradeManager.GetDefenseLevel();
-                int defenseMaxLevel = upgradeManager.GetDefenseMaxLevel();
-                
-                if (defenseLevel == 0)
-                {
-                    // Not obtained yet - show as unlock
-                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>Unlock Skill (Level 1/{defenseMaxLevel})</size>";
-                }
-                else if (defenseLevel < defenseMaxLevel)
-                {
-                    // Show level upgrade
-                    float currentAbsorption = upgradeManager.GetDefenseAbsorptionPercent();
-                    // Calculate next level absorption (linear progression)
-                    float increment = (80f - 20f) / 9f; // (max - min) / (levels - 1)
-                    float nextAbsorption = Mathf.Min(currentAbsorption + increment, 80f);
-                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>Level {defenseLevel} → {defenseLevel + 1}\n{currentAbsorption:F1}% → {nextAbsorption:F1}% Absorb</size>";
-                }
-                else
-                {
-                    // Max level reached (shouldn't appear but handle it)
-                    return $"<color=#5DADE2>DEFENSE</color>\n<size=24>MAX LEVEL ({defenseMaxLevel})</size>";
-                }
-                
-            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
-                int vampireLevel = upgradeManager.GetVampireAuraLevel();
-                int vampireMaxLevel = upgradeManager.GetVampireAuraMaxLevel();
-                
-                if (vampireLevel == 0)
-                {
-                    // Not obtained yet - show as unlock
-                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>Unlock Skill (Level 1/{vampireMaxLevel})</size>";
-                }
-                else if (vampireLevel < vampireMaxLevel)
-                {
-                    // Show level upgrade with lifesteal percentage progression
-                    float currentLifesteal = upgradeManager.GetVampireAuraHealPercentage();
-                    float nextLifesteal = currentLifesteal + 1f; // +1% per level
-                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>Level {vampireLevel} → {vampireLevel + 1}\n{currentLifesteal:F0}% → {nextLifesteal:F0}% Lifesteal</size>";
-                }
-                else
-                {
-                    // Max level reached (shouldn't appear but handle it)
-                    return $"<color=#CC0033>VAMPIRE AURA</color>\n<size=24>MAX LEVEL ({vampireMaxLevel})</size>";
-                }
+
                 
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
                 int piccoloLevel = upgradeManager.GetPiccoloFireCrackerLevel();
@@ -184,28 +139,11 @@ public static class UpgradeTextProvider
                 int maxUpgradeLevelBD = upgradeManager.GetStatUpgradeMaxLevel();
                 return $"BLINK RANGE (Lv{blinkDistLevel}/{maxUpgradeLevelBD})\n<size=24>{currentBlinkDist:F1}m → {currentBlinkDist + blinkDistUpgrade:F1}m</size>";
                 
-            case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
-                float currentBlinkCD = upgradeManager.GetCurrentBlinkCooldown();
-                float blinkCDReduction = upgradeManager.GetBlinkCooldownReduction();
-                float newBlinkCD = Mathf.Max(currentBlinkCD - blinkCDReduction, 0.5f);
-                int blinkCDLevel = upgradeManager.GetBlinkCooldownUpgradeLevel();
-                int maxUpgradeLevelBC = upgradeManager.GetStatUpgradeMaxLevel();
-                return $"BLINK COOLDOWN (Lv{blinkCDLevel}/{maxUpgradeLevelBC})\n<size=24>{currentBlinkCD:F1}s → {newBlinkCD:F1}s</size>";
+
                 
-            case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
-                float currentDashCD = upgradeManager.GetCurrentDashCooldown();
-                float dashCDReduction = upgradeManager.GetDashCooldownReduction();
-                float newDashCD = Mathf.Max(currentDashCD - dashCDReduction, 0.3f);
-                int dashCDLevel = upgradeManager.GetDashCooldownUpgradeLevel();
-                int maxUpgradeLevelDC = upgradeManager.GetStatUpgradeMaxLevel();
-                return $"DASH COOLDOWN (Lv{dashCDLevel}/{maxUpgradeLevelDC})\n<size=24>{currentDashCD:F1}s → {newDashCD:F1}s</size>";
+
                 
-            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
-                float currentSpeed2 = upgradeManager.GetCurrentBlinkDashSpeed();
-                float speedUpgrade2 = upgradeManager.GetBlinkDashSpeedUpgrade();
-                int dashSpeedLevel = upgradeManager.GetBlinkDashSpeedUpgradeLevel();
-                int maxUpgradeLevelDS = upgradeManager.GetStatUpgradeMaxLevel();
-                return $"DASH SPEED (Lv{dashSpeedLevel}/{maxUpgradeLevelDS})\n<size=24>{currentSpeed2:F0} → {currentSpeed2 + speedUpgrade2:F0}</size>";
+
                 
             default:
                 return "UNKNOWN";
@@ -225,9 +163,6 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.MaxHealth:
                 return "<b><color=#4ECDC4>MAX HEALTH</color></b>\n\nIncrease your maximum health pool. Your current health will remain the same percentage.\n\n<i>More health means better survivability in longer waves.</i>";
                 
-            case PlayerUpgradeData.UpgradeType.Heal:
-                return "<b><color=#95E1D3>HEAL</color></b>\n\nRestore all health to maximum instantly. Choose this when you're low on health.\n\n<i>Perfect for emergency recovery!</i>";
-                
             case PlayerUpgradeData.UpgradeType.CriticalChance:
                 return "<b><color=#FFD93D>CRITICAL CHANCE</color></b>\n\nIncrease the probability of landing critical hits. Critical hits deal bonus damage based on your Critical Damage multiplier.\n\n<i>Synergizes well with Critical Damage upgrades!</i>";
                 
@@ -246,11 +181,7 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.UpgradeExtraHand:
                 return "<b><color=#00FF00>GRANDMOTHERS CANDY</color></b>\n\nUnlock or upgrade this auto-targeting skill! A Grand Mothers Candy shoots projectiles at nearby enemies. Each level increases:\n• <b>Damage</b> (+2 per level)\n• <b>Fire Rate</b> (-0.2s interval per level)\n• <b>Range</b> (+1m per level)\n• <b>Projectiles</b> (+1 on even levels 2,4,6,8,10)\n\n<i>Max Level: 10 - Never miss with this auto-aiming companion!</i>";
                 
-            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
-                return "<b><color=#5DADE2>ONION ARMOR</color></b>\n\nUnlock or upgrade this powerful defensive skill! Automatically absorbs incoming damage with 100% chance and reflects 100% of absorbed damage back to enemies. Each level increases:\n• <b>Absorption</b> (20% at Lv1 → 80% at Lv10)\n• <b>Reflection</b> (100% of absorbed damage)\n• <b>Chance</b> (Always 100%)\n\nDamage absorption scales linearly across all 10 levels. Reflected damage targets the attacker first, then nearest enemy within 5m radius.\n\n<i>Max Level: 10 - Turn enemy attacks into your weapon!</i>";
-                
-            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
-                return "<b><color=#CC0033>ANITOS BLESSING'S</color></b>\n\nUnlock or upgrade this lifesteal skill! Passively restores health whenever you deal damage to enemies. Each level increases:\n• <b>Lifesteal</b> (5% at Lv1 → 14% at Lv10)\n• <b>+1% per level</b>\n\nHeals for 5-14% of all damage you deal. Works with projectiles, dash attacks, and skills. Rewards aggressive playstyle with constant healing!\n\n<i>Max Level: 10 - Sustain yourself through combat!</i>";
+
                 
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
                 return "<b><color=#FF6600>PICCOLO FIRECRACKER</color></b>\n\nUnlock or upgrade this explosive bombardment skill! Throws explosive bombs to random areas that explode after a delay, damaging all nearby enemies. Each level increases:\n• <b>Damage</b> (+15% per level, 20 → 52 at Lv10)\n• <b>Explosion Radius</b> (+10% per level, 5m → 10m max)\n• <b>Explosion Speed</b> (-0.22s per level, 3s → 1s min)\n• <b>Bomb Count</b> (+1 every 3 levels, 2 → 5 max)\n\nAutomatically throws volleys of bombs every 5 seconds. Bombs arc through the air and create spectacular fiery explosions!\n\n<i>Max Level: 10 - Rain destruction from above!</i>";
@@ -258,17 +189,16 @@ public static class UpgradeTextProvider
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 return "<b><color=#6BCF7F>BLINK RANGE</color></b>\n\nIncrease the maximum distance you can teleport with Blink or Dash. Better mobility and positioning control.\n\n<i>Escape danger or chase enemies more effectively!</i>";
                 
-            case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
-                return "<b><color=#4A90E2>BLINK COOLDOWN</color></b>\n\nReduce the time between Blink uses. Use your mobility ability more frequently for better repositioning.\n\n<i>Minimum cooldown: 0.5 seconds</i>";
+
                 
-            case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
-                return "<b><color=#E74C3C>DASH COOLDOWN</color></b>\n\nReduce the time between Dash attacks. Attack more frequently with your high-damage dash strike.\n\n<i>Minimum cooldown: 0.3 seconds</i>";
+
                 
-            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
-                return "<b><color=#9B59B6>DASH SPEED</color></b>\n\nIncrease the movement speed during Blink and Dash. Move faster across the battlefield.\n\n<i>Harder for enemies to track and hit you!</i>";
+
                 
             default:
                 return "<b>UPGRADE</b>\n\nSelect this upgrade to enhance your character.";
         }
     }
+    
+
 }

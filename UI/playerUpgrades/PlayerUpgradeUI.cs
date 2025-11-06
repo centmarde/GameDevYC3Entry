@@ -465,9 +465,7 @@ public class PlayerUpgradeUI : MonoBehaviour
             case PlayerUpgradeData.UpgradeType.MaxHealth:
                 hasLevelSystem = false; // MaxHealth has no level cap (unlimited)
                 break;
-            case PlayerUpgradeData.UpgradeType.Heal:
-                hasLevelSystem = false; // Heal has no level system
-                break;
+
             case PlayerUpgradeData.UpgradeType.CriticalChance:
                 currentLevel = upgradeManager.GetCriticalChanceUpgradeLevel();
                 break;
@@ -489,14 +487,7 @@ public class PlayerUpgradeUI : MonoBehaviour
                 currentLevel = upgradeManager.GetExtraHandLevel();
                 maxLevel = upgradeManager.GetExtraHandMaxLevel();
                 break;
-            case PlayerUpgradeData.UpgradeType.UpgradeDefense:
-                currentLevel = upgradeManager.GetDefenseLevel();
-                maxLevel = upgradeManager.GetDefenseMaxLevel();
-                break;
-            case PlayerUpgradeData.UpgradeType.UpgradeVampireAura:
-                currentLevel = upgradeManager.GetVampireAuraLevel();
-                maxLevel = upgradeManager.GetVampireAuraMaxLevel();
-                break;
+
             case PlayerUpgradeData.UpgradeType.UpgradePiccoloFireCracker:
                 currentLevel = upgradeManager.GetPiccoloFireCrackerLevel();
                 maxLevel = upgradeManager.GetPiccoloFireCrackerMaxLevel();
@@ -504,15 +495,9 @@ public class PlayerUpgradeUI : MonoBehaviour
             case PlayerUpgradeData.UpgradeType.UpgradeBlinkDistance:
                 currentLevel = upgradeManager.GetBlinkDistanceUpgradeLevel();
                 break;
-            case PlayerUpgradeData.UpgradeType.ReduceBlinkCooldown:
-                currentLevel = upgradeManager.GetBlinkCooldownUpgradeLevel();
-                break;
-            case PlayerUpgradeData.UpgradeType.ReduceDashCooldown:
-                currentLevel = upgradeManager.GetDashCooldownUpgradeLevel();
-                break;
-            case PlayerUpgradeData.UpgradeType.UpgradeBlinkDashSpeed:
-                currentLevel = upgradeManager.GetBlinkDashSpeedUpgradeLevel();
-                break;
+
+
+
         }
         
         upgradeButtons[buttonIndex].UpdateLevelIndicator(currentLevel, maxLevel, hasLevelSystem);
