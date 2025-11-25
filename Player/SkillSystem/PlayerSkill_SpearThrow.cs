@@ -18,8 +18,11 @@ public class PlayerSkill_SpearThrow : MonoBehaviour
     [SerializeField] private float speedIncreasePerLevel = 1f; // Speed increase per level (reduced)
     
     [Header("Spear Formation")]
-    [SerializeField] private float spearSpread = 0.8f; // Distance between spears
+    [SerializeField] private float spearSpread = 0.8f; // Distance between spears (legacy - now used for cone spread)
     [SerializeField] private int baseSpearCount = 3; // Base number of spears
+    [SerializeField] private float baseConeAngle = 15f; // Base cone spread angle in degrees
+    [SerializeField] private float coneAnglePerLevel = 5f; // Additional cone angle per level
+    [SerializeField] private int projectilesPerLevel = 1; // Additional projectiles every level after first
     [SerializeField] private LayerMask enemyLayerMask = -1; // What layers spears can hit
     
     [Header("Visual Effects")]
@@ -43,6 +46,7 @@ public class PlayerSkill_SpearThrow : MonoBehaviour
     private float currentCooldown;
     private float currentProjectileSpeed;
     private int currentSpearCount;
+    private float currentConeAngle;
     
     // Player and combat references
     private Player player;
@@ -165,11 +169,14 @@ public class PlayerSkill_SpearThrow : MonoBehaviour
         // Calculate current projectile speed
         currentProjectileSpeed = baseProjectileSpeed + (speedIncreasePerLevel * (currentLevel - 1));
         
-        // Calculate current spear count (bonus spear every 3 levels: 3 → 4 → 5)
-        // Level 1-2: 3 spears, Level 3-5: 4 spears, Level 6+: 5 spears
-        int bonusSpears = (currentLevel - 1) / 3; // 0 at levels 1-2, 1 at levels 3-5, 2 at levels 6+
-        currentSpearCount = baseSpearCount + bonusSpears;
-        currentSpearCount = Mathf.Min(currentSpearCount, 5); // Cap at 5 spears max
+        // Calculate current spear count (increases every level)
+        // Level 1: 3 spears, Level 2: 4 spears, etc.
+        currentSpearCount = baseSpearCount + (currentLevel - 1) * projectilesPerLevel;
+        currentSpearCount = Mathf.Min(currentSpearCount, baseSpearCount + 7); // Cap at reasonable limit
+        
+        // Calculate current cone angle (wider spread at higher levels)
+        currentConeAngle = baseConeAngle + (coneAnglePerLevel * (currentLevel - 1));
+        currentConeAngle = Mathf.Min(currentConeAngle, 60f); // Cap at 60 degrees total spread
     }
     
     /// <summary>
@@ -203,70 +210,87 @@ public class PlayerSkill_SpearThrow : MonoBehaviour
     }
     
     /// <summary>
-    /// Spawn spears in formation in front of the player
+    /// Spawn spears in cone formation in front of the player
     /// </summary>
     private void SpawnSpearFormation(Vector3 centerPosition, Vector3 direction)
     {
         if (currentSpearCount <= 0 || spearProjectilePrefab == null) return;
         
-        // Calculate perpendicular direction for spread
-        Vector3 rightDirection = Vector3.Cross(direction, Vector3.up).normalized;
+        // For single spear, shoot straight
+        if (currentSpearCount == 1)
+        {
+            CreateSpearProjectile(centerPosition, direction);
+            return;
+        }
         
-        // Calculate starting offset for centering the formation
-        float totalWidth = (currentSpearCount - 1) * spearSpread;
-        float startOffset = -totalWidth * 0.5f;
+        // Calculate angle step between spears for cone formation
+        float halfConeAngle = currentConeAngle * 0.5f;
+        float angleStep = currentConeAngle / (currentSpearCount - 1);
         
         for (int i = 0; i < currentSpearCount; i++)
         {
-            // Calculate position for this spear
-            float offsetFromCenter = startOffset + (i * spearSpread);
-            Vector3 spearPosition = centerPosition + rightDirection * offsetFromCenter;
+            // Calculate angle for this spear (-halfCone to +halfCone)
+            float angle = -halfConeAngle + (i * angleStep);
+            
+            // Rotate the base direction by the calculated angle around Y axis
+            Vector3 spearDirection = Quaternion.AngleAxis(angle, Vector3.up) * direction;
             
             // Create spear projectile
-            GameObject spear = Instantiate(spearProjectilePrefab, spearPosition, Quaternion.LookRotation(direction));
-            spear.SetActive(true);
+            CreateSpearProjectile(centerPosition, spearDirection);
+        }
+    }
+    
+    /// <summary>
+    /// Create a single spear projectile with given direction
+    /// </summary>
+    private void CreateSpearProjectile(Vector3 position, Vector3 direction)
+    {
+        if (spearProjectilePrefab == null) return;
+        
+        // Create spear projectile
+        GameObject spear = Instantiate(spearProjectilePrefab, position, Quaternion.LookRotation(direction));
+        spear.SetActive(true);
+        
+        // Configure spear projectile
+        var projectile = spear.GetComponent<ProjectileSlingshot>();
+        if (projectile != null)
+        {
+            projectile.SetHitMask(enemyLayerMask);
             
-            // Configure spear projectile
-            var projectile = spear.GetComponent<ProjectileSlingshot>();
-            if (projectile != null)
+            // Configure for boomerang behavior - spear projectile will handle its own destruction
+            var spearComponent = spear.GetComponent<SpearProjectile>();
+            if (spearComponent != null)
             {
-                projectile.SetHitMask(enemyLayerMask);
-                
-                // Configure for boomerang behavior - spear projectile will handle its own destruction
-                var spearComponent = spear.GetComponent<SpearProjectile>();
-                if (spearComponent != null)
-                {
-                    // Let the SpearProjectile handle destruction when it returns to player
-                    projectile.SetLifeTime(10f); // Fallback safety timeout
-                }
-                else
-                {
-                    // Fallback for spears without SpearProjectile component
-                    projectile.SetLifeTime(4f);
-                }
-                
-                // Calculate damage (with potential critical hit)
-                float finalDamage = currentSpearDamage;
-                bool isCritical = false;
-                
-                if (player != null && player.Stats != null)
-                {
-                    isCritical = player.Stats.RollCriticalHit();
-                    if (isCritical)
-                    {
-                        finalDamage *= player.Stats.criticalDamageMultiplier;
-                    }
-                }
-                
-                // Launch the spear
-                Vector3 velocity = direction * currentProjectileSpeed;
-                projectile.Launch(velocity, finalDamage, player, isCritical);
+                // Let the SpearProjectile handle destruction when it returns to player
+                projectile.SetLifeTime(10f); // Fallback safety timeout
             }
             else
             {
-                // Destroy the created object if no ProjectileSlingshot component
-                if (spear != null) Destroy(spear);
+                // Fallback for spears without SpearProjectile component
+                projectile.SetLifeTime(4f);
             }
+            
+            // Calculate damage (with potential critical hit)
+            float finalDamage = currentSpearDamage;
+            bool isCritical = false;
+            
+            if (player != null && player.Stats != null)
+            {
+                isCritical = player.Stats.RollCriticalHit();
+                if (isCritical)
+                {
+                    finalDamage *= player.Stats.criticalDamageMultiplier;
+                }
+            }
+            
+            // Launch the spear
+            Vector3 velocity = direction * currentProjectileSpeed;
+            projectile.Launch(velocity, finalDamage, player, isCritical);
+        }
+        else
+        {
+            // Destroy the created object if no ProjectileSlingshot component
+            if (spear != null) Destroy(spear);
         }
     }
     
@@ -405,20 +429,37 @@ public class PlayerSkill_SpearThrow : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(centerPosition, 0.2f);
         
-        // Draw spear positions
+        // Draw cone formation
         if (currentSpearCount > 0)
         {
-            Vector3 rightDirection = Vector3.Cross(aimDirection, Vector3.up).normalized;
-            float totalWidth = (currentSpearCount - 1) * spearSpread;
-            float startOffset = -totalWidth * 0.5f;
-            
             Gizmos.color = Color.red;
-            for (int i = 0; i < currentSpearCount; i++)
+            
+            if (currentSpearCount == 1)
             {
-                float offsetFromCenter = startOffset + (i * spearSpread);
-                Vector3 spearPosition = centerPosition + rightDirection * offsetFromCenter;
-                Gizmos.DrawWireSphere(spearPosition, 0.1f);
-                Gizmos.DrawLine(spearPosition, spearPosition + aimDirection * baseSpearRange);
+                // Single spear - straight line
+                Gizmos.DrawLine(centerPosition, centerPosition + aimDirection * baseSpearRange);
+            }
+            else
+            {
+                // Multiple spears - cone formation
+                float halfConeAngle = currentConeAngle * 0.5f;
+                float angleStep = currentConeAngle / (currentSpearCount - 1);
+                
+                for (int i = 0; i < currentSpearCount; i++)
+                {
+                    float angle = -halfConeAngle + (i * angleStep);
+                    Vector3 spearDirection = Quaternion.AngleAxis(angle, Vector3.up) * aimDirection;
+                    
+                    Gizmos.DrawLine(centerPosition, centerPosition + spearDirection * baseSpearRange);
+                    Gizmos.DrawWireSphere(centerPosition + spearDirection * 0.5f, 0.1f);
+                }
+                
+                // Draw cone outline
+                Gizmos.color = Color.yellow;
+                Vector3 leftEdge = Quaternion.AngleAxis(-halfConeAngle, Vector3.up) * aimDirection;
+                Vector3 rightEdge = Quaternion.AngleAxis(halfConeAngle, Vector3.up) * aimDirection;
+                Gizmos.DrawLine(centerPosition, centerPosition + leftEdge * baseSpearRange);
+                Gizmos.DrawLine(centerPosition, centerPosition + rightEdge * baseSpearRange);
             }
         }
     }

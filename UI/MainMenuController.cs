@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Photon.Pun;
 
 /// <summary>
 /// Main Menu Controller - Handles main menu UI interactions
@@ -44,6 +45,9 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Reference to the Leaderboards button")]
     [SerializeField] private Button leaderboardsButton;
     
+    [Tooltip("Reference to the Coop button")]
+    [SerializeField] private Button coopButton;
+    
     [Tooltip("Reference to the Quit Game button")]
     [SerializeField] private Button quitButton;
     
@@ -56,6 +60,9 @@ public class MainMenuController : MonoBehaviour
     
     [Tooltip("Name of the leaderboards scene to load")]
     [SerializeField] private string leaderboardsSceneName = "LeaderBoards";
+    
+    [Tooltip("Name of the coop scene to load")]
+    [SerializeField] private string coopSceneName = "Coop";
 
     [Header("Audio Settings")]
     [Tooltip("Delay in seconds before executing button action (allows audio to play)")]
@@ -85,6 +92,15 @@ public class MainMenuController : MonoBehaviour
             leaderboardsButton.onClick.AddListener(OnLeaderboardsButtonClicked);
         }
         
+        if (coopButton == null)
+        {
+            Debug.LogError("MainMenuController: Coop Button is not assigned in the Inspector!");
+        }
+        else
+        {
+            coopButton.onClick.AddListener(OnCoopButtonClicked);
+        }
+        
         if (quitButton == null)
         {
             Debug.LogError("MainMenuController: Quit Button is not assigned in the Inspector!");
@@ -97,6 +113,38 @@ public class MainMenuController : MonoBehaviour
         // Optional: Ensure cursor is visible and unlocked in menu
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
+        
+        // Reconnect to Photon if needed (for GameManager)
+        ReconnectToPhoton();
+    }
+    
+    /// <summary>
+    /// Reconnects to Photon when returning to main menu
+    /// This ensures GameManager can properly initialize when entering game scenes
+    /// </summary>
+    private void ReconnectToPhoton()
+    {
+        // If Photon is disconnected or in a bad state, reconnect
+        if (PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected ||
+            PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.PeerCreated)
+        {
+            Debug.Log("[MainMenuController] Reconnecting to Photon for GameManager...");
+            PhotonNetwork.ConnectUsingSettings();
+        }
+        else if (PhotonNetwork.IsConnected)
+        {
+            Debug.Log($"[MainMenuController] Already connected to Photon. State: {PhotonNetwork.NetworkClientState}");
+            // If in lobby, leave it to free up resources
+            if (PhotonNetwork.InLobby)
+            {
+                Debug.Log("[MainMenuController] Leaving lobby...");
+                PhotonNetwork.LeaveLobby();
+            }
+        }
+        else
+        {
+            Debug.Log($"[MainMenuController] Photon connection state: {PhotonNetwork.NetworkClientState}");
+        }
     }
 
     /// <summary>
@@ -164,6 +212,38 @@ public class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
+    /// Called when the Coop button is clicked
+    /// Loads the coop scene
+    /// </summary>
+    private void OnCoopButtonClicked()
+    {
+        if (isProcessingButtonClick) return;
+        StartCoroutine(CoopButtonClickCoroutine());
+    }
+
+    private IEnumerator CoopButtonClickCoroutine()
+    {
+        isProcessingButtonClick = true;
+        Debug.Log($"Coop button clicked - waiting {buttonClickDelay}s for audio...");
+        
+        yield return new WaitForSeconds(buttonClickDelay);
+        
+        Debug.Log($"Loading scene: {coopSceneName}");
+        
+        // Use LoadingScreen if available, otherwise load normally
+        if (LoadingScreen.Instance != null)
+        {
+            LoadingScreen.LoadScene(coopSceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(coopSceneName);
+        }
+        
+        isProcessingButtonClick = false;
+    }
+
+    /// <summary>
     /// Called when the Quit button is clicked
     /// Exits the application
     /// </summary>
@@ -216,6 +296,11 @@ public class MainMenuController : MonoBehaviour
         if (leaderboardsButton != null)
         {
             leaderboardsButton.onClick.RemoveListener(OnLeaderboardsButtonClicked);
+        }
+
+        if (coopButton != null)
+        {
+            coopButton.onClick.RemoveListener(OnCoopButtonClicked);
         }
 
         if (quitButton != null)

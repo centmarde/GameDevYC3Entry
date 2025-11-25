@@ -1,13 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
 /// UI component for displaying experience bar and level.
 /// Auto-creates UI if not manually set up in the scene.
+/// Only shows in specified scenes to avoid appearing in menus.
 /// </summary>
 public class ExperienceUI : MonoBehaviour
 {
+    [Header("Scene Settings")]
+    [Tooltip("List of scene names where the ExperienceUI should be visible")]
+    [SerializeField] private string[] allowedScenes = {  "MainBase" };
+    
     [Header("UI References")]
     [SerializeField] private Image fillBar;
     [SerializeField] private TextMeshProUGUI levelText;
@@ -25,6 +31,14 @@ public class ExperienceUI : MonoBehaviour
 
     private void Awake()
     {
+        // Check if we should be visible in this scene
+        if (!ShouldShowInCurrentScene())
+        {
+            Debug.Log($"[ExperienceUI] Hiding UI - current scene '{SceneManager.GetActiveScene().name}' is not in allowed scenes list");
+            gameObject.SetActive(false);
+            return;
+        }
+        
         // If UI elements are not assigned, auto-create them
         if (fillBar == null || levelText == null)
         {
@@ -243,5 +257,123 @@ public class ExperienceUI : MonoBehaviour
         {
             fillBar.color = color;
         }
+    }
+    
+    /// <summary>
+    /// Check if the ExperienceUI should be shown in the current scene
+    /// </summary>
+    private bool ShouldShowInCurrentScene()
+    {
+        if (allowedScenes == null || allowedScenes.Length == 0)
+        {
+            // If no scenes specified, show everywhere (backward compatibility)
+            return true;
+        }
+        
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        
+        for (int i = 0; i < allowedScenes.Length; i++)
+        {
+            if (allowedScenes[i] == currentSceneName)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private void OnEnable()
+    {
+        // Subscribe to scene loaded events to handle scene transitions
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    private void OnDisable()
+    {
+        // Unsubscribe from scene loaded events
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    /// <summary>
+    /// Handle scene transitions - show/hide UI based on new scene
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        bool shouldShow = ShouldShowInCurrentScene();
+        gameObject.SetActive(shouldShow);
+        
+        if (shouldShow)
+        {
+            Debug.Log($"[ExperienceUI] Showing UI in scene: {scene.name}");
+        }
+        else
+        {
+            Debug.Log($"[ExperienceUI] Hiding UI in scene: {scene.name}");
+        }
+    }
+    
+    /// <summary>
+    /// Add a scene name to the allowed scenes list at runtime
+    /// </summary>
+    public void AddAllowedScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return;
+        
+        // Check if scene already exists
+        for (int i = 0; i < allowedScenes.Length; i++)
+        {
+            if (allowedScenes[i] == sceneName)
+            {
+                return; // Already exists
+            }
+        }
+        
+        // Add new scene
+        string[] newArray = new string[allowedScenes.Length + 1];
+        for (int i = 0; i < allowedScenes.Length; i++)
+        {
+            newArray[i] = allowedScenes[i];
+        }
+        newArray[allowedScenes.Length] = sceneName;
+        allowedScenes = newArray;
+        
+        Debug.Log($"[ExperienceUI] Added '{sceneName}' to allowed scenes list");
+    }
+    
+    /// <summary>
+    /// Remove a scene name from the allowed scenes list at runtime
+    /// </summary>
+    public void RemoveAllowedScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName) || allowedScenes.Length == 0) return;
+        
+        // Find the scene index
+        int indexToRemove = -1;
+        for (int i = 0; i < allowedScenes.Length; i++)
+        {
+            if (allowedScenes[i] == sceneName)
+            {
+                indexToRemove = i;
+                break;
+            }
+        }
+        
+        if (indexToRemove == -1) return; // Scene not found
+        
+        // Create new array without the removed scene
+        string[] newArray = new string[allowedScenes.Length - 1];
+        int newIndex = 0;
+        for (int i = 0; i < allowedScenes.Length; i++)
+        {
+            if (i != indexToRemove)
+            {
+                newArray[newIndex] = allowedScenes[i];
+                newIndex++;
+            }
+        }
+        allowedScenes = newArray;
+        
+        Debug.Log($"[ExperienceUI] Removed '{sceneName}' from allowed scenes list");
     }
 }

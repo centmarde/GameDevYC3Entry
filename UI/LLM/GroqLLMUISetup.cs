@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
-
 #if UNITY_EDITOR
 using UnityEditor;
+#endif
 
 public class GroqLLMUISetup : MonoBehaviour
 {
@@ -214,6 +214,7 @@ public class GroqLLMUISetup : MonoBehaviour
             groqScript = gameObject.AddComponent<GroqLLMIntegration>();
         }
         
+#if UNITY_EDITOR
         // Assign references via reflection since they're private serialized fields
         SerializedObject so = new SerializedObject(groqScript);
         so.FindProperty("inputField").objectReferenceValue = inputField;
@@ -226,6 +227,7 @@ public class GroqLLMUISetup : MonoBehaviour
         SerializedObject setupSO = new SerializedObject(this);
         setupSO.FindProperty("setupComplete").boolValue = true;
         setupSO.ApplyModifiedProperties();
+#endif
         
         Debug.Log("Groq LLM UI Setup Complete! EventSystem and Canvas are ready. You can now interact with the UI.");
     }
@@ -267,4 +269,3 @@ public class GroqLLMUISetup : MonoBehaviour
         return buttonObj;
     }
 }
-#endif
