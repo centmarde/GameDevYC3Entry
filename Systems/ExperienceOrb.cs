@@ -15,10 +15,10 @@ public class ExperienceOrb : MonoBehaviour
     [SerializeField] private float pickupRange = 5f;
     
     [Tooltip("Speed at which the orb moves towards the player")]
-    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float moveSpeed = 5f;
     
     [Tooltip("Acceleration applied when moving towards player")]
-    [SerializeField] private float acceleration = 2f;
+    [SerializeField] private float acceleration = 1f;
     
     [Tooltip("Time in seconds before the orb can be picked up")]
     [SerializeField] private float pickupDelay = 3f;
@@ -50,17 +50,29 @@ public class ExperienceOrb : MonoBehaviour
     private bool canBePickedUp = false;
     private bool hasLanded = false;
     private float groundY;
+    private Collider orbCollider;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        orbCollider = GetComponent<Collider>();
+        
+        // CRITICAL: Ensure collider is initially NOT a trigger for physics bouncing
+        if (orbCollider != null)
+        {
+            orbCollider.isTrigger = false;
+        }
         
         // Ensure rigidbody settings for proper physics
         if (rb != null)
         {
             rb.useGravity = true;
-            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            // CRITICAL: Use ContinuousSpeculative for trigger collisions (prevents tunneling)
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
+            // Increase solver iterations for better collision detection
+            rb.solverIterations = 10;
+            rb.solverVelocityIterations = 10;
             // Allow free rotation for ragdoll-like tumbling
             rb.constraints = RigidbodyConstraints.None;
             
@@ -214,11 +226,50 @@ public class ExperienceOrb : MonoBehaviour
     {
         if (targetPlayer == null || rb == null) return;
 
+        // Calculate distance first
+        float distanceToPlayer = Vector3.Distance(transform.position, targetPlayer.position);
+        
+        // AGGRESSIVE COLLECTION: Larger radius for instant collection
+        if (distanceToPlayer < 1.5f)
+        {
+            Player player = targetPlayer.GetComponent<Player>();
+            if (player != null)
+            {
+                Entity_Health health = player.GetComponent<Entity_Health>();
+                if (health != null && health.IsAlive)
+                {
+                    CollectOrb(player);
+                    return;
+                }
+            }
+        }
+
+        // Make collider a trigger when moving to player to avoid pushing
+        if (orbCollider != null && !orbCollider.isTrigger)
+        {
+            orbCollider.isTrigger = true;
+        }
+
         // Calculate direction to player
         Vector3 direction = (targetPlayer.position - transform.position).normalized;
 
-        // Accelerate towards player
+        // Use kinematic movement when very close for precise control
+        if (distanceToPlayer < 2f)
+        {
+            // Direct position interpolation for final approach
+            float step = 8f * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, targetPlayer.position, step);
+            return;
+        }
+
+        // Accelerate towards player (capped to prevent tunneling through triggers)
         currentSpeed = Mathf.Min(currentSpeed + acceleration * Time.deltaTime, moveSpeed);
+        
+        // Clamp max speed when getting closer to prevent overshooting
+        if (distanceToPlayer < 3f)
+        {
+            currentSpeed = Mathf.Min(currentSpeed, distanceToPlayer * 2f);
+        }
 
         // Move using rigidbody, maintaining minimum height
         Vector3 velocity = direction * currentSpeed;
@@ -241,6 +292,66 @@ public class ExperienceOrb : MonoBehaviour
 
         // Check if collided with a player
         Player player = other.GetComponent<Player>();
+        if (player != null)
+        {
+            // Check if player is alive by checking their health component
+            Entity_Health health = player.GetComponent<Entity_Health>();
+            if (health != null && health.IsAlive)
+            {
+                CollectOrb(player);
+            }
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (isBeingCollected) return;
+        
+        // Don't allow pickup during delay period
+        if (!canBePickedUp) return;
+
+        // Check if staying in contact with a player
+        Player player = other.GetComponent<Player>();
+        if (player != null)
+        {
+            // Check if player is alive by checking their health component
+            Entity_Health health = player.GetComponent<Entity_Health>();
+            if (health != null && health.IsAlive)
+            {
+                CollectOrb(player);
+            }
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (isBeingCollected) return;
+        
+        // Don't allow pickup during delay period
+        if (!canBePickedUp) return;
+
+        // Check if collided with a player (when orb is solid, not trigger)
+        Player player = collision.gameObject.GetComponent<Player>();
+        if (player != null)
+        {
+            // Check if player is alive by checking their health component
+            Entity_Health health = player.GetComponent<Entity_Health>();
+            if (health != null && health.IsAlive)
+            {
+                CollectOrb(player);
+            }
+        }
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        if (isBeingCollected) return;
+        
+        // Don't allow pickup during delay period
+        if (!canBePickedUp) return;
+
+        // Check if staying in contact with a player (when orb is solid, not trigger)
+        Player player = collision.gameObject.GetComponent<Player>();
         if (player != null)
         {
             // Check if player is alive by checking their health component
