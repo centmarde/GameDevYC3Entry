@@ -306,6 +306,8 @@ public class ExperienceUI : MonoBehaviour
         if (shouldShow)
         {
             Debug.Log($"[ExperienceUI] Showing UI in scene: {scene.name}");
+            // Update UI with current experience values when reactivated
+            RefreshFromExperienceManager();
         }
         else
         {
@@ -375,5 +377,25 @@ public class ExperienceUI : MonoBehaviour
         allowedScenes = newArray;
         
         Debug.Log($"[ExperienceUI] Removed '{sceneName}' from allowed scenes list");
+    }
+    
+    /// <summary>
+    /// Refresh UI display with current values from ExperienceManager
+    /// </summary>
+    private void RefreshFromExperienceManager()
+    {
+        if (ExperienceManager.Instance != null)
+        {
+            Debug.Log($"[ExperienceUI] Refreshing UI with current experience values");
+            UpdateExperienceBar(
+                ExperienceManager.Instance.GetCurrentExperience(),
+                ExperienceManager.Instance.GetExperienceToNextLevel(),
+                ExperienceManager.Instance.GetCurrentLevel()
+            );
+        }
+        else
+        {
+            Debug.LogWarning("[ExperienceUI] ExperienceManager.Instance is null when trying to refresh UI");
+        }
     }
 }

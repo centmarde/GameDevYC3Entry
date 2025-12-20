@@ -61,10 +61,13 @@ public class ExperienceManager : MonoBehaviour
         }
         else
         {
-            // Update UI with initial values (start at 0 XP)
+            // Update UI with current values
             Debug.Log($"[ExperienceManager] Initializing UI - Level: {currentLevel}, XP: {currentExperience}/{experienceToNextLevel}");
             UpdateUI();
         }
+        
+        // Subscribe to scene loaded events to reconnect with UI after scene transitions
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     /// <summary>
@@ -178,8 +181,28 @@ public class ExperienceManager : MonoBehaviour
         Debug.Log("[ExperienceManager] Experience reset to starting values");
     }
 
+    /// <summary>
+    /// Handle scene transitions - reconnect with UI
+    /// </summary>
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // Try to reconnect with ExperienceUI after scene load
+        if (experienceUI == null)
+        {
+            experienceUI = FindObjectOfType<ExperienceUI>();
+            if (experienceUI != null)
+            {
+                Debug.Log($"[ExperienceManager] Reconnected with ExperienceUI in scene: {scene.name}");
+                UpdateUI();
+            }
+        }
+    }
+
     private void OnDestroy()
     {
+        // Unsubscribe from scene events
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        
         if (Instance == this)
         {
             Instance = null;
